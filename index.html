@@ -37,9 +37,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .hdr-search input:focus{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
 .hdr-search .si{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.4;pointer-events:none;font-style:normal}
 .hdr-search .si.resolving{animation:sp .7s linear infinite;opacity:.9}
-.hdr-search .srst{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:var(--tr);padding:0;line-height:1}
+.hdr-search .srst{position:absolute;right:0;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:0;border:none;background:transparent;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:var(--tr);padding:0;line-height:1}
 .hdr-search .srst.vis{display:flex}
-.hdr-search .srst:hover{background:rgba(255,255,255,.2);color:#fff}
+.hdr-search .srst:hover{color:#fff}
 .hdr-search input{width:100%;font-family:var(--font);font-size:13px;padding:8px 48px 8px 34px;border:1px solid rgba(255,255,255,.12);border-radius:2px;background:rgba(255,255,255,.06);color:#fff;outline:none;transition:var(--tr)}
 .hdr-r{display:flex;gap:4px;margin-left:auto;align-items:center}
 .api-grp{display:flex;gap:1px;background:rgba(255,255,255,.08);border-radius:2px;padding:1px}
@@ -247,8 +247,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 /* Individual specimen dot markers — override default Leaflet icon styles */
 .qm-dot{background:none!important;border:none!important}
 /* Temporal range slider */
-.map-temporal{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:600;background:rgba(255,255,255,.96);border:1px solid #ddd;border-radius:2px;padding:8px 14px 6px;font-family:var(--font);width:min(520px,calc(100% - 240px));display:none;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.map-temporal{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:600;background:rgba(255,255,255,.96);border:1px solid #ddd;border-radius:2px;padding:8px 14px 6px;font-family:var(--font);width:min(520px,calc(100% - 240px));display:none;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:padding .15s,width .15s}
 .map-temporal.vis{display:block}
+.map-temporal.collapsed{padding:4px 10px;width:auto;left:50%;transform:translateX(-50%)}
+.map-temporal.collapsed .mt-hist,.map-temporal.collapsed .mt-slider{display:none}
+.map-temporal.collapsed .mt-label{display:none}
+.map-temporal .mt-tog{border:none;background:none;cursor:pointer;font-size:12px;color:var(--muted);padding:2px 4px;line-height:1;font-family:var(--font);min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;margin:-4px -6px -4px 0;flex-shrink:0}
 .map-temporal .mt-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .map-temporal .mt-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
 .map-temporal .mt-range{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
@@ -270,6 +274,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .map-pill button{font-family:var(--font);font-size:12px;font-weight:600;border:1px solid #ddd;border-radius:2px;padding:4px 8px;background:#fff;cursor:pointer;min-height:28px}
 .map-pill button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .map-pill button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* Tools popover */
+.map-tools-wrap{position:relative}
+.map-tools-btn{font-family:var(--font);font-size:13px;font-weight:700;border:1px solid #ddd;border-radius:2px;padding:4px 10px;background:rgba(255,255,255,.95);cursor:pointer;min-height:36px;min-width:36px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:var(--tr)}
+.map-tools-btn:hover,.map-tools-btn.open{background:var(--ink);color:#fff;border-color:var(--ink)}
+.map-tools-pop{display:none;position:absolute;top:calc(100% + 4px);left:0;background:rgba(255,255,255,.97);border:1px solid #ddd;border-radius:2px;padding:8px 10px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:610;min-width:180px;font-size:12px}
+.map-tools-pop.open{display:block}
+.map-tools-pop label{display:flex;align-items:center;gap:6px;padding:6px 0;cursor:pointer;white-space:nowrap;min-height:36px}
+.map-tools-pop label:not(:last-child){border-bottom:1px solid #eee}
+.map-tools-pop .mtp-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:8px 0 2px;margin-top:4px;border-top:1px solid #eee}
+.map-tools-pop .mtp-section:first-child{margin-top:0;border-top:none;padding-top:0}
+.map-tools-pop button{font-family:var(--font);font-size:12px;font-weight:600;border:1px solid #ddd;border-radius:2px;padding:6px 10px;background:#fff;cursor:pointer;width:100%;text-align:left;min-height:36px;margin:2px 0}
+.map-tools-pop button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .map-legend{position:absolute;bottom:10px;right:10px;z-index:600;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:2px;padding:10px;max-width:200px;max-height:240px;overflow-y:auto;font-size:11px}
 .map-legend.shut .ml-body{display:none}
 .ml-head{font-weight:700;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
@@ -285,6 +301,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .nntt-drop-item .nntt-type.det{background:#2d6a4f}.nntt-drop-item .nntt-type.app{background:#e07c24}.nntt-drop-item .nntt-type.rntbc{background:#4361a0}
 .nntt-drop-item .nntt-type.bio{background:#00a561}.nntt-drop-item .nntt-type.prot{background:#2a8f9d}.nntt-drop-item .nntt-type.drain{background:#1f5378}.nntt-drop-item .nntt-type.nntt{background:#864a7e}.nntt-drop-item .nntt-type.veg{background:#4a7a2e}
 .nntt-drop-item .nntt-type.subbio{background:#3a9e6e}.nntt-drop-item .nntt-type.lga{background:#c06a00}.nntt-drop-item .nntt-type.marine{background:#0077b6}
+.nntt-drop-item .nntt-type.capad{background:#1a6e5c}.nntt-drop-item .nntt-type.cmarine{background:#005082}
 .nntt-active{display:flex;align-items:center;gap:4px;font-size:11px;max-width:220px}
 .nntt-active .nntt-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
 
@@ -459,7 +476,7 @@ const S = {
   alaInst:'in15',
   treeCache:new Map(),
   mapBox:null, mapBoxState:null, mapPoly:null,
-  mapColorBy:'family', mapLegendShut:false, mapSpiderfy:false, mapDirty:true, mapYearRange:null,
+  mapColorBy:'family', mapLegendShut:false, mapSpiderfy:false, mapDirty:true, mapYearRange:null, mapUncapped:false,
   modalIdx:-1, modalPhotos:[], modalPhotoIdx:0, navIdx:0,
   qc:{georef:null,media:null,typed:null},
   richness:{families:0,genera:0,species:0},
@@ -1328,7 +1345,7 @@ async function bgLoadAllPages(f,loadId){
   S._bgRunning=loadId;
   const total=S.total;
   if(total<=0)return;
-  const MAP_CAP=50000;
+  const MAP_CAP=S.mapUncapped?Infinity:50000;
   const target=Math.min(total,MAP_CAP);
   const allGeo=[];
   let lastRedraw=0;
@@ -1407,7 +1424,7 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
   let alaId=cursor.alaId||'';
   let alaFetched=cursor.alaFetched||0;
   let polyCount=startCount;
-  const REC_CAP=50000;
+  const REC_CAP=S.mapUncapped?Infinity:50000;
   /* Seed with all MASTER records already found by fill-page (unfiltered) */
   const allMasterRecs=(S._polyMasterRecs||[]).slice();
   let failures=0;
@@ -2415,11 +2432,39 @@ function addMapControls(){
   // Remove old controls
   mc.querySelectorAll('.map-top,.map-legend,.map-info').forEach(e=>e.remove());
   const top=document.createElement('div');top.className='map-top';
-  top.innerHTML=`<div class="map-pill"><label style="font-weight:600">Color by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-pill"><label style="font-size:12px"><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''} style="margin-right:4px"/>Spiderfy</label></div><div class="map-pill"><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button></div><div class="map-pill"><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish</button><button id="clearPolyBtn" style="display:none">Clear area</button></div><div class="map-pill nntt-wrap"><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:180px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-pill"><input id="mapSrch" type="text" placeholder="Search location…" style="width:140px"/><button id="mapSrchBtn">Go</button></div>`;
+  top.innerHTML=`<div class="map-pill"><label style="font-weight:600">Color by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-tools-wrap"><button class="map-tools-btn" id="mapToolsBtn" aria-label="Map tools" title="Drawing &amp; display tools">⚙</button><div class="map-tools-pop" id="mapToolsPop"><div class="mtp-section">Display</div><label><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''}/>Spiderfy clusters</label><label title="Remove the 50,000 marker cap. Warning: loading 200k+ records is slow."><input type="checkbox" id="uncapTog"${S.mapUncapped?' checked':''}/>Load all markers</label><div class="mtp-section">Spatial filter</div><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish polygon</button><button id="clearPolyBtn" style="display:none">Clear drawn area</button></div></div><div class="map-pill nntt-wrap"><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:180px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-pill"><input id="mapSrch" type="text" placeholder="Search location…" style="width:140px"/><button id="mapSrchBtn">Go</button></div>`;
   mc.appendChild(top);
+
+  /* Tools popover toggle */
+  const toolsBtn=top.querySelector('#mapToolsBtn');
+  const toolsPop=top.querySelector('#mapToolsPop');
+  toolsBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const open=toolsPop.classList.toggle('open');
+    toolsBtn.classList.toggle('open',open);
+  });
+  /* Close popover when clicking outside */
+  document.addEventListener('click',e=>{
+    if(!toolsPop.contains(e.target)&&e.target!==toolsBtn){
+      toolsPop.classList.remove('open');toolsBtn.classList.remove('open');
+    }
+  });
+
   top.querySelector('#mapCB').value=S.mapColorBy;
   top.querySelector('#mapCB').addEventListener('change',e=>{S.mapColorBy=e.target.value;addMarkers();buildLegend()});
   top.querySelector('#spiderfyTog').addEventListener('change',e=>{S.mapSpiderfy=e.target.checked;rebuildMarkerLayer()});
+  top.querySelector('#uncapTog').addEventListener('change',e=>{
+    if(e.target.checked&&S.total>50000){
+      const ok=confirm(`This will load all ${fmt(S.total)} georeferenced records. For 200k+ records this may take several minutes and use significant memory.\n\nContinue?`);
+      if(!ok){e.target.checked=false;return}
+    }
+    S.mapUncapped=e.target.checked;
+    S.mapLoadId++;S._bgRunning=null;S.allPts=[];S.mapFetched=0;
+    if(S.mapUncapped||S.allPts.length<Math.min(S.total,50000)){
+      bgLoadAllPages(getFilters(),S.mapLoadId);
+    }
+    updateMapInfo();
+  });
   // Location search
   top.querySelector('#mapSrchBtn').addEventListener('click',doMapSearch);
   top.querySelector('#mapSrch').addEventListener('keydown',e=>{if(e.key==='Enter')doMapSearch()});
@@ -2445,8 +2490,23 @@ function addMapControls(){
 async function doMapSearch(){
   const q=$('#mapSrch')?.value?.trim();if(!q||!S.map)return;
   try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
-    const d=await r.json();if(d[0]){S.map.setView([+d[0].lat,+d[0].lon],10);toast('Moved to '+d[0].display_name.split(',')[0])}else toast('Location not found');
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=au`);
+    const d=await r.json();
+    if(d[0]){
+      const hit=d[0];
+      /* Use bounding box if available for natural zoom, otherwise estimate from place type */
+      if(hit.boundingbox){
+        const bb=hit.boundingbox.map(Number); /* [south, north, west, east] */
+        S.map.fitBounds([[bb[0],bb[2]],[bb[1],bb[3]]],{padding:[40,40],maxZoom:16});
+      }else{
+        /* Fallback: zoom based on place type */
+        const t=(hit.type||'').toLowerCase();
+        const z=t==='suburb'||t==='village'||t==='hamlet'||t==='town'||t==='locality'?14:
+                 t==='city'?12:t==='state'||t==='country'?6:13;
+        S.map.setView([+hit.lat,+hit.lon],z);
+      }
+      toast('Moved to '+hit.display_name.split(',')[0]);
+    }else toast('Location not found');
   }catch(e){toast('Search failed')}
 }
 
@@ -2456,7 +2516,7 @@ function updateMapInfo(){
   const visPts=getVisiblePts();
   const visCount=visPts.length;
   const filtered=S.mapBox||S.mapPoly;
-  const cap=Math.min(S.total,50000);
+  const cap=S.mapUncapped?S.total:Math.min(S.total,50000);
   const fetched=S.mapFetched||allCount;
   const loading=fetched<cap;
   const coordFilter=$('#fCoord')?.value==='true';
@@ -2471,7 +2531,8 @@ function updateMapInfo(){
   else if(gap>0&&coordFilter)txt+=` of ${fmt(S.total)} <span style="color:var(--muted)" title="${gap} records have coordinates withheld by ALA (sensitive taxa)">(${fmt(gap)} coords withheld)</span>`;
   else if(gap>0)txt+=` of ${fmt(S.total)} total <span style="color:var(--muted)">(${fmt(allCount)} with coords)</span>`;
   else txt+=` of ${fmt(S.total)} total`;
-  if(S.total>20000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
+  if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
+  else if(S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--orange);font-weight:600">(uncapped)</span>`;
   if(S.mapYearRange)txt+=` · <span style="color:var(--ink);font-weight:600">${S.mapYearRange[0]}–${S.mapYearRange[1]}</span>`;
   info.innerHTML=txt;
   $('#mapC').appendChild(info);
@@ -2657,6 +2718,8 @@ function initDrawBox(){
   drawBtn.addEventListener('click',()=>{
     box.mode=!box.mode;
     if(box.mode){
+      /* Close tools popover */
+      try{$('#mapToolsPop')?.classList.remove('open');$('#mapToolsBtn')?.classList.remove('open')}catch(e){}
       /* Cancel draw-poly if active */
       if(S._drawPoly?.mode){S._drawPoly.mode=false;try{const dp=$('#drawPolyBtn');if(dp){dp.textContent='Draw polygon';dp.classList.remove('active')}}catch(e){};try{const fp=$('#finishPolyBtn');if(fp)fp.style.display='none'}catch(e){}}
       S.map.dragging.disable();S.map.doubleClickZoom.disable();S.map.scrollWheelZoom.disable()
@@ -2798,6 +2861,8 @@ function initDrawPoly(){
     }
     poly.mode=true;
     poly.vertices=[];
+    /* Close tools popover */
+    try{$('#mapToolsPop')?.classList.remove('open');$('#mapToolsBtn')?.classList.remove('open')}catch(e){}
     S.map.dragging.disable();S.map.doubleClickZoom.disable();S.map.scrollWheelZoom.disable();
     updateUI();
     toast('Click to place vertices. Double-click or press Finish to close.');
@@ -2844,8 +2909,15 @@ function initTemporalSlider(){
   const mc=$('#mapC');
   /* Create the slider DOM */
   const wrap=document.createElement('div');wrap.className='map-temporal';wrap.id='mapTemporal';
-  wrap.innerHTML=`<div class="mt-head"><span class="mt-label">Collection year</span><span class="mt-range" id="mtRange">—</span></div><div class="mt-hist" id="mtHist"></div><div class="mt-slider" id="mtSlider"><div class="mt-track"></div><div class="mt-fill" id="mtFill"></div><div class="mt-thumb" id="mtLo" tabindex="0"></div><div class="mt-thumb" id="mtHi" tabindex="0"></div></div>`;
+  wrap.innerHTML=`<div class="mt-head"><span class="mt-label">Collection year</span><span class="mt-range" id="mtRange">—</span><button class="mt-tog" id="mtTog" aria-label="Collapse year scrubber" title="Collapse">▾</button></div><div class="mt-hist" id="mtHist"></div><div class="mt-slider" id="mtSlider"><div class="mt-track"></div><div class="mt-fill" id="mtFill"></div><div class="mt-thumb" id="mtLo" tabindex="0"></div><div class="mt-thumb" id="mtHi" tabindex="0"></div></div>`;
   mc.appendChild(wrap);
+  /* Toggle collapse */
+  wrap.querySelector('#mtTog').addEventListener('click',()=>{
+    const collapsed=wrap.classList.toggle('collapsed');
+    wrap.querySelector('#mtTog').textContent=collapsed?'▸':'▾';
+    wrap.querySelector('#mtTog').title=collapsed?'Expand year scrubber':'Collapse';
+    wrap.querySelector('#mtTog').setAttribute('aria-label',collapsed?'Expand year scrubber':'Collapse year scrubber');
+  });
 }
 
 /* Rebuild the temporal histogram and slider range when data changes */
@@ -2993,6 +3065,19 @@ async function searchNNTT(term){
       }));
     }catch(e){return[]}
   };
+  /* Helper: query CAPAD FeatureServer (Commonwealth protected areas) */
+  const searchCAPAD=async(layer,label,cls)=>{
+    try{
+      const where=`UPPER(NAME) LIKE '%${baseQ}%' AND STATE IN ('QLD','COM')`;
+      const u=`${CAPAD_SPATIAL}/${layer}/query?where=${encodeURIComponent(where)}&outFields=NAME,TYPE,OBJECTID&returnGeometry=false&resultRecordCount=8&f=json`;
+      const r=await fetch(u);if(!r.ok)return[];
+      const d=await r.json();
+      return(d.features||[]).map(f=>({
+        name:f.attributes.NAME||'Unknown',oid:f.attributes.OBJECTID,
+        layer,label:f.attributes.TYPE||label,cls,service:'capad',nameField:'NAME'
+      }));
+    }catch(e){return[]}
+  };
 
   try{
     const results=await Promise.all([
@@ -3002,11 +3087,14 @@ async function searchNNTT(term){
       searchQLD(11,'adminareaname','LGA','lga'),
       searchQLD(97,'estatename','Protected Area','prot'),
       searchQLD(6,'basin_name','Drainage Basin','drain'),
-      /* Marine protected areas (separate MapServer) */
+      /* Marine protected areas (QLD State — separate MapServer) */
       searchQLD_base(MARINE_SPATIAL,1,'location','GBR Coast Marine Park','marine'),
       searchQLD_base(MARINE_SPATIAL,2,'zone_name','Moreton Bay Marine Park','marine'),
       searchQLD_base(MARINE_SPATIAL,7,'res_name','Fish Habitat Area','marine'),
       searchQLD_base(MARINE_SPATIAL,15,'zone_name','Great Sandy Marine Park','marine'),
+      /* CAPAD — Commonwealth + QLD protected areas (terrestrial + marine) */
+      searchCAPAD(0,'National Protected Area','capad'),
+      searchCAPAD(1,'Commonwealth Marine Park','cmarine'),
       /* NNTT layers */
       searchNNTTLayer(8,'Name','Native Title','nntt'),
       searchNNTTLayer(0,'Name','NT Application','nntt'),
@@ -3018,7 +3106,7 @@ async function searchNNTT(term){
     const seen=new Set();
     const unique=all.filter(r=>{const k=r.name.toUpperCase()+'|'+r.cls;if(seen.has(k))return false;seen.add(k);return true});
     /* Sort: bioregions, sub-bioregions, LGA, protected areas, marine, drainage, NNTT */
-    const order={bio:0,subbio:1,lga:2,prot:3,marine:4,drain:5,veg:6,nntt:7};
+    const order={bio:0,subbio:1,lga:2,prot:3,capad:4,marine:5,cmarine:6,drain:7,veg:8,nntt:9};
     unique.sort((a,b)=>(order[a.cls]??9)-(order[b.cls]??9));
     if(!unique.length){drop.innerHTML='<div style="padding:8px;color:var(--muted)">No areas found</div>';return}
     drop.innerHTML=unique.slice(0,18).map((r,i)=>
@@ -3064,6 +3152,16 @@ async function selectNNTTArea(r){
       for(const f of(d.features||[])){
         if(f.geometry?.rings)allRings.push(...f.geometry.rings);
       }
+    }else if(r.service==='capad'){
+      /* CAPAD FeatureServer — Commonwealth/QLD protected areas */
+      const where=`UPPER(NAME) LIKE '%${nameQ}%' AND STATE IN ('QLD','COM')`;
+      const u=`${CAPAD_SPATIAL}/${r.layer}/query?where=${encodeURIComponent(where)}&outFields=NAME,TYPE&returnGeometry=true&outSR=4326&f=json&resultRecordCount=10`;
+      const res=await fetch(u);
+      if(!res.ok)throw new Error('CAPAD '+res.status);
+      const d=await res.json();
+      for(const f of(d.features||[])){
+        if(f.geometry?.rings)allRings.push(...f.geometry.rings);
+      }
     }else{
       /* NNTT FeatureServer — query all 3 layers and merge for best coverage */
       const layerDefs=[
@@ -3095,7 +3193,7 @@ async function selectNNTTArea(r){
     S._polyMasterRecs=null;S._polyMasterDone=false;S._polyMasterBboxTotal=0;
 
     /* Colour polygon by type */
-    const polyColors={bio:'#00a561',subbio:'#3a9e6e',lga:'#c06a00',prot:'#2a8f9d',marine:'#0077b6',drain:'#1f5378',veg:'#4a7a2e',nntt:'#2d6a4f',det:'#2d6a4f',app:'#e07c24',rntbc:'#4361a0'};
+    const polyColors={bio:'#00a561',subbio:'#3a9e6e',lga:'#c06a00',prot:'#2a8f9d',capad:'#1a6e5c',marine:'#0077b6',cmarine:'#005082',drain:'#1f5378',veg:'#4a7a2e',nntt:'#2d6a4f',det:'#2d6a4f',app:'#e07c24',rntbc:'#4361a0'};
     const pc=polyColors[r.cls]||'#2d6a4f';
 
     /* Draw the polygon on the map */
@@ -3571,6 +3669,7 @@ const QLD_SPATIAL='https://spatial-gis.information.qld.gov.au/arcgis/rest/servic
 const NNTT_SPATIAL='https://services2.arcgis.com/rzk7fNEt0xoEp3cX/arcgis/rest/services/NNTT_Custodial_AGOL/FeatureServer';
 const VEG_SPATIAL='https://spatial-gis.information.qld.gov.au/arcgis/rest/services/Biota/VegetationManagement/MapServer';
 const MARINE_SPATIAL='https://spatial-gis.information.qld.gov.au/arcgis/rest/services/Environment/ParksMarineProtectedAreas/MapServer';
+const CAPAD_SPATIAL='https://gis.environment.gov.au/gispubmap/rest/services/ogc_services/CAPAD/FeatureServer';
 
 /* Marine/coastal detection: triggers marine spatial enrichment when:
    1. Record has valid coordinates within QLD coastal/marine extent (lat -10 to -29, lng 138 to 160)
@@ -3617,7 +3716,7 @@ async function fetchSpatialContext(r,idx){
   // Title-case ALL CAPS strings like LGA names
   const titleCase=s=>s?s.replace(/\b([A-Z]{2,})\b/g,w=>w.charAt(0)+w.slice(1).toLowerCase()):s;
 
-  const [nntt8,nntt5,nntt0,bio,sub,drain,lga,prot,veg]=await Promise.all([
+  const [nntt8,nntt5,nntt0,bio,sub,drain,lga,prot,veg,capadT,capadM]=await Promise.all([
     grab(NNTT_SPATIAL,8),
     grab(NNTT_SPATIAL,5),
     grab(NNTT_SPATIAL,0),  /* Schedule of Applications — much broader coverage */
@@ -3627,6 +3726,8 @@ async function fetchSpatialContext(r,idx){
     grab(QLD_SPATIAL,11),
     grab(QLD_SPATIAL,97),
     grab(VEG_SPATIAL,134),
+    grab(CAPAD_SPATIAL,0),  /* CAPAD terrestrial — National Parks, IPAs, Nature Refuges */
+    grab(CAPAD_SPATIAL,1),  /* CAPAD marine — Commonwealth marine parks (GBRMP, Coral Sea) */
   ]);
 
   /* ── Marine spatial enrichment (ParksMarineProtectedAreas) ──
@@ -3734,6 +3835,12 @@ async function fetchSpatialContext(r,idx){
     legislated:clean(prot?.legislated),
     iucnCode:clean(prot?.iucncode),
     ijma:clean(prot?.ijma),
+    /* CAPAD — Commonwealth/National protected areas */
+    capadName:clean(capadT?.NAME)||clean(capadM?.NAME)||null,
+    capadType:clean(capadT?.TYPE)||clean(capadM?.TYPE)||null,
+    capadIUCN:clean(capadT?.IUCN)||clean(capadM?.IUCN)||null,
+    capadAuthority:clean(capadT?.AUTHORITY)||clean(capadM?.AUTHORITY)||null,
+    capadMarine:capadM?{name:clean(capadM.NAME),type:clean(capadM.TYPE),zoneType:clean(capadM.ZONE_TYPE)}:null,
     /* Regional Ecosystem (from VegetationManagement layer 134) */
     reCode:clean(veg?.re1)||clean(veg?.re),
     reStatus:reStatusLabel(clean(veg?.vm_status)),
@@ -3965,9 +4072,20 @@ function renderSpatialSection(r){
   if(sp.drainageBasin)admin.push(`${esc(sp.drainageBasin)} drainage basin`);
   if(admin.length)lines.push(admin.join(' · ')+'.');
 
-  // Protected area — just the name
+  // Protected area — QLD state (Layer 97)
   if(sp.protectedArea){
-    lines.push(`Protected area: <strong>${esc(sp.protectedArea)}</strong>.`);
+    lines.push(`Protected area: <strong>${esc(sp.protectedArea)}</strong>${sp.estateType?' ('+esc(sp.estateType)+')':''}.`);
+  }
+
+  // CAPAD — Commonwealth/National protected area (when different from QLD layer)
+  if(sp.capadName&&sp.capadName!==sp.protectedArea){
+    lines.push(`National protected area: <strong>${esc(sp.capadName)}</strong>${sp.capadType?' — '+esc(sp.capadType):''}.`);
+  }
+  // CAPAD Marine — Commonwealth marine park (separate from QLD state marine parks)
+  if(sp.capadMarine&&sp.capadMarine.name){
+    let cmLine=`Commonwealth marine park: <strong>${esc(sp.capadMarine.name)}</strong>`;
+    if(sp.capadMarine.zoneType)cmLine+=` (${esc(sp.capadMarine.zoneType)})`;
+    lines.push(cmLine+'.');
   }
 
   // Vegetation / Regional Ecosystem — natural language
@@ -5368,6 +5486,7 @@ function specSources(r){
     if(sp.drainageBasin)lines.push('Drainage basin: Queensland Government, AdminBoundariesFramework MapServer (Layer 6).');
     if(sp.lga)lines.push('Local Government Area: Queensland Government, AdminBoundariesFramework MapServer (Layer 11).');
     if(sp.protectedArea)lines.push('Protected area: Queensland Government, AdminBoundariesFramework MapServer (Layer 97).');
+    if(sp.capadName||sp.capadMarine)lines.push('National/Commonwealth protected area: Collaborative Australian Protected Areas Database (CAPAD) 2024, Commonwealth of Australia 2025. CC BY 4.0.');
     if(sp.reCode)lines.push('Regional ecosystem: Queensland Government, Biota/VegetationManagement MapServer (Layer 134). Landzone descriptions: Queensland Herbarium.');
     if(sp.marine&&(sp.marineZone||sp.marineFHA||sp.marineBenthic)){
       const mLayers=[];
@@ -5570,8 +5689,8 @@ function switchView(v){
     /* Lazy map: only render when tab is active */
     if(S.mapDirty||!S.map){renderMap();S.mapDirty=false}
     else{setTimeout(()=>S.map?.invalidateSize(),120)}
-    /* Load all georeferenced records for map (up to 50k) */
-    const cap=Math.min(S.total,50000);
+    /* Load all georeferenced records for map */
+    const cap=S.mapUncapped?S.total:Math.min(S.total,50000);
     if(S.mapPoly){
       /* Polygon mode — show accumulated points (bgPolyScan continues updating) */
       try{addMarkers();buildLegend();updateMapInfo()}catch(e){}
@@ -5661,10 +5780,8 @@ async function smartSearch(){
   if(!/\s/.test(raw)&&/(?:idae|inae|ini|oidea|ales|iformes|ptera|ura|phora|phyta|mycota|opsida|ata|poda|oza)$/i.test(raw)){
     S.q=raw;S._smartMatch=null;doSearch();return;
   }
-  /* Fast-path: single capitalised word that looks like a genus (e.g. "Rattus") */
-  if(/^[A-Z][a-z]{2,}$/.test(raw)){
-    S.q=raw;S._smartMatch=null;doSearch();return;
-  }
+  /* Genus-like names (single capitalised word) go through GBIF resolution
+     to populate the full taxonomy breadcrumb (kingdom → genus) */
   const resolveId=++_resolveId;
   searchResolving(true);
   try{
@@ -5684,8 +5801,9 @@ async function smartSearch(){
     let best=null;
     const qLower=raw.toLowerCase();
     
-    /* Check if the strict match has a high confidence and matches a vernacular name */
+    /* Check if the strict match has a high confidence */
     if(matchData&&matchData.usageKey&&matchData.confidence>=90&&matchData.matchType!=='NONE'){
+      /* Try to find a vernacular name */
       try{
         const vr=await cachedFetch(`https://api.gbif.org/v1/species/${matchData.usageKey}/vernacularNames?limit=50`);
         if(resolveId!==_resolveId){searchResolving(false);return}
@@ -5700,6 +5818,12 @@ async function smartSearch(){
           }
         }
       }catch(e){}
+      /* If no vernacular match but query looks like a scientific name, accept the taxonomic resolution directly */
+      if(!best&&/^[A-Z]/.test(raw)){
+        best={rank:matchData.rank?.toLowerCase(),name:matchData.canonicalName||matchData.species||matchData.scientificName,
+          vern:'',kingdom:matchData.kingdom,phylum:matchData.phylum,class_:matchData.class,
+          order:matchData.order,family:matchData.family,genus:matchData.genus,species:matchData.species};
+      }
     }
     
     /* If no match from strict, scan suggest results for vernacular name overlap */
@@ -5753,11 +5877,21 @@ async function smartSearch(){
       }
       if(filterRank&&filterName){
         FIDS.forEach(id=>$('#'+id).value='');
+        /* Set the target rank */
         const sel=$('#'+filterRank);
         if(sel){
           let found=false;for(const o of sel.options)if(o.value===filterName){found=true;break}
           if(!found){const o=document.createElement('option');o.value=filterName;o.textContent=filterName;sel.appendChild(o)}
           sel.value=filterName;
+        }
+        /* Populate parent taxonomy chain from GBIF — gives full breadcrumbs */
+        const chain=[['fK',best.kingdom],['fP',best.phylum],['fC',best.class_],['fO',best.order],['fF',best.family],['fG',best.genus],['fSp',best.species]];
+        for(const [fid,val] of chain){
+          if(!val||fid===filterRank)continue;
+          const el=$('#'+fid);if(!el)continue;
+          let found=false;for(const o of el.options)if(o.value===val){found=true;break}
+          if(!found){const o=document.createElement('option');o.value=val;o.textContent=val;el.appendChild(o)}
+          el.value=val;
         }
         toast(`"${raw}" → ${best.vern||best.name} (${best.rank||'taxon'})`);
       }else if(S.q){
