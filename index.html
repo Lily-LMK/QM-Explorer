@@ -284,6 +284,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .nntt-drop-item .nntt-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:1px 4px;border-radius:2px;color:#fff;margin-left:4px;vertical-align:middle}
 .nntt-drop-item .nntt-type.det{background:#2d6a4f}.nntt-drop-item .nntt-type.app{background:#e07c24}.nntt-drop-item .nntt-type.rntbc{background:#4361a0}
 .nntt-drop-item .nntt-type.bio{background:#00a561}.nntt-drop-item .nntt-type.prot{background:#2a8f9d}.nntt-drop-item .nntt-type.drain{background:#1f5378}.nntt-drop-item .nntt-type.nntt{background:#864a7e}.nntt-drop-item .nntt-type.veg{background:#4a7a2e}
+.nntt-drop-item .nntt-type.subbio{background:#3a9e6e}.nntt-drop-item .nntt-type.lga{background:#c06a00}.nntt-drop-item .nntt-type.marine{background:#0077b6}
 .nntt-active{display:flex;align-items:center;gap:4px;font-size:11px;max-width:220px}
 .nntt-active .nntt-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
 
@@ -2414,7 +2415,7 @@ function addMapControls(){
   // Remove old controls
   mc.querySelectorAll('.map-top,.map-legend,.map-info').forEach(e=>e.remove());
   const top=document.createElement('div');top.className='map-top';
-  top.innerHTML=`<div class="map-pill"><label style="font-weight:600">Color by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-pill"><label style="font-size:12px"><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''} style="margin-right:4px"/>Spiderfy</label></div><div class="map-pill"><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button></div><div class="map-pill"><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish</button><button id="clearPolyBtn" style="display:none">Clear area</button></div><div class="map-pill nntt-wrap"><input id="nnttSrch" type="text" placeholder="Bioregion, park, catchment…" style="width:180px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-pill"><input id="mapSrch" type="text" placeholder="Search location…" style="width:140px"/><button id="mapSrchBtn">Go</button></div>`;
+  top.innerHTML=`<div class="map-pill"><label style="font-weight:600">Color by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-pill"><label style="font-size:12px"><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''} style="margin-right:4px"/>Spiderfy</label></div><div class="map-pill"><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button></div><div class="map-pill"><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish</button><button id="clearPolyBtn" style="display:none">Clear area</button></div><div class="map-pill nntt-wrap"><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:180px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-pill"><input id="mapSrch" type="text" placeholder="Search location…" style="width:140px"/><button id="mapSrchBtn">Go</button></div>`;
   mc.appendChild(top);
   top.querySelector('#mapCB').value=S.mapColorBy;
   top.querySelector('#mapCB').addEventListener('change',e=>{S.mapColorBy=e.target.value;addMarkers();buildLegend()});
@@ -2963,14 +2964,19 @@ async function searchNNTT(term){
 
   /* Helper: query a QLD MapServer layer by name field */
   const searchQLD=async(layer,nameField,label,cls)=>{
+    return searchQLD_base(QLD_SPATIAL,layer,nameField,label,cls);
+  };
+  /* Helper: query any QLD ArcGIS MapServer layer */
+  const searchQLD_base=async(base,layer,nameField,label,cls)=>{
     try{
       const where=`UPPER(${nameField}) LIKE '%${baseQ}%'`;
-      const u=`${QLD_SPATIAL}/${layer}/query?where=${encodeURIComponent(where)}&outFields=${nameField},OBJECTID&returnGeometry=false&resultRecordCount=8&f=json`;
+      const u=`${base}/${layer}/query?where=${encodeURIComponent(where)}&outFields=${nameField},OBJECTID&returnGeometry=false&resultRecordCount=8&f=json`;
       const r=await fetch(u);if(!r.ok)return[];
       const d=await r.json();
+      const svc=base===MARINE_SPATIAL?'marine':base===VEG_SPATIAL?'veg':'qld';
       return(d.features||[]).map(f=>({
         name:f.attributes[nameField]||'Unknown',oid:f.attributes.OBJECTID,
-        layer,label,cls,service:'qld',nameField
+        layer,label,cls,service:svc,nameField,_base:base
       }));
     }catch(e){return[]}
   };
@@ -2990,10 +2996,17 @@ async function searchNNTT(term){
 
   try{
     const results=await Promise.all([
-      /* QLD Government spatial layers */
+      /* QLD Government AdminBoundaries layers */
       searchQLD(2,'q_reg_name','Bioregion','bio'),
+      searchQLD(3,'q_sub_name','Sub-bioregion','subbio'),
+      searchQLD(11,'adminareaname','LGA','lga'),
       searchQLD(97,'estatename','Protected Area','prot'),
       searchQLD(6,'basin_name','Drainage Basin','drain'),
+      /* Marine protected areas (separate MapServer) */
+      searchQLD_base(MARINE_SPATIAL,1,'location','GBR Coast Marine Park','marine'),
+      searchQLD_base(MARINE_SPATIAL,2,'zone_name','Moreton Bay Marine Park','marine'),
+      searchQLD_base(MARINE_SPATIAL,7,'res_name','Fish Habitat Area','marine'),
+      searchQLD_base(MARINE_SPATIAL,15,'zone_name','Great Sandy Marine Park','marine'),
       /* NNTT layers */
       searchNNTTLayer(8,'Name','Native Title','nntt'),
       searchNNTTLayer(0,'Name','NT Application','nntt'),
@@ -3004,8 +3017,8 @@ async function searchNNTT(term){
     /* Deduplicate by name+type */
     const seen=new Set();
     const unique=all.filter(r=>{const k=r.name.toUpperCase()+'|'+r.cls;if(seen.has(k))return false;seen.add(k);return true});
-    /* Sort: bioregions first, then protected areas, then drainage, then NNTT */
-    const order={bio:0,prot:1,drain:2,veg:3,nntt:4};
+    /* Sort: bioregions, sub-bioregions, LGA, protected areas, marine, drainage, NNTT */
+    const order={bio:0,subbio:1,lga:2,prot:3,marine:4,drain:5,veg:6,nntt:7};
     unique.sort((a,b)=>(order[a.cls]??9)-(order[b.cls]??9));
     if(!unique.length){drop.innerHTML='<div style="padding:8px;color:var(--muted)">No areas found</div>';return}
     drop.innerHTML=unique.slice(0,18).map((r,i)=>
@@ -3040,9 +3053,9 @@ async function selectNNTTArea(r){
     const allRings=[];
     let sourceLabel=r.label;
 
-    if(r.service==='qld'||r.service==='veg'){
+    if(r.service==='qld'||r.service==='veg'||r.service==='marine'){
       /* QLD Government MapServer layer — single layer, single name field */
-      const base=r.service==='veg'?VEG_SPATIAL:QLD_SPATIAL;
+      const base=r._base||( r.service==='veg'?VEG_SPATIAL:r.service==='marine'?MARINE_SPATIAL:QLD_SPATIAL);
       const where=`UPPER(${r.nameField}) LIKE '%${nameQ}%'`;
       const u=`${base}/${r.layer}/query?where=${encodeURIComponent(where)}&outFields=${r.nameField}&returnGeometry=true&outSR=4326&f=json&resultRecordCount=3`;
       const res=await fetch(u);
@@ -3082,7 +3095,7 @@ async function selectNNTTArea(r){
     S._polyMasterRecs=null;S._polyMasterDone=false;S._polyMasterBboxTotal=0;
 
     /* Colour polygon by type */
-    const polyColors={bio:'#00a561',prot:'#2a8f9d',drain:'#1f5378',veg:'#4a7a2e',nntt:'#2d6a4f',det:'#2d6a4f',app:'#e07c24',rntbc:'#4361a0'};
+    const polyColors={bio:'#00a561',subbio:'#3a9e6e',lga:'#c06a00',prot:'#2a8f9d',marine:'#0077b6',drain:'#1f5378',veg:'#4a7a2e',nntt:'#2d6a4f',det:'#2d6a4f',app:'#e07c24',rntbc:'#4361a0'};
     const pc=polyColors[r.cls]||'#2d6a4f';
 
     /* Draw the polygon on the map */
