@@ -687,6 +687,8 @@ async function alaFetch(f,off,lim){
   u.set('pageSize',Math.max(1,lim));u.set('startIndex',off);
   /* Essential facets only — analytics facets fetched lazily when charts tab opened */
   u.set('facets','kingdom,phylum,class,order,family,genus,species,collection_uid,state,type_status');u.set('flimit',FLIM);u.set('fsort','count');
+  /* Request raw locality fields — ALA's processed 'locality' often loses specificity */
+  u.set('fl','id,uuid,raw_scientificName,scientificName,vernacularName,commonName,taxonConceptID,taxonConceptLsid,kingdom,phylum,classs,order,superfamily,family,subfamily,tribe,genus,species,scientificNameAuthorship,raw_scientificNameAuthorship,basisOfRecord,raw_basisOfRecord,year,month,day,eventDate,raw_eventDate,verbatimEventDate,raw_verbatimEventDate,decimalLatitude,decimalLongitude,raw_decimalLatitude,raw_decimalLongitude,latLong,country,stateProvince,state,locality,raw_locality,verbatimLocality,raw_verbatimLocality,minimumElevationInMeters,maximumElevationInMeters,minimumDepthInMeters,catalogNumber,raw_catalogNumber,collectionCode,raw_collectionCode,collectionUid,institutionCode,raw_institutionCode,collector,recordedBy,raw_recordedBy,raw_collector,identifiedBy,raw_identifiedBy,typeStatus,raw_typeStatus,preparations,raw_preparations,sex,raw_sex,lifeStage,raw_lifeStage,habitat,raw_habitat,samplingProtocol,raw_samplingProtocol,samplingMethod,raw_samplingMethod,occurrenceRemarks,raw_occurrenceRemarks,fieldNumber,raw_fieldNumber,individualCount,raw_individualCount,datasetName,dataResourceName,multimedia,largeImageUrl,imageUrl,smallImageUrl,geospatial_kosher');
   const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
   if(!r.ok)throw new Error('ALA '+r.status);return r.json();
 }
@@ -1012,7 +1014,7 @@ function normRec_A(r){
   return{key:r.uuid,sci:bestSci,vern:_vn,vernRank:_vn?classifyBackboneVern(_vn):null,
     kingdom:r.kingdom||'',phylum:r.phylum||'',class_:r.classs||r['class']||'',order:r.order||'',superfamily:r.superfamily||'',family:r.family||'',subfamily:r.subfamily||'',tribe:r.tribe||'',genus:genusVal,species:speciesVal,
     basis:r.basisOfRecord||r.raw_basisOfRecord||'',year:r.year?parseInt(r.year):null,month:r.month?parseInt(r.month):null,day:r.day?parseInt(r.day):null,
-    lat:toNum(r.decimalLatitude)??toNum(r.latitude)??toNum(r.raw_decimalLatitude)??parseLatLong(r.latLong)[0],lng:toNum(r.decimalLongitude)??toNum(r.longitude)??toNum(r.raw_decimalLongitude)??parseLatLong(r.latLong)[1],country:r.country||'',state:r.stateProvince||r.state||'',locality:r.locality||r.raw_locality||'',
+    lat:toNum(r.decimalLatitude)??toNum(r.latitude)??toNum(r.raw_decimalLatitude)??parseLatLong(r.latLong)[0],lng:toNum(r.decimalLongitude)??toNum(r.longitude)??toNum(r.raw_decimalLongitude)??parseLatLong(r.latLong)[1],country:r.country||'',state:r.stateProvince||r.state||'',locality:r.raw_locality||r.locality||'',
     cat:cat,coll:coll,collUid:collUid,inst:r.institutionCode||r.raw_institutionCode||'QM',recBy:toStr(r.collector||r.recordedBy||r.raw_recordedBy||r.raw_collector),
     media:dedupImgs([r.largeImageUrl,r.imageUrl,r.smallImageUrl].filter(Boolean)),
     /* Darwin Core extras */
@@ -1035,6 +1037,14 @@ function normRec_A(r){
     fieldNumber:safe$(r.fieldNumber||r.raw_fieldNumber),
     individualCount:safe$(r.individualCount||r.raw_individualCount),
     datasetName:safe$(r.datasetName||r.dataResourceName||''),
+    /* Raw locality fields — for diagnostic export */
+    _alaLocality:r.locality||'',
+    _rawLocality:r.raw_locality||'',
+    _alaState:r.stateProvince||r.state||'',
+    _rawState:r.raw_stateProvince||r.raw_state||'',
+    _alaCountry:r.country||'',
+    _rawCountry:r.raw_countryCode||r.raw_country||'',
+    _alaVerbatimLocality:r.verbatimLocality||r.raw_verbatimLocality||'',
   };
 }
 
@@ -2376,11 +2386,11 @@ function renderMap(){
   if(!S.map){
     setTimeout(()=>{
       if(S.map)return;
-      S.map=L.map('map',{zoomControl:true,preferCanvas:true,maxZoom:22}).setView([-23.5,148],5);
+      S.map=L.map('map',{zoomControl:true,preferCanvas:true,maxZoom:20}).setView([-23.5,148],5);
       // Basemaps
-      const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,maxNativeZoom:19,attribution:'© OSM'});
-      const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:22,maxNativeZoom:17,attribution:'© OpenTopoMap'});
-      const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,maxNativeZoom:19,attribution:'© Esri'});
+      const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OSM'});
+      const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:17,attribution:'© OpenTopoMap'});
+      const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'© Esri'});
       streets.addTo(S.map);L.control.layers({'Streets':streets,'Topo':topo,'Satellite':sat},{},{collapsed:true}).addTo(S.map);
       S.markers=createMarkerLayer();S.markers.addTo(S.map);
       /* Scale bar */
@@ -3195,10 +3205,10 @@ async function fetchFullAlaRecord(uuid){
       samplingProtocol:pick(pEvt.samplingProtocol,rEvt.samplingProtocol,raw.samplingProtocol,rEvt.samplingMethod,raw.samplingMethod,pOcc.samplingProtocol,rOcc.samplingProtocol,d.samplingProtocol,d.samplingMethod),
       identifiedBy:pick(pOcc.identifiedBy,rOcc.identifiedBy,raw.identifiedBy),
       individualCount:pick(pOcc.individualCount,rOcc.individualCount,raw.individualCount),
-      habitat:pick(pLoc.habitat,raw.habitat),
+      habitat:pick(rLoc.habitat,pLoc.habitat,raw.habitat),
       occurrenceRemarks:pick(pOcc.occurrenceRemarks,rOcc.occurrenceRemarks,raw.occurrenceRemarks),
       fieldNumber:pick(pOcc.fieldNumber,rOcc.fieldNumber,raw.fieldNumber),
-      locality:pick(pLoc.locality,rOcc.locality,raw.locality),
+      locality:pick(rLoc.locality,raw.locality,pLoc.locality,rOcc.locality),
       eventDate:pick(pEvt.eventDate,rEvt.eventDate,raw.eventDate),
       verbatimDate:pick(rEvt.verbatimEventDate,raw.verbatimEventDate),
       recBy:pick(pOcc.recordedBy,rOcc.recordedBy,raw.collector,raw.recordedBy,pEvt.recordedBy,rEvt.recordedBy,d.collector,d.recordedBy),
@@ -3232,7 +3242,9 @@ function enrichRecord(r,fields){
   const fill=(key)=>{if(fields[key]&&!r[key])r[key]=fields[key]};
   fill('preparations');fill('sex');fill('lifeStage');fill('samplingProtocol');
   fill('identifiedBy');fill('individualCount');fill('habitat');
-  fill('occurrenceRemarks');fill('fieldNumber');fill('locality');
+  fill('occurrenceRemarks');fill('fieldNumber');
+  /* Locality: overwrite if enriched value is more specific (longer) than current */
+  if(fields.locality&&(!r.locality||fields.locality.length>r.locality.length))r.locality=fields.locality;
   fill('eventDate');fill('verbatimDate');fill('recBy');
   fill('authorship');fill('typeStatus');
   /* Fill missing taxonomy from full record */
@@ -3257,6 +3269,32 @@ async function exportCSV(){
     if(visPts.length&&visPts.length<recs.length)recs=visPts;
   }
   if(!recs.length){toast('No records to export');return}
+
+  /* ── Batch locality enrichment ──
+     The search endpoint returns a weak 'locality' (often just state name).
+     The full occurrence endpoint has the real locality from the data provider.
+     Fetch full records for any that haven't been enriched via the modal. */
+  const needLocality=recs.filter(r=>r.uuid&&!r._enriched);
+  if(needLocality.length>0&&needLocality.length<=2000){
+    const total=needLocality.length;
+    toast(`Fetching locality data… 0%`);
+    const CONCURRENT=6;
+    let done=0;
+    for(let i=0;i<needLocality.length;i+=CONCURRENT){
+      const batch=needLocality.slice(i,i+CONCURRENT);
+      await Promise.all(batch.map(async rec=>{
+        try{
+          const fields=await fetchFullAlaRecord(rec.uuid);
+          if(fields){
+            enrichRecord(rec,fields);
+            rec._enriched=true;
+          }
+        }catch(e){}
+      }));
+      done+=batch.length;
+      toast(`Fetching locality data… ${Math.round(done/total*100)}%`);
+    }
+  }
 
   /* ── Batch spatial enrichment ── */
   /* Collect unique coordinate keys that lack spatial data */
@@ -3307,7 +3345,7 @@ async function exportCSV(){
   }
 
   /* ── Build CSV ── */
-  const cols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','elevationDEM_m','depth_m','ibraBioregion','ibraSubregion','lga','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid'];
+  const cols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','raw_locality','verbatimLocality','stateProvince','raw_stateProvince','country','raw_country','latitude','longitude','elevationMin_m','elevationMax_m','elevationDEM_m','depth_m','ibraBioregion','ibraSubregion','lga','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid'];
   const rows=[cols.join(',')];
   recs.forEach(r=>{
     /* Merge spatial from modal (_spatial), batch CSV enrichment (_csvSpatial), or empty */
@@ -3316,7 +3354,7 @@ async function exportCSV(){
       r.cat,r.sci,r.authorship||'',r.typeStatus,
       r.kingdom,r.phylum,r.class_,r.order,r.superfamily||'',r.family,r.subfamily||'',r.tribe||'',r.genus,r.species,r.vern,
       r.basis,r.recBy,r.identifiedBy||'',fmtDate(r),
-      [r.locality,r.state].filter(Boolean).join(', '),r.state,r.country,r.lat,r.lng,
+      r.locality||'',r._rawLocality||'',r._alaVerbatimLocality||'',r.state,r._rawState||'',r.country,r._rawCountry||'',r.lat,r.lng,
       r.elevMin??'',r.elevMax??'',sp.demElev!=null?Math.round(sp.demElev):'',r.depth??'',
       sp.bioregion||'',sp.subregion||'',sp.lga||'',
       r.habitat||'',r.sex||'',r.lifeStage||'',r.preparations||'',r.individualCount||'',r.samplingProtocol||'',r.occurrenceRemarks||'',
