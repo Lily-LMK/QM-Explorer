@@ -141,8 +141,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .density-tog{display:flex;gap:1px;background:#eee;border-radius:2px;padding:1px}
 .density-tog button{font-size:14px;padding:6px 12px;border:none;background:transparent;cursor:pointer;border-radius:1px;color:var(--muted);line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .density-tog button.on{background:#fff;color:var(--ink)}
-.csv-btn{color:var(--ink)!important;border-color:var(--ink)!important;font-size:11px!important;padding:5px 10px!important;text-transform:uppercase!important;letter-spacing:.3px!important}
-.csv-btn:hover{background:var(--ink)!important;color:#fff!important}
+.csv-btn{color:var(--ink)!important;border:none!important;font-size:12px!important;padding:5px 2px 5px 10px!important;text-transform:uppercase!important;letter-spacing:.3px!important;background:transparent!important}
+.csv-btn:hover{opacity:.7!important}
+.csv-plus{font-size:13px!important;padding:5px 10px 5px 0!important;font-weight:800!important;letter-spacing:0!important;color:var(--hair)!important;border:none!important;background:transparent!important}
+.csv-plus:hover{color:var(--muted)!important}
+.csv-plus.on{color:var(--green)!important}
 /* Collection vertical label — hidden in grid */
 .card-coll{display:none}
 /* card-fam: compact-only family line — hidden in grid */
@@ -428,7 +431,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
   </aside>
 
   <main class="main" role="main">
-    <div class="tabs" role="tablist" aria-label="View tabs"><button class="tab on" data-v="gallery" role="tab" aria-selected="true" aria-controls="v-gallery" id="tab-gallery">Records</button><button class="tab" data-v="taxa" role="tab" aria-selected="false" aria-controls="v-taxa" id="tab-taxa">Taxa</button><button class="tab" data-v="guide" role="tab" aria-selected="false" aria-controls="v-guide" id="tab-guide">Browse</button><button class="tab" data-v="map" role="tab" aria-selected="false" aria-controls="v-map" id="tab-map">Map</button><button class="tab" data-v="charts" role="tab" aria-selected="false" aria-controls="v-charts" id="tab-charts">Analytics</button><button class="tab csv-btn" id="csvBtn" title="Export CSV" aria-label="Export records as CSV">⬇ CSV</button><span class="tab-sp"></span><span class="rc" id="rc" role="status" aria-live="polite"></span></div>
+    <div class="tabs" role="tablist" aria-label="View tabs"><button class="tab on" data-v="gallery" role="tab" aria-selected="true" aria-controls="v-gallery" id="tab-gallery">Records</button><button class="tab" data-v="taxa" role="tab" aria-selected="false" aria-controls="v-taxa" id="tab-taxa">Taxa</button><button class="tab" data-v="guide" role="tab" aria-selected="false" aria-controls="v-guide" id="tab-guide">Browse</button><button class="tab" data-v="map" role="tab" aria-selected="false" aria-controls="v-map" id="tab-map">Map</button><button class="tab" data-v="charts" role="tab" aria-selected="false" aria-controls="v-charts" id="tab-charts">Analytics</button><button class="tab csv-btn" id="csvBtn" title="Export CSV" aria-label="Export records as CSV">⬇ CSV</button><button class="tab csv-btn csv-plus" id="csvPlusBtn" title="Toggle enriched export (spatial context)" aria-label="Toggle enriched CSV export" aria-pressed="false">+</button><span class="tab-sp"></span><span class="rc" id="rc" role="status" aria-live="polite"></span></div>
     <div class="scroll" id="scroll">
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
@@ -3370,115 +3373,179 @@ function enrichRecord(r,fields){
 }
 
 /* TABLE */
-/* CSV EXPORT — with batch spatial enrichment */
-async function exportCSV(){
-  /* In polygon mode, export ALL polygon-filtered records (not just the visible page) */
-  let recs=(S.mapPoly&&S._polyAllRecs?.length)?S._polyAllRecs:S.res;
-  /* If temporal filter is active on map, export only the filtered set from allPts */
+/* CSV EXPORT — two modes: fast (ALA data only) and enriched (full spatial context) */
+async function exportCSV(enriched=false){
+  /* ── Collect ALL records, not just the visible page ── */
+  let recs;
+  if(S.mapPoly&&S._polyAllRecs?.length){
+    recs=[...S._polyAllRecs];
+  }else if(S.total<=INIT_PAGE){
+    recs=[...S.res];
+  }else{
+    /* Need to fetch all pages from ALA */
+    const max=10000; /* safety cap */
+    const target=Math.min(S.total,max);
+    if(S.total>max){
+      const ok=confirm(`This query has ${fmt(S.total)} records. CSV export is capped at ${fmt(max)} for performance.\n\nExport the first ${fmt(max)} records?`);
+      if(!ok)return;
+    }
+    toast(`Fetching all ${fmt(target)} records… 0%`);
+    recs=[...S.res]; /* start with what we have */
+    const f=getFilters();
+    const BATCH=1000;
+    for(let off=recs.length;off<target;off+=BATCH){
+      try{
+        const d=await alaFetch(f,off,Math.min(BATCH,target-off));
+        const batch=(d.occurrences||[]).map(normRec_A);
+        recs.push(...batch);
+        if(batch.length<BATCH)break; /* no more records */
+      }catch(e){toast('Fetch error — exporting what we have');break}
+      toast(`Fetching all ${fmt(target)} records… ${Math.round(recs.length/target*100)}%`);
+    }
+  }
+
   if(S.view==='map'&&S.mapYearRange){
     const visPts=getVisiblePts();
     if(visPts.length&&visPts.length<recs.length)recs=visPts;
   }
   if(!recs.length){toast('No records to export');return}
 
-  /* ── Batch locality enrichment ──
-     The search endpoint returns a weak 'locality' (often just state name).
-     The full occurrence endpoint has the real locality from the data provider.
-     Fetch full records for any that haven't been enriched via the modal. */
-  const needLocality=recs.filter(r=>r.uuid&&!r._enriched);
-  if(needLocality.length>0&&needLocality.length<=2000){
-    const total=needLocality.length;
-    toast(`Fetching locality data… 0%`);
-    const CONCURRENT=6;
-    let done=0;
-    for(let i=0;i<needLocality.length;i+=CONCURRENT){
-      const batch=needLocality.slice(i,i+CONCURRENT);
-      await Promise.all(batch.map(async rec=>{
-        try{
-          const fields=await fetchFullAlaRecord(rec.uuid);
-          if(fields){
-            enrichRecord(rec,fields);
-            rec._enriched=true;
-          }
-        }catch(e){}
-      }));
-      done+=batch.length;
-      toast(`Fetching locality data… ${Math.round(done/total*100)}%`);
+  if(enriched){
+    /* ── Enriched: batch locality enrichment (raw_locality from full occurrence) ── */
+    const needLocality=recs.filter(r=>r.uuid&&!r._enriched);
+    if(needLocality.length>0&&needLocality.length<=5000){
+      const total=needLocality.length;
+      toast(`Fetching locality data… 0%`);
+      const CONCURRENT=6;
+      let done=0;
+      for(let i=0;i<needLocality.length;i+=CONCURRENT){
+        const batch=needLocality.slice(i,i+CONCURRENT);
+        await Promise.all(batch.map(async rec=>{
+          try{
+            const fields=await fetchFullAlaRecord(rec.uuid);
+            if(fields){enrichRecord(rec,fields);rec._enriched=true}
+          }catch(e){}
+        }));
+        done+=batch.length;
+        toast(`Fetching locality data… ${Math.round(done/total*100)}%`);
+      }
     }
-  }
 
-  /* ── Batch spatial enrichment ── */
-  /* Collect unique coordinate keys that lack spatial data */
-  const needLookup=new Map(); /* "lat,lng" → [{record}, …] */
-  recs.forEach(r=>{
-    if(r._spatial&&!r._spatial.loading)return; /* already enriched via modal */
-    if(typeof r.lat!=='number'||typeof r.lng!=='number')return;
-    const key=r.lat.toFixed(4)+','+r.lng.toFixed(4);
-    if(!needLookup.has(key))needLookup.set(key,[]);
-    needLookup.get(key).push(r);
-  });
+    /* ── Full spatial enrichment — QLD services + ALA intersect per unique coordinate ── */
+    const needSpatial=new Map();
+    recs.forEach(r=>{
+      if(r._spatial&&!r._spatial.loading)return;
+      if(typeof r.lat!=='number'||typeof r.lng!=='number')return;
+      const key=r.lat.toFixed(4)+','+r.lng.toFixed(4);
+      if(!needSpatial.has(key))needSpatial.set(key,[]);
+      needSpatial.get(key).push(r);
+    });
 
-  if(needLookup.size>0){
-    const total=needLookup.size;
-    toast(`Enriching ${total} locations… 0%`);
-    const LAYERS='cl1048,cl1049,cl10923,el887'; /* IBRA, IBRA sub, LGA, DEM elev */
-    const CONCURRENT=8;
-    const keys=[...needLookup.keys()];
-    let done=0;
+    if(needSpatial.size>0){
+      const total=needSpatial.size;
+      toast(`Enriching ${total} locations with spatial data… 0%`);
+      const CONCURRENT=4;
+      const keys=[...needSpatial.keys()];
+      let done=0;
 
-    /* Process in batches of CONCURRENT */
-    for(let i=0;i<keys.length;i+=CONCURRENT){
-      const batch=keys.slice(i,i+CONCURRENT);
-      await Promise.all(batch.map(async key=>{
-        const [lat,lng]=key.split(',').map(Number);
-        try{
-          const r=await cachedFetch(`https://spatial.ala.org.au/ws/intersect/${LAYERS}/${lat}/${lng}`);
-          if(!r.ok)return;
-          const d=await r.json();
+      for(let i=0;i<keys.length;i+=CONCURRENT){
+        const batch=keys.slice(i,i+CONCURRENT);
+        await Promise.all(batch.map(async key=>{
+          const [lat,lng]=key.split(',').map(Number);
           const ctx={};
-          for(const item of d){
-            if(item.field==='cl1048')ctx.bioregion=item.value||'';
-            else if(item.field==='cl1049')ctx.subregion=item.value||'';
-            else if(item.field==='cl10923')ctx.lga=item.value||'';
-            else if(item.field==='el887')ctx.demElev=toNum(item.value);
+          try{
+            /* ALA spatial intersect — IBRA, sub-bioregion, LGA, DEM */
+            const alaP=cachedFetch(`https://spatial.ala.org.au/ws/intersect/cl1048,cl1049,cl10923,el887/${lat}/${lng}`).then(r=>r.ok?r.json():null).catch(()=>null);
+            /* QLD AdminBoundaries — bioregion, sub-bio, drainage, LGA, protected area */
+            const qGrab=async(layer)=>{try{const r=await fetch(spatialURL(QLD_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
+            /* VEG — regional ecosystem */
+            const vGrab=async()=>{try{const r=await fetch(spatialURL(VEG_SPATIAL,134,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
+            /* NNTT */
+            const nGrab=async(layer)=>{try{const r=await fetch(spatialURL(NNTT_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
+            /* CAPAD */
+            const cGrab=async(layer)=>{try{const r=await fetch(spatialURL(CAPAD_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
+            /* Marine */
+            const mGrab=async(layer)=>{try{const r=await fetch(spatialURL(MARINE_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
+
+            const [ala,drain,prot,veg,nntt8,nntt5,nntt0,capadT,capadM,mp1,mp2,mp7,mp15]=await Promise.all([
+              alaP,qGrab(6),qGrab(97),vGrab(),nGrab(8),nGrab(5),nGrab(0),cGrab(0),cGrab(1),mGrab(1),mGrab(2),mGrab(7),mGrab(15)
+            ]);
+
+            const clean=v=>{if(!v)return'';const s=String(v).trim();return(/^n\/?a$/i.test(s)||s.toLowerCase()==='non-rem')?'':s};
+
+            /* ALA intersect */
+            if(ala){for(const item of ala){
+              if(item.field==='cl1048')ctx.bioregion=item.value||'';
+              else if(item.field==='cl1049')ctx.subregion=item.value||'';
+              else if(item.field==='cl10923')ctx.lga=item.value||'';
+              else if(item.field==='el887')ctx.demElev=toNum(item.value);
+            }}
+            /* QLD layers */
+            ctx.drainageBasin=clean(drain?.basin_name);
+            ctx.protectedArea=clean(prot?.estatename);
+            ctx.estateType=clean(prot?.esttype);
+            /* Vegetation */
+            ctx.reCode=clean(veg?.re1)||clean(veg?.re);
+            /* NNTT — try Determination (8), then RNTBC (5), then Application (0) */
+            ctx.traditionalOwners=clean(nntt8?.Name)||clean(nntt5?.RNTBC_Name)||clean(nntt0?.Name)||'';
+            ctx.nnttType=nntt8?'Determination':nntt5?'RNTBC':nntt0?'Application':'';
+            /* CAPAD */
+            ctx.capadName=clean(capadT?.NAME)||clean(capadM?.NAME)||'';
+            ctx.capadType=clean(capadT?.TYPE)||clean(capadM?.TYPE)||'';
+            /* Marine */
+            const zoneHit=mp1||mp2||mp15;
+            ctx.marineZone=clean(zoneHit?.zone_name)||clean(zoneHit?.location)||'';
+            ctx.marinePark=clean(zoneHit?.mp_name)||(mp1?'GBR Coast':mp2?'Moreton Bay':mp15?'Great Sandy':'');
+            ctx.fha=clean(mp7?.res_name)||'';
+          }catch(e){}
+
+          for(const rec of needSpatial.get(key)){
+            if(!rec._spatial||rec._spatial.loading)rec._csvSpatial=ctx;
           }
-          /* Apply to all records at this coordinate */
-          for(const rec of needLookup.get(key)){
-            if(!rec._spatial||rec._spatial.loading){
-              rec._csvSpatial=ctx;
-            }
-          }
-        }catch(e){}
-      }));
-      done+=batch.length;
-      toast(`Enriching ${total} locations… ${Math.round(done/total*100)}%`);
+        }));
+        done+=batch.length;
+        toast(`Enriching ${total} locations… ${Math.round(done/total*100)}%`);
+      }
     }
   }
+  /* Fast mode: no batch enrichment. Any records previously opened in the modal
+     already have _spatial data; all others export without spatial columns. */
 
   /* ── Build CSV ── */
-  const cols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','raw_locality','verbatimLocality','stateProvince','raw_stateProvince','country','raw_country','latitude','longitude','elevationMin_m','elevationMax_m','elevationDEM_m','depth_m','ibraBioregion','ibraSubregion','lga','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid'];
+  const sp0=r=>r._spatial&&!r._spatial.loading?r._spatial:r._csvSpatial||{};
+  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid'];
+  const spatialCols=['elevationDEM_m','ibraBioregion','ibraSubregion','lga','drainageBasin','protectedArea','estateType','capadName','capadType','regionalEcosystem','traditionalOwners','nnttType','marineZone','marinePark','fishHabitatArea'];
+  const cols=enriched?[...coreCols,...spatialCols]:coreCols;
   const rows=[cols.join(',')];
   recs.forEach(r=>{
-    /* Merge spatial from modal (_spatial), batch CSV enrichment (_csvSpatial), or empty */
-    const sp=r._spatial&&!r._spatial.loading?r._spatial:r._csvSpatial||{};
-    const v=[
+    const sp=enriched?sp0(r):{};
+    const coreVals=[
       r.cat,r.sci,r.authorship||'',r.typeStatus,
       r.kingdom,r.phylum,r.class_,r.order,r.superfamily||'',r.family,r.subfamily||'',r.tribe||'',r.genus,r.species,r.vern,
       r.basis,r.recBy,r.identifiedBy||'',fmtDate(r),
-      r.locality||'',r._rawLocality||'',r._alaVerbatimLocality||'',r.state,r._rawState||'',r.country,r._rawCountry||'',r.lat,r.lng,
-      r.elevMin??'',r.elevMax??'',sp.demElev!=null?Math.round(sp.demElev):'',r.depth??'',
-      sp.bioregion||'',sp.subregion||'',sp.lga||'',
+      r.locality||'',r.state,r.country,r.lat,r.lng,
+      r.elevMin??'',r.elevMax??'',r.depth??'',
       r.habitat||'',r.sex||'',r.lifeStage||'',r.preparations||'',r.individualCount||'',r.samplingProtocol||'',r.occurrenceRemarks||'',
       r.coll,r.uuid||''
     ];
+    const spatialVals=enriched?[
+      sp.demElev!=null?Math.round(sp.demElev):'',
+      sp.bioregion||'',sp.subregion||'',sp.lga||'',
+      sp.drainageBasin||'',sp.protectedArea||'',sp.estateType||'',
+      sp.capadName||'',sp.capadType||'',sp.reCode||'',
+      sp.traditionalOwners||'',sp.nnttType||'',
+      sp.marineZone||'',sp.marinePark||'',sp.fha||sp.marineFHA?.name||''
+    ]:[];
+    const v=[...coreVals,...spatialVals];
     rows.push(v.map(x=>{const s=String(x??'');return/[,"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(','));
   });
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   const tag=S.mapPoly?'-'+S.mapPoly.name.replace(/[^a-zA-Z0-9]+/g,'_').slice(0,30):'';
-  a.download='qm-export'+tag+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  const suffix=enriched?'-enriched':'';
+  a.download='qm-export'+tag+suffix+'-'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();URL.revokeObjectURL(a.href);
-  toast('Exported '+recs.length+' records');
+  toast(`Exported ${recs.length} records`+(enriched?' (enriched)':''));
 }
 
 /* CHARTS */
@@ -5979,7 +6046,8 @@ $('#nextP')?.addEventListener('click',()=>{
 });
 /* Density toggle + CSV export + Nav buttons */
 $('#galBar').querySelectorAll('.density-tog button').forEach(b=>b.addEventListener('click',()=>{S.galDensity=b.dataset.d;S._densityManual=true;$('#galBar').querySelectorAll('.density-tog button').forEach(x=>{x.setAttribute('aria-pressed',x===b?'true':'false')});renderGallery()}));
-$('#csvBtn').addEventListener('click',e=>{e.stopPropagation();exportCSV()});
+$('#csvBtn').addEventListener('click',e=>{e.stopPropagation();exportCSV($('#csvPlusBtn').classList.contains('on'))});
+$('#csvPlusBtn').addEventListener('click',e=>{e.stopPropagation();const btn=$('#csvPlusBtn');btn.classList.toggle('on');btn.setAttribute('aria-pressed',btn.classList.contains('on'));toast(btn.classList.contains('on')?'CSV+ on — export will include full spatial enrichment':'CSV+ off — fast export')});
 /* Nav: open sequential records in modal */
 $('#navPrev').addEventListener('click',()=>{if(S.navIdx>0){S.navIdx--;openModal(S.navIdx)}});
 $('#navNext').addEventListener('click',()=>{if(S.navIdx<S.res.length-1){S.navIdx++;openModal(S.navIdx)}else if(S.res.length>0){S.navIdx=0;openModal(0)}});
