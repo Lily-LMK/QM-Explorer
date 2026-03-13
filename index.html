@@ -5587,13 +5587,20 @@ function renderModalDetails(r){
   const df=(label,val,wide)=>val?`<span class="df${wide?' wide':''}"><span class="k">${label}</span><span class="v">${val}</span></span>`:'';
   const loc=[r.locality,r.state,r.country].filter(Boolean).join(', ');
 
-  /* AFD/taxon concept link for Links section */
+  /* AFD/APC taxon link — use scientific name, not ALA UUID */
   let afdLink='';
-  if(r.taxonConceptID){
-    const href=r.taxonConceptID.startsWith('http')?esc(r.taxonConceptID)
-      :r.taxonConceptID.startsWith('urn:lsid')?'https://biodiversity.org.au/afd/taxa/'+encodeURIComponent(r.taxonConceptID)
-      :'https://bie.ala.org.au/species/'+encodeURIComponent(r.taxonConceptID);
-    afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">AFD Taxon ↗</a>`;
+  if(r.sci){
+    const nameForUrl=r.sci.trim().replace(/\s+/g,'_');
+    if(r.kingdom==='Animalia'){
+      const href='https://biodiversity.org.au/afd/taxa/'+encodeURIComponent(nameForUrl);
+      afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">AFD Taxon ↗</a>`;
+    }else if(r.kingdom==='Plantae'||r.kingdom==='Fungi'){
+      const href='https://biodiversity.org.au/nsl/services/search/names?name='+encodeURIComponent(r.sci.trim());
+      afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">APC/APNI ↗</a>`;
+    }else{
+      const href='https://bie.ala.org.au/species/'+encodeURIComponent(r.taxonConceptID||r.sci.trim());
+      afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">ALA Species ↗</a>`;
+    }
   }
 
   $('#mDetails').innerHTML=`
