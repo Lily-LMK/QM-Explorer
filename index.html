@@ -2066,11 +2066,13 @@ function renderGuide(){
     tile.onclick=()=>{S.guideFocus={rank:g.rank,name:g.name};setFilterSilent(rk.k,g.name);renderGuide()};grid.appendChild(tile)});
   root.appendChild(grid);
 
-  /* ── Async: multi-tier image resolution for guide tiles ──
+  /* ── Async: targeted per-group image fetch for guide tiles ──
      Tier 1 already ran above (harvest from S.res).
-     Tier 2: BIE taxon profile images — curated representative images per taxon name.
-     Tier 3: Batch occurrence query — targeted per-group queries for remaining gaps.
-     This layered approach ensures maximum coverage even for underrepresented groups. */
+     Tier 2: For each tile still missing an image, fire a targeted QM-scoped occurrence
+     query filtered to that specific taxon group + multimedia:"Image". This guarantees
+     we find an image if *any* imaged QM specimen exists for that group, unlike the old
+     approach which fetched a single undifferentiated batch and missed most groups.
+     All queries go through alaBaseFQ → institution_uid:in15, so only QM images appear. */
   const tilesNeedingImgs=sorted.filter(g=>g.imgs.length<1);
   if(tilesNeedingImgs.length){
     (async()=>{
@@ -2083,64 +2085,37 @@ function renderGuide(){
         if(tile){const d=tile.querySelector('.gt-img');if(d&&!d.querySelector('img'))d.innerHTML='<div class="gt-no">—</div>'}
       };
       const found=new Set();
+      const alaRkField=rk.k==='class_'?'class':rk.k; /* ALA fq field: 'class' not 'class_' */
 
-      /* ── Tier 2: BIE taxon profile images (batched, 6 concurrent) ── */
       try{
         const CONC=6;
         const queue=[...tilesNeedingImgs];
-        const runBatch=async()=>{
-          while(queue.length){
-            const batch=queue.splice(0,CONC);
-            await Promise.allSettled(batch.map(async g=>{
-              if(found.has(g.name))return;
-              try{
-                const r=await cachedFetch(`https://bie-ws.ala.org.au/ws/search?q=${encodeURIComponent(g.name)}&fq=idxtype:TAXON+AND+rank:${encodeURIComponent(rk.l.toLowerCase())}&pageSize=1`);
-                if(!r.ok)return;const d=await r.json();
-                const hit=(d.searchResults?.results||[])[0];
-                const url=hit?.imageUrl||hit?.smallImageUrl||hit?.thumbnailUrl||'';
-                if(url){found.add(g.name);applyImg(g.name,url)}
-              }catch(e){}
-            }));
-          }
-        };
-        await runBatch();
+        while(queue.length){
+          const batch=queue.splice(0,CONC);
+          await Promise.allSettled(batch.map(async g=>{
+            if(found.has(g.name))return;
+            try{
+              const u=new URLSearchParams();
+              u.set('q',getFilters().q||'*:*');
+              const fqs=alaBaseFQ(getFilters());
+              fqs.push('multimedia:"Image"');
+              fqs.push(`${alaRkField}:"${g.name}"`);
+              u.set('fq',fqs.join(' AND '));
+              u.set('pageSize','1');u.set('startIndex','0');
+              u.set('fl','largeImageUrl,imageUrl,smallImageUrl');
+              u.set('facets','');u.set('flimit','0');
+              const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+              if(!r.ok)return;const d=await r.json();
+              const o=(d.occurrences||[])[0];
+              if(!o)return;
+              const url=o.largeImageUrl||o.imageUrl||o.smallImageUrl||'';
+              if(url){found.add(g.name);applyImg(g.name,url)}
+            }catch(e){}
+          }));
+        }
       }catch(e){}
 
-      /* ── Tier 3: per-group occurrence queries for remaining gaps ── */
-      const stillNeeded=tilesNeedingImgs.filter(g=>!found.has(g.name));
-      if(stillNeeded.length){
-        try{
-          const rkField=rk.k==='class_'?'classs':rk.k;  /* ALA returns 'classs' not 'class' */
-          const alaRkField=rk.k==='class_'?'class':rk.k; /* ALA fq uses 'class' */
-          const CONC2=4;
-          const queue2=[...stillNeeded];
-          while(queue2.length){
-            const batch=queue2.splice(0,CONC2);
-            await Promise.allSettled(batch.map(async g=>{
-              if(found.has(g.name))return;
-              try{
-                const u=new URLSearchParams();
-                u.set('q',getFilters().q||'*:*');
-                const fqs=alaBaseFQ(getFilters());
-                fqs.push('multimedia:"Image"');
-                fqs.push(`${alaRkField}:"${g.name}"`);
-                u.set('fq',fqs.join(' AND '));
-                u.set('pageSize','1');u.set('startIndex','0');
-                u.set('fl','largeImageUrl,imageUrl,smallImageUrl');
-                u.set('facets','');u.set('flimit','0');
-                const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
-                if(!r.ok)return;const d=await r.json();
-                const o=(d.occurrences||[])[0];
-                if(!o)return;
-                const url=o.largeImageUrl||o.imageUrl||o.smallImageUrl||'';
-                if(url){found.add(g.name);applyImg(g.name,url)}
-              }catch(e){}
-            }));
-          }
-        }catch(e){}
-      }
-
-      /* Mark anything still without an image */
+      /* Mark anything still without an image — these groups genuinely have no imaged QM specimens */
       for(const g of tilesNeedingImgs){if(!found.has(g.name))markEmpty(g.name)}
     })();
   }
