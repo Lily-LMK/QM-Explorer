@@ -2066,66 +2066,82 @@ function renderGuide(){
     tile.onclick=()=>{S.guideFocus={rank:g.rank,name:g.name};setFilterSilent(rk.k,g.name);renderGuide()};grid.appendChild(tile)});
   root.appendChild(grid);
 
-  /* ── Async: batch-fetch images for tiles that need them ──
-     Instead of one API call per tile (which gets rate-limited), fetch a large batch
-     of imaged records and distribute them by rank grouping. One query, many tiles. */
+  /* ── Async: multi-tier image resolution for guide tiles ──
+     Tier 1 already ran above (harvest from S.res).
+     Tier 2: BIE taxon profile images — curated representative images per taxon name.
+     Tier 3: Batch occurrence query — targeted per-group queries for remaining gaps.
+     This layered approach ensures maximum coverage even for underrepresented groups. */
   const tilesNeedingImgs=sorted.filter(g=>g.imgs.length<1);
   if(tilesNeedingImgs.length){
     (async()=>{
+      const applyImg=(name,url)=>{
+        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
+        if(tile){const d=tile.querySelector('.gt-img');if(d&&!d.querySelector('img'))d.innerHTML=`<img src="${esc(url)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gt-no\\'>—</div>'">`}
+      };
+      const markEmpty=name=>{
+        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
+        if(tile){const d=tile.querySelector('.gt-img');if(d&&!d.querySelector('img'))d.innerHTML='<div class="gt-no">—</div>'}
+      };
+      const found=new Set();
+
+      /* ── Tier 2: BIE taxon profile images (batched, 6 concurrent) ── */
       try{
-        const rkField=rk.k==='class_'?'class':rk.k;
-        /* Fetch a generous batch of imaged records — each record gives us one image for its group */
-        const batchSize=Math.min(tilesNeedingImgs.length*2, 500);
-        const needed=new Set(tilesNeedingImgs.map(g=>g.name));
-        const found=new Map(); /* name → imageUrl */
-        let startIdx=0;
-        const PAGE=200;
-        /* Paginate through imaged records until we've covered most tiles or exhausted results */
-        while(found.size<needed.size&&startIdx<batchSize){
-          const u=new URLSearchParams();
-          u.set('q',getFilters().q||'*:*');
-          const fqs=alaBaseFQ(getFilters());
-          fqs.push('multimedia:"Image"');
-          u.set('fq',fqs.join(' AND '));
-          u.set('pageSize',Math.min(PAGE,batchSize-startIdx));
-          u.set('startIndex',startIdx);
-          u.set('facets','');u.set('flimit','0');
-          const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
-          if(!r.ok)break;
-          const d=await r.json();
-          const occs=d.occurrences||[];
-          if(!occs.length)break;
-          for(const o of occs){
-            const groupName=o[rkField]||o['raw_'+rkField]||'';
-            if(groupName&&needed.has(groupName)&&!found.has(groupName)){
-              const url=o.largeImageUrl||o.imageUrl||o.smallImageUrl||'';
-              if(url)found.set(groupName,url);
-            }
+        const CONC=6;
+        const queue=[...tilesNeedingImgs];
+        const runBatch=async()=>{
+          while(queue.length){
+            const batch=queue.splice(0,CONC);
+            await Promise.allSettled(batch.map(async g=>{
+              if(found.has(g.name))return;
+              try{
+                const r=await cachedFetch(`https://bie-ws.ala.org.au/ws/search?q=${encodeURIComponent(g.name)}&fq=idxtype:TAXON+AND+rank:${encodeURIComponent(rk.l.toLowerCase())}&pageSize=1`);
+                if(!r.ok)return;const d=await r.json();
+                const hit=(d.searchResults?.results||[])[0];
+                const url=hit?.imageUrl||hit?.smallImageUrl||hit?.thumbnailUrl||'';
+                if(url){found.add(g.name);applyImg(g.name,url)}
+              }catch(e){}
+            }));
           }
-          startIdx+=occs.length;
-          if(startIdx>=d.totalRecords)break;
-        }
-        /* Apply found images to tiles */
-        for(const [name,url] of found){
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
-          if(tile){
-            const imgDiv=tile.querySelector('.gt-img');
-            if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML=`<img src="${esc(url)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gt-no\\'>—</div>'">`;
+        };
+        await runBatch();
+      }catch(e){}
+
+      /* ── Tier 3: per-group occurrence queries for remaining gaps ── */
+      const stillNeeded=tilesNeedingImgs.filter(g=>!found.has(g.name));
+      if(stillNeeded.length){
+        try{
+          const rkField=rk.k==='class_'?'classs':rk.k;  /* ALA returns 'classs' not 'class' */
+          const alaRkField=rk.k==='class_'?'class':rk.k; /* ALA fq uses 'class' */
+          const CONC2=4;
+          const queue2=[...stillNeeded];
+          while(queue2.length){
+            const batch=queue2.splice(0,CONC2);
+            await Promise.allSettled(batch.map(async g=>{
+              if(found.has(g.name))return;
+              try{
+                const u=new URLSearchParams();
+                u.set('q',getFilters().q||'*:*');
+                const fqs=alaBaseFQ(getFilters());
+                fqs.push('multimedia:"Image"');
+                fqs.push(`${alaRkField}:"${g.name}"`);
+                u.set('fq',fqs.join(' AND '));
+                u.set('pageSize','1');u.set('startIndex','0');
+                u.set('fl','largeImageUrl,imageUrl,smallImageUrl');
+                u.set('facets','');u.set('flimit','0');
+                const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+                if(!r.ok)return;const d=await r.json();
+                const o=(d.occurrences||[])[0];
+                if(!o)return;
+                const url=o.largeImageUrl||o.imageUrl||o.smallImageUrl||'';
+                if(url){found.add(g.name);applyImg(g.name,url)}
+              }catch(e){}
+            }));
           }
-        }
-        /* Mark remaining tiles as no-image */
-        for(const g of tilesNeedingImgs){
-          if(found.has(g.name))continue;
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
-          if(tile){const imgDiv=tile.querySelector('.gt-img');if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML='<div class="gt-no">—</div>'}
-        }
-      }catch(e){
-        /* On error, clear loading states */
-        for(const g of tilesNeedingImgs){
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
-          if(tile){const imgDiv=tile.querySelector('.gt-img');if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML='<div class="gt-no">—</div>'}
-        }
+        }catch(e){}
       }
+
+      /* Mark anything still without an image */
+      for(const g of tilesNeedingImgs){if(!found.has(g.name))markEmpty(g.name)}
     })();
   }
   /* Async: fetch vernacular names — sequential with small batches to avoid rate limiting */
