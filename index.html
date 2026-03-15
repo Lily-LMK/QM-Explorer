@@ -2066,57 +2066,66 @@ function renderGuide(){
     tile.onclick=()=>{S.guideFocus={rank:g.rank,name:g.name};setFilterSilent(rk.k,g.name);renderGuide()};grid.appendChild(tile)});
   root.appendChild(grid);
 
-  /* ── Async: targeted per-group image fetch for guide tiles ──
-     Tier 1 already ran above (harvest from S.res).
-     Tier 2: For each tile still missing an image, fire a targeted QM-scoped occurrence
-     query filtered to that specific taxon group + multimedia:"Image". This guarantees
-     we find an image if *any* imaged QM specimen exists for that group, unlike the old
-     approach which fetched a single undifferentiated batch and missed most groups.
-     All queries go through alaBaseFQ → institution_uid:in15, so only QM images appear. */
+  /* ── Async: batch-fetch images for tiles that need them ──
+     Instead of one API call per tile (which gets rate-limited), fetch a large batch
+     of imaged records and distribute them by rank grouping. One query, many tiles. */
   const tilesNeedingImgs=sorted.filter(g=>g.imgs.length<1);
   if(tilesNeedingImgs.length){
     (async()=>{
-      const applyImg=(name,url)=>{
-        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
-        if(tile){const d=tile.querySelector('.gt-img');if(d&&!d.querySelector('img'))d.innerHTML=`<img src="${esc(url)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gt-no\\'>—</div>'">`}
-      };
-      const markEmpty=name=>{
-        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
-        if(tile){const d=tile.querySelector('.gt-img');if(d&&!d.querySelector('img'))d.innerHTML='<div class="gt-no">—</div>'}
-      };
-      const found=new Set();
-      const alaRkField=rk.k==='class_'?'class':rk.k; /* ALA fq field: 'class' not 'class_' */
-
       try{
-        const CONC=6;
-        const queue=[...tilesNeedingImgs];
-        while(queue.length){
-          const batch=queue.splice(0,CONC);
-          await Promise.allSettled(batch.map(async g=>{
-            if(found.has(g.name))return;
-            try{
-              const u=new URLSearchParams();
-              u.set('q',getFilters().q||'*:*');
-              const fqs=alaBaseFQ(getFilters());
-              fqs.push('multimedia:"Image"');
-              fqs.push(`${alaRkField}:"${g.name}"`);
-              u.set('fq',fqs.join(' AND '));
-              u.set('pageSize','1');u.set('startIndex','0');
-              u.set('fl','largeImageUrl,imageUrl,smallImageUrl');
-              u.set('facets','');u.set('flimit','0');
-              const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
-              if(!r.ok)return;const d=await r.json();
-              const o=(d.occurrences||[])[0];
-              if(!o)return;
+        const rkField=rk.k==='class_'?'class':rk.k;
+        /* Fetch a generous batch of imaged records — each record gives us one image for its group */
+        const batchSize=Math.min(tilesNeedingImgs.length*2, 500);
+        const needed=new Set(tilesNeedingImgs.map(g=>g.name));
+        const found=new Map(); /* name → imageUrl */
+        let startIdx=0;
+        const PAGE=200;
+        /* Paginate through imaged records until we've covered most tiles or exhausted results */
+        while(found.size<needed.size&&startIdx<batchSize){
+          const u=new URLSearchParams();
+          u.set('q',getFilters().q||'*:*');
+          const fqs=alaBaseFQ(getFilters());
+          fqs.push('multimedia:"Image"');
+          u.set('fq',fqs.join(' AND '));
+          u.set('pageSize',Math.min(PAGE,batchSize-startIdx));
+          u.set('startIndex',startIdx);
+          u.set('facets','');u.set('flimit','0');
+          const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+          if(!r.ok)break;
+          const d=await r.json();
+          const occs=d.occurrences||[];
+          if(!occs.length)break;
+          for(const o of occs){
+            const groupName=o[rkField]||o['raw_'+rkField]||'';
+            if(groupName&&needed.has(groupName)&&!found.has(groupName)){
               const url=o.largeImageUrl||o.imageUrl||o.smallImageUrl||'';
-              if(url){found.add(g.name);applyImg(g.name,url)}
-            }catch(e){}
-          }));
+              if(url)found.set(groupName,url);
+            }
+          }
+          startIdx+=occs.length;
+          if(startIdx>=d.totalRecords)break;
         }
-      }catch(e){}
-
-      /* Mark anything still without an image — these groups genuinely have no imaged QM specimens */
-      for(const g of tilesNeedingImgs){if(!found.has(g.name))markEmpty(g.name)}
+        /* Apply found images to tiles */
+        for(const [name,url] of found){
+          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
+          if(tile){
+            const imgDiv=tile.querySelector('.gt-img');
+            if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML=`<img src="${esc(url)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gt-no\\'>—</div>'">`;
+          }
+        }
+        /* Mark remaining tiles as no-image */
+        for(const g of tilesNeedingImgs){
+          if(found.has(g.name))continue;
+          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
+          if(tile){const imgDiv=tile.querySelector('.gt-img');if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML='<div class="gt-no">—</div>'}
+        }
+      }catch(e){
+        /* On error, clear loading states */
+        for(const g of tilesNeedingImgs){
+          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
+          if(tile){const imgDiv=tile.querySelector('.gt-img');if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML='<div class="gt-no">—</div>'}
+        }
+      }
     })();
   }
   /* Async: fetch vernacular names — sequential with small batches to avoid rate limiting */
