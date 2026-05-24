@@ -100,18 +100,26 @@ If `sw.js` is not present alongside `index.html`, the app runs in standalone mod
 - Modern browser (Chrome 90+, Firefox 88+, Safari 15+, Edge 90+)
 - Internet connection (all data is fetched live from external APIs)
 
-### Caching (Service Worker)
+### Caching
 
-`sw.js` is optional. When deployed alongside `index.html`, it caches:
+The app uses two caching layers, which sit on top of the browser's standard HTTP cache:
+
+**In-page cache (`cachedFetch` in `index.html`)**: A JavaScript Map holding up to 400 API responses for 30 minutes, scoped to ALA biocache, ALA BIE, ALA spatial intersect, GBIF, iNaturalist, and Wikipedia. Lives for the duration of a single page session. Reduces redundant API calls while a user is exploring.
+
+**Service worker (`sw.js`, optional)**: When deployed alongside `index.html`, persists caching across page reloads and sessions:
 
 | Category | Strategy | TTL | Max entries |
 |---|---|---|---|
 | CDN assets (Leaflet, fonts) | Cache-first | Indefinite (versioned URLs) | — |
 | Map tiles (OSM, OpenTopoMap) | Cache-first with TTL | 24 hours | 600 |
 | Specimen images (ALA) | Cache-first with TTL | 24 hours | 600 |
-| API responses (ALA, GBIF, Wikipedia, iNaturalist) | Stale-while-revalidate | Always revalidates | 500 |
+| API responses (ALA, GBIF, Wikipedia, iNaturalist) | Stale-while-revalidate | 1 hour | 500 |
 
 QLD Government spatial services, NNTT, Geoscience Australia, and Nominatim are deliberately not cached — their responses are location-specific and the services have intermittent availability that caching would obscure.
+
+The service worker is also the foundation for a future offline mode (Service Worker + IndexedDB), which would let users browse previously-loaded records without an internet connection — useful for fieldwork at remote sites.
+
+If `sw.js` is not present, the app runs in standalone mode. The registration call fails silently and the in-page cache continues to handle within-session requests.
 
 To force a cache refresh, increment the version suffix in the cache names (`CACHE_STATIC`, `CACHE_API`, `CACHE_IMG`) in `sw.js`. The activate event automatically purges old caches.
 
@@ -119,7 +127,7 @@ To force a cache refresh, increment the version suffix in the cache names (`CACH
 
 - **QLD spatial services**: The QLD Government ArcGIS MapServer services (`spatial-gis.information.qld.gov.au`) intermittently return 503 errors. The app shows a graceful degradation message when these services are unavailable. A bug report has been filed with QLD Spatial Help Centre.
 - **Polygon geometry not in URL**: NNTT polygon geometries are too large for URL encoding. Only the area name is stored — polygon state cannot be fully restored from a shared link.
-- **No offline mode**: All data requires live API access. A future Service Worker + IndexedDB implementation could enable offline browsing of cached records.
+- **No offline mode yet**: All data requires live API access. The service worker is in place as the foundation for offline browsing — a future Service Worker + IndexedDB implementation would let users browse previously-loaded records without an internet connection.
 
 ## Credits
 
@@ -127,7 +135,7 @@ Built by Lily Kumpe. Data from the Atlas of Living Australia, GBIF, Wikipedia, i
 
 ## Licence
 
-Copyright © 2024–2026 Lily Kumpe
+Copyright © 2026 Lily Kumpe
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for the full text, or read it at <https://www.apache.org/licenses/LICENSE-2.0>.
 
