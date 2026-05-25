@@ -125,7 +125,6 @@ To force a cache refresh, increment the version suffix in the cache names (`CACH
 
 ## Known limitations
 
-- **QLD spatial services**: The QLD Government ArcGIS MapServer services (`spatial-gis.information.qld.gov.au`) intermittently return 503 errors. The app shows a graceful degradation message when these services are unavailable. A bug report has been filed with QLD Spatial Help Centre.
 - **Polygon geometry not in URL**: NNTT polygon geometries are too large for URL encoding. Only the area name is stored — polygon state cannot be fully restored from a shared link.
 - **No offline mode yet**: All data requires live API access. The service worker is in place as the foundation for offline browsing — a future Service Worker + IndexedDB implementation would let users browse previously-loaded records without an internet connection.
 
