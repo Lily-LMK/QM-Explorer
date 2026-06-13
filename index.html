@@ -1926,51 +1926,83 @@ async function autoExpandAll(container,depth){
   }
 }
 
+/* Throttle for tree vernacular lookups: expanding a node can create dozens of
+   genus/species children at once — cap concurrent GBIF/iNat calls so we don't
+   hammer those APIs (cachedFetch still dedupes identical requests). */
+const _treeVernQ=[]; let _treeVernActive=0; const _TREE_VERN_CONC=4;
+function _queueTreeVern(task){
+  return new Promise(resolve=>{
+    _treeVernQ.push(async()=>{ try{resolve(await task())}catch(e){resolve(null)} });
+    _drainTreeVern();
+  });
+}
+function _drainTreeVern(){
+  while(_treeVernActive<_TREE_VERN_CONC && _treeVernQ.length){
+    const job=_treeVernQ.shift(); _treeVernActive++;
+    job().finally(()=>{ _treeVernActive--; _drainTreeVern(); });
+  }
+}
+
+/* Lazy resolution: only nodes scrolled into view trigger an API lookup, so
+   expanding a node with hundreds of children doesn't fire hundreds of GBIF/iNat
+   calls (which overloads those services). Curated names still resolve instantly. */
+const _treeVernObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(entries=>{
+  for(const e of entries){
+    if(e.isIntersecting){
+      _treeVernObserver.unobserve(e.target);
+      const fn=e.target._vernResolve; e.target._vernResolve=null;
+      if(fn)fn();
+    }
+  }
+},{rootMargin:'150px'}) : null;
+
 /* Resolve and display a common name for a taxa tree node.
-   Family+: instant from _localVern. Genus: check caches → async subfamily lookup.
-   Species: check _vernCache. Populates the .tn-com span. */
-async function _fillTreeVern(el,name,rank,ancestors){
+   - Class/order and curated families resolve instantly from _localVern (no network).
+   - Uncurated families, genera and species are fetched via the shared resolver
+     (lookupVern → GBIF + iNaturalist), cached in _vernCache — but ONLY once the node
+     is visible (lazy), and throttled.
+   - A genus with no name of its own falls back to its family's curated name. */
+function _fillTreeVern(el,name,rank,ancestors){
   if(!el)return;
   const lo=name.toLowerCase();
-  const show=n=>{if(el)el.textContent=n};
-  /* Family, order, class, etc. — _localVern is instant */
-  if(rank!=='genus'&&rank!=='species'){
-    const v=_localVern[lo];
-    if(v)show(v);
-    return;
-  }
-  /* Species — check _vernCache */
-  if(rank==='species'){
-    const ck=cleanTaxonTerm(name);
-    if(_vernCache.has(ck)){
-      const cached=_vernCache.get(ck);
-      if(cached&&!isGenericVern(cached))show(singularize(cached));
-    }
-    return;
-  }
-  /* Genus — most important case (dung beetles etc.) */
   const ck=cleanTaxonTerm(name);
-  /* 1. Check gallery _vernCache (genus-level name from batch pipeline) */
+  const show=n=>{ if(el&&n&&!isGenericVern(n)) el.textContent=singularize(n); };
+  const genusFamilyFallback=()=>{
+    if(rank!=='genus')return;
+    const fam=(ancestors?.family||'').toLowerCase();
+    const fv=fam&&_localVern[fam];
+    if(fv&&!isGenericVern(fv)) el.textContent=singularize(fv);
+  };
+
+  /* 1. Curated dictionary — instant and trusted (all classes/orders, common families) */
+  const dict=_localVern[lo];
+  if(dict){ el.textContent=dict; return; }
+
+  /* 2. Already cached (from a prior lookup anywhere) — instant, no network */
   if(_vernCache.has(ck)){
     const cached=_vernCache.get(ck);
-    if(cached&&!isGenericVern(cached)){show(singularize(cached));return}
+    if(cached) show(cached); else genusFamilyFallback();
+    return;
   }
-  /* 2. Check _subTribeCache (subfamily name already resolved) */
-  if(_subTribeCache.has(lo)){
-    const cached=_subTribeCache.get(lo);
-    if(cached){show(singularize(cached.name));return}
+
+  /* 3. Needs a network lookup — defer until the node is visible, then throttle. */
+  const resolve=async()=>{
+    if(_vernCache.has(ck)){ const c=_vernCache.get(ck); if(c){show(c);return} }
+    const result=await _queueTreeVern(()=>lookupVern(name));
+    const nm=result&&result.name;
+    _vernCache.set(ck, nm||null);
+    if(nm) show(nm); else genusFamilyFallback();
+  };
+  const target=el.closest('.tn-h')||el;
+  if(_treeVernObserver){
+    target._vernResolve=resolve;
+    /* Observe only once the node is actually in the DOM — IntersectionObserver
+       won't fire for elements observed while still detached (mkTreeNode builds
+       them before appending). The caller attaches synchronously, so by the next
+       frame the node is connected. */
+    requestAnimationFrame(()=>{ if(target._vernResolve&&target.isConnected) _treeVernObserver.observe(target); });
   }
-  /* 3. Async: resolve subfamily via GBIF classification chain */
-  try{
-    const result=await lookupSubfamilyVern(name);
-    if(result){show(singularize(result.name));return}
-  }catch(e){}
-  /* 4. Fallback: family name from _localVern via ancestors */
-  const fam=(ancestors?.family||'').toLowerCase();
-  if(fam&&_localVern[fam]){
-    const v=_localVern[fam];
-    if(!isGenericVern(v))show(singularize(v));
-  }
+  else resolve(); /* no IntersectionObserver support — resolve eagerly */
 }
 
 function mkTreeNode(name,count,rank,ancestors,autoExpandPath){
