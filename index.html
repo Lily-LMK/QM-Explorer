@@ -954,14 +954,17 @@ async function fetchQualityCounts(f){
   try{
     const fq=alaBaseFQ(f);const q=f.q||'*:*';
     const base='https://biocache-ws.ala.org.au/ws/occurrences/search';
-    function countURL(extraFQ){
-      const u=new URLSearchParams();u.set('q',q);appendFQ(u,fq);if(extraFQ)u.append('fq',extraFQ);
+    /* Extra clauses MUST be separate fq params, never AND-joined into one — ALA
+       drops the CORS header on an AND-joined fq (the CLAUDE.md #1 rule). Each
+       clause is attached via the CORS-safe appendFQ helper. */
+    function countURL(extraClauses){
+      const u=new URLSearchParams();u.set('q',q);appendFQ(u,fq);if(extraClauses)appendFQ(u,extraClauses);
       u.set('pageSize','0');u.set('facets','');return base+'?'+u;
     }
     const [rGeo,rMedia,rTyped]=await Promise.all([
-      fetch(countURL('geospatial_kosher:true')).then(r=>r.ok?r.json():null).catch(()=>null),
-      fetch(countURL('multimedia:"Image"')).then(r=>r.ok?r.json():null).catch(()=>null),
-      fetch(countURL('-type_status:"notatype" AND type_status:[* TO *]')).then(r=>r.ok?r.json():null).catch(()=>null)
+      fetch(countURL(['geospatial_kosher:true'])).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch(countURL(['multimedia:"Image"'])).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch(countURL(['-type_status:"notatype"','type_status:[* TO *]'])).then(r=>r.ok?r.json():null).catch(()=>null)
     ]);
     if(rGeo)qc.georef=rGeo.totalRecords||0;
     if(rMedia)qc.media=rMedia.totalRecords||0;
