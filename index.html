@@ -493,6 +493,13 @@ const S = {
    Every per-page/batch size sent to the occurrences/search endpoint must stay <= ALA_MAX_PAGE.
    (FLIM is a facet limit, not a page size, so it is exempt.) */
 const ALA_MAX_PAGE=100;
+/* ALA also caps the result WINDOW: it will not return any record past index 5000
+   (startIndex + pageSize must be <= 5000), and the id-range cursor that used to
+   bypass this no longer works (ALA stopped returning a queryable `id` field).
+   So a single query yields at most ALA_MAX_RESULTS records. To exceed this we
+   partition the query (e.g. spatial quadtree for the map) into sub-queries that
+   each stay under the window — see fetchAllOffset() and bgLoadAllPages(). */
+const ALA_MAX_RESULTS=5000;
 const PAGE=5000, FLIM=500, INIT_PAGE=ALA_MAX_PAGE;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>(s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[c]));
@@ -1178,11 +1185,11 @@ async function doSearch(){
         const masterF = {q:'*:*', kingdom:'', phylum:'', class_:'', order:'', family:'', genus:'', species:'',
                          hasType:'', coord:'', media:'', country:'', state:'', catNum:'', collCode:'', bbox:f.bbox};
         const pg = S._polyPage || 0;
-        const bookmark = S._polyPageBookmarks?.[pg] || {alaId:''};
+        const bookmark = S._polyPageBookmarks?.[pg] || {alaFetched:0};
         const BATCH = ALA_MAX_PAGE;
         const collected = [];
         let bboxTotal = pg > 0 ? (S._polyBboxTotal || 0) : 0;
-        let alaId = bookmark.alaId;
+        /* alaFetched doubles as the offset into the (stably id-sorted) bbox result set */
         let alaFetched = bookmark.alaFetched || 0;
 
         /* Facets in parallel (on bbox, unfiltered — so we get ALL collections/taxa available) */
@@ -1195,15 +1202,16 @@ async function doSearch(){
         facU.set('flimit', FLIM); facU.set('fsort', 'count');
         facP = fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?' + facU).then(r => r.ok ? r.json() : null).catch(() => null);
 
-        /* Fill-page loop: fetch API batches (UNFILTERED), filter by polygon, until we have enough */
+        /* Fill-page loop: offset-page bbox batches (UNFILTERED), filter by polygon, until we have enough.
+           Bounded by ALA's 5000-record window — for a bbox denser than that, the scan stops at 5000. */
         let polyCountSoFar = 0;
-        while(collected.length < INIT_PAGE){
+        while(collected.length < INIT_PAGE && alaFetched < ALA_MAX_RESULTS){
           if(S._searchId !== searchId) return;
           const fqs = alaBaseFQ(masterF);
-          if(alaId) fqs.push(`id:{${alaId} TO *}`);
+          const sz = Math.min(BATCH, ALA_MAX_RESULTS - alaFetched);
           const u = new URLSearchParams();
           u.set('q', '*:*'); u.set('fq', fqs.join(' AND '));
-          u.set('pageSize', BATCH); u.set('startIndex', '0');
+          u.set('pageSize', sz); u.set('startIndex', alaFetched);
           u.set('sort', 'id'); u.set('dir', 'asc');
           u.set('facets', ''); u.set('flimit', '0');
           const r = await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?' + u);
@@ -1212,7 +1220,6 @@ async function doSearch(){
           if(!bboxTotal) bboxTotal = d.totalRecords || 0;
           const rawOccs = d.occurrences || [];
           const recs = rawOccs.map(normRec_A);
-          if(rawOccs.length) alaId = rawOccs[rawOccs.length - 1].uuid || '';
           alaFetched += rawOccs.length;
           if(!recs.length) break;
           for(const r of recs){
@@ -1225,7 +1232,7 @@ async function doSearch(){
 
         /* Bookmark for next page */
         if(!S._polyPageBookmarks) S._polyPageBookmarks = [];
-        S._polyPageBookmarks[pg + 1] = {alaId, alaFetched};
+        S._polyPageBookmarks[pg + 1] = {alaFetched};
         const scanComplete = alaFetched >= bboxTotal;
         S._polyBboxTotal = bboxTotal;
         S._polyMasterBboxTotal = bboxTotal;
@@ -1286,7 +1293,7 @@ async function doSearch(){
         });
 
         /* Kick off background scan to build complete master cache */
-        if(!scanComplete) bgPolyScan(masterF, loadId, searchId, {alaId, alaFetched}, polyCountSoFar, bboxTotal);
+        if(!scanComplete) bgPolyScan(masterF, loadId, searchId, {alaFetched}, polyCountSoFar, bboxTotal);
         else{
           S._polyScanDone = true;
           /* Scan was complete on first page — compute analytics locally */
@@ -1343,76 +1350,70 @@ async function doSearch(){
   }catch(e){console.error(e);toast('Search failed: '+e.message);showEmpty('Error: '+e.message);showLoad(false)}
 }
 
-/* ALA has a SOLR startIndex cap (~5000). We bypass it using ID-range cursoring:
-   sort by id asc, then filter id:{lastId TO *} for each subsequent page. 
-   No offset needed — each page starts from where the last one ended. */
+/* ALA serves at most ALA_MAX_RESULTS (5000) records per query, and no cursor
+   bypasses it any more. So we offset-page up to that ceiling. To plot MORE than
+   5000 points, the caller partitions the query spatially (see bgLoadAllPages,
+   which splits the area into quadtree tiles each under the window). */
 async function bgLoadAllPages(f,loadId){
   /* Prevent concurrent loads with same loadId */
   if(S._bgRunning===loadId)return;
   S._bgRunning=loadId;
   const total=S.total;
-  if(total<=0)return;
-  const MAP_CAP=S.mapUncapped?Infinity:50000;
-  const target=Math.min(total,MAP_CAP);
+  if(total<=0){S._bgRunning=null;return}
+  const target=Math.min(total,ALA_MAX_RESULTS);
   const allGeo=[];
   let lastRedraw=0;
   let failures=0;
+  let fetched=0;
   S.mapFetched=0;
   if(S.view==='map')updateMapInfo();
-  
-  /* ALA: cursor-based loading using id sort + range filter */
-  const PAGE_SZ=ALA_MAX_PAGE;
-    let lastId='';
-    let fetched=0;
-    while(fetched<target){
+
+  /* Offset paging: startIndex 0,100,200,... up to the 5000 window. */
+  for(let off=0; off<target; ){
+    if(S.mapLoadId!==loadId)return;
+    const sz=Math.min(ALA_MAX_PAGE,target-off);
+    try{
+      const fqs=alaBaseFQ(f);
+      const u=new URLSearchParams();
+      u.set('q',f.q||'*:*');u.set('fq',fqs.join(' AND '));
+      u.set('pageSize',sz);u.set('startIndex',off);
+      u.set('facets','');u.set('flimit','0');
+      const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+      /* Re-check after await — a new search may have started while we were waiting */
       if(S.mapLoadId!==loadId)return;
-      const sz=Math.min(PAGE_SZ,target-fetched);
-      try{
-        const fqs=alaBaseFQ(f);
-        if(lastId)fqs.push(`id:{${lastId} TO *}`);
-        const u=new URLSearchParams();
-        u.set('q',f.q||'*:*');u.set('fq',fqs.join(' AND '));
-        u.set('pageSize',sz);u.set('startIndex','0');
-        u.set('sort','id');u.set('dir','asc');
-        u.set('facets','');u.set('flimit','0');
-        const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
-        /* Re-check after await — a new search may have started while we were waiting */
-        if(S.mapLoadId!==loadId)return;
-        if(!r.ok)throw new Error('ALA '+r.status);
-        const d=await r.json();
-        if(S.mapLoadId!==loadId)return;
-        const occs=d.occurrences||[];
-        if(occs.length===0)break;
-        
-        const recs=occs.map(normRec_A);
-        const geo=recs.filter(r=>r.lat!=null&&r.lng!=null);
-        allGeo.push(...geo);
-        fetched+=occs.length;
-        
-        /* Cursor: use the last record's uuid as the range start for next page */
-        lastId=occs[occs.length-1].uuid||'';
-        if(!lastId){console.warn('[Map] No uuid on last record, cannot cursor');break}
-        
-        /* Guard before writing — ensures stale loads never overwrite fresh data */
-        if(S.mapLoadId!==loadId)return;
-        S.allPts=allGeo;
-        S.mapFetched=fetched;
-        if(S.view==='map'){
-          try{updateMapInfo()}catch(e){}
-          /* Always redraw on first page to show results quickly; then every 2000 pts */
-          if(fetched<=PAGE_SZ||fetched>=target||allGeo.length-lastRedraw>=2000){
-            try{addMarkers()}catch(e){}
-            lastRedraw=allGeo.length;
-          }
+      if(!r.ok)throw new Error('ALA '+r.status);
+      const d=await r.json();
+      if(S.mapLoadId!==loadId)return;
+      const occs=d.occurrences||[];
+      if(occs.length===0)break;
+
+      const recs=occs.map(normRec_A);
+      const geo=recs.filter(r=>r.lat!=null&&r.lng!=null);
+      allGeo.push(...geo);
+      fetched+=occs.length;
+      off+=occs.length;
+
+      /* Guard before writing — ensures stale loads never overwrite fresh data */
+      if(S.mapLoadId!==loadId)return;
+      S.allPts=allGeo;
+      S.mapFetched=fetched;
+      if(S.view==='map'){
+        try{updateMapInfo()}catch(e){}
+        /* Always redraw on first page to show results quickly; then every 2000 pts */
+        if(fetched<=ALA_MAX_PAGE||fetched>=target||allGeo.length-lastRedraw>=2000){
+          try{addMarkers()}catch(e){}
+          lastRedraw=allGeo.length;
         }
-      }catch(e){
-        failures++;
-        console.warn(`[bgLoad] ALA cursor fail at ${fetched}:`,e);
-        if(failures>5){console.error('[bgLoad] Too many failures');break}
-        await new Promise(r=>setTimeout(r,500));
       }
+      if(occs.length<sz)break; /* short page = no more records */
+    }catch(e){
+      failures++;
+      console.warn(`[bgLoad] ALA offset fail at ${off}:`,e);
+      if(failures>5){console.error('[bgLoad] Too many failures');break}
+      await new Promise(r=>setTimeout(r,500));
     }
-  
+  }
+
   if(S.mapLoadId===loadId){
     S.allPts=allGeo;
     S.mapFetched=fetched;
@@ -1428,7 +1429,6 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
   S._bgRunning=loadId;
   const BATCH=ALA_MAX_PAGE;
 
-  let alaId=cursor.alaId||'';
   let alaFetched=cursor.alaFetched||0;
   let polyCount=startCount;
   const REC_CAP=S.mapUncapped?Infinity:50000;
@@ -1439,14 +1439,15 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
 
   const getScanned=()=>alaFetched;
 
-  while(getScanned()<bboxTotal){
+  /* Offset-scan the bbox (stably id-sorted), bounded by ALA's 5000 window. */
+  while(getScanned()<bboxTotal && alaFetched<ALA_MAX_RESULTS){
     if(S.mapLoadId!==loadId||S._searchId!==searchId||!S.mapPoly?.rings)return;
     try{
       /* Query ALA with UNFILTERED masterF (only institution + bbox — no taxonomy/collection) */
       const fqs=alaBaseFQ(masterF);
-      if(alaId)fqs.push(`id:{${alaId} TO *}`);
+      const sz=Math.min(BATCH,ALA_MAX_RESULTS-alaFetched);
       const u=new URLSearchParams();u.set('q','*:*');u.set('fq',fqs.join(' AND '));
-      u.set('pageSize',BATCH);u.set('startIndex','0');
+      u.set('pageSize',sz);u.set('startIndex',alaFetched);
       u.set('sort','id');u.set('dir','asc');
       u.set('facets','');u.set('flimit','0');
       const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
@@ -1456,7 +1457,6 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
       if(S.mapLoadId!==loadId||S._searchId!==searchId)return;
       const rawOccs=d.occurrences||[];
       const recs=rawOccs.map(normRec_A);
-      if(rawOccs.length)alaId=rawOccs[rawOccs.length-1].uuid||'';
       alaFetched+=rawOccs.length;
       if(!recs.length)break;
       for(const r of recs){
@@ -1695,9 +1695,11 @@ function updatePag(){
     $('#pgI').textContent=info;
     $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> records in area${scanning?' <span style="color:#f7941d">⏳</span>':''}`:'';
   }else{
-    const t=S.total,pg=Math.floor(S.off/INIT_PAGE)+1,tp=Math.max(1,Math.ceil(t/INIT_PAGE));
+    /* ALA won't serve records past index ALA_MAX_RESULTS, so cap the reachable pages there. */
+    const t=S.total,reachable=Math.min(t,ALA_MAX_RESULTS),pg=Math.floor(S.off/INIT_PAGE)+1,tp=Math.max(1,Math.ceil(reachable/INIT_PAGE));
     el.style.display=t>INIT_PAGE?'flex':'none';
-    $('#prevP').disabled=pg<=1;$('#nextP').disabled=pg>=tp;$('#pgI').textContent=`Page ${pg}/${fmt(tp)} · ${fmt(t)} records · ${S.res.length} shown`;
+    const capped=t>ALA_MAX_RESULTS?` (of ${fmt(t)})`:'';
+    $('#prevP').disabled=pg<=1;$('#nextP').disabled=pg>=tp;$('#pgI').textContent=`Page ${pg}/${fmt(tp)} · ${fmt(reachable)}${capped} records · ${S.res.length} shown`;
     $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> records`:'';
   }
 }
@@ -3386,11 +3388,12 @@ async function exportCSV(enriched=false){
   }else if(S.total<=INIT_PAGE){
     recs=[...S.res];
   }else{
-    /* Need to fetch all pages from ALA */
-    const max=10000; /* safety cap */
+    /* Need to fetch all pages from ALA. ALA serves at most ALA_MAX_RESULTS per
+       query (no cursor bypasses this), so that is the hard export ceiling. */
+    const max=ALA_MAX_RESULTS;
     const target=Math.min(S.total,max);
     if(S.total>max){
-      const ok=confirm(`This query has ${fmt(S.total)} records. CSV export is capped at ${fmt(max)} for performance.\n\nExport the first ${fmt(max)} records?`);
+      const ok=confirm(`This query has ${fmt(S.total)} records, but the Atlas of Living Australia now returns at most ${fmt(max)} records per query.\n\nExport the first ${fmt(max)}? (To export everything, narrow the search — e.g. by collection or taxon — so each query stays under ${fmt(max)}.)`);
       if(!ok)return;
     }
     toast(`Fetching all ${fmt(target)} records… 0%`);
@@ -6053,7 +6056,7 @@ $('#prevP')?.addEventListener('click',()=>{
 $('#nextP')?.addEventListener('click',()=>{
   if(S.mapPoly&&S.mapPoly.rings){
     S._polyPage=(S._polyPage||0)+1;S._polyNavActive=true;doSearch();
-  }else{if(S.off+INIT_PAGE<S.total){S.off+=INIT_PAGE;doSearch()}}
+  }else{if(S.off+INIT_PAGE<Math.min(S.total,ALA_MAX_RESULTS)){S.off+=INIT_PAGE;doSearch()}}
 });
 /* Density toggle + CSV export + Nav buttons */
 $('#galBar').querySelectorAll('.density-tog button').forEach(b=>b.addEventListener('click',()=>{S.galDensity=b.dataset.d;S._densityManual=true;$('#galBar').querySelectorAll('.density-tog button').forEach(x=>{x.setAttribute('aria-pressed',x===b?'true':'false')});renderGallery()}));
