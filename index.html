@@ -500,6 +500,9 @@ const ALA_MAX_PAGE=100;
    partition the query (e.g. spatial quadtree for the map) into sub-queries that
    each stay under the window — see fetchAllOffset() and bgLoadAllPages(). */
 const ALA_MAX_RESULTS=5000;
+/* Default ceiling on how many georeferenced points the map loads (via quadtree
+   partitioning) before stopping. The "Load all" toggle (mapUncapped) lifts it. */
+const MAP_POINT_CAP=50000;
 const PAGE=5000, FLIM=500, INIT_PAGE=ALA_MAX_PAGE;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>(s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[c]));
@@ -715,7 +718,7 @@ function getFilters(){
 
 async function alaFetch(f,off,lim){
   const fq=alaBaseFQ(f);
-  const u=new URLSearchParams();u.set('q',f.q||'*:*');u.set('fq',fq.join(' AND '));
+  const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
   u.set('pageSize',Math.max(1,lim));u.set('startIndex',off);
   /* Essential facets only — analytics facets fetched lazily when charts tab opened */
   u.set('facets','kingdom,phylum,class,order,family,genus,species,collection_uid,state,type_status');u.set('flimit',FLIM);u.set('fsort','count');
@@ -754,11 +757,20 @@ function alaBaseFQ(f){
   return fq;
 }
 
+/* CORS-safe fq: ALA drops the Access-Control-Allow-Origin header when several
+   filters are AND-joined into ONE fq param (the browser then blocks the response,
+   which the service worker reports as "ALA 503"). Sending each clause as a
+   SEPARATE fq param keeps the header. Always build fq through these helpers.
+   appendFQ() adds clauses to a URLSearchParams; fqQS() returns an &fq=…&fq=…
+   string for hand-built URLs. */
+function appendFQ(u,clauses){(Array.isArray(clauses)?clauses:[clauses]).forEach(c=>{if(c)u.append('fq',c)});return u}
+function fqQS(clauses){return (Array.isArray(clauses)?clauses:[clauses]).filter(Boolean).map(c=>'fq='+encodeURIComponent(c)).join('&')}
+
 /* Lightweight count-only queries for data quality metrics */
 async function fetchAnalyticsFacets(f){
   try{
     const fq=alaBaseFQ(f);
-    const u=new URLSearchParams();u.set('q',f.q||'*:*');u.set('fq',fq.join(' AND '));
+    const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
     u.set('pageSize','0');u.set('startIndex','0');
     /* Collector needs higher limit for complete ranking — 2000 covers most collections */
     u.set('facets','collector,basis_of_record,year,month');u.set('flimit','2000');u.set('fsort','count');
@@ -912,10 +924,10 @@ function computePolyDropdownFacets(masterRecs, f){
 
 async function fetchRichnessCounts(f){
   try{
-    const fq=alaBaseFQ(f);const baseFQ=fq.join(' AND ');const q=f.q||'*:*';
+    const fq=alaBaseFQ(f);const q=f.q||'*:*';
     const base='https://biocache-ws.ala.org.au/ws/occurrences/search';
     async function countFacet(facetName){
-      const u=new URLSearchParams();u.set('q',q);u.set('fq',baseFQ);
+      const u=new URLSearchParams();u.set('q',q);appendFQ(u,fq);
       u.set('pageSize','0');u.set('facets',facetName);u.set('flimit','-1');u.set('fsort','count');
       const r=await fetch(base+'?'+u);
       if(!r.ok)return 0;
@@ -940,10 +952,10 @@ async function fetchRichnessCounts(f){
 async function fetchQualityCounts(f){
   const qc={georef:null,media:null,typed:null};
   try{
-    const fq=alaBaseFQ(f);const baseFQ=fq.join(' AND ');const q=f.q||'*:*';
+    const fq=alaBaseFQ(f);const q=f.q||'*:*';
     const base='https://biocache-ws.ala.org.au/ws/occurrences/search';
     function countURL(extraFQ){
-      const u=new URLSearchParams();u.set('q',q);u.set('fq',baseFQ+(extraFQ?' AND '+extraFQ:''));
+      const u=new URLSearchParams();u.set('q',q);appendFQ(u,fq);if(extraFQ)u.append('fq',extraFQ);
       u.set('pageSize','0');u.set('facets','');return base+'?'+u;
     }
     const [rGeo,rMedia,rTyped]=await Promise.all([
@@ -1196,7 +1208,7 @@ async function doSearch(){
         let facP;
         const facU = new URLSearchParams();
         facU.set('q', '*:*');
-        facU.set('fq', alaBaseFQ(masterF).join(' AND '));
+        appendFQ(facU, alaBaseFQ(masterF));
         facU.set('pageSize', '0'); facU.set('startIndex', '0');
         facU.set('facets', 'kingdom,phylum,class,order,family,genus,species,collection_uid,state,type_status');
         facU.set('flimit', FLIM); facU.set('fsort', 'count');
@@ -1210,7 +1222,7 @@ async function doSearch(){
           const fqs = alaBaseFQ(masterF);
           const sz = Math.min(BATCH, ALA_MAX_RESULTS - alaFetched);
           const u = new URLSearchParams();
-          u.set('q', '*:*'); u.set('fq', fqs.join(' AND '));
+          u.set('q', '*:*'); appendFQ(u, fqs);
           u.set('pageSize', sz); u.set('startIndex', alaFetched);
           u.set('sort', 'id'); u.set('dir', 'asc');
           u.set('facets', ''); u.set('flimit', '0');
@@ -1316,10 +1328,10 @@ async function doSearch(){
       S._polyAllRecs=null;
       S._polyMasterRecs=null;S._polyMasterDone=false;S._polyMasterBboxTotal=0;
       const fq=alaBaseFQ(f);
-        const recU=new URLSearchParams();recU.set('q',f.q||'*:*');recU.set('fq',fq.join(' AND '));
+        const recU=new URLSearchParams();recU.set('q',f.q||'*:*');appendFQ(recU,fq);
         recU.set('pageSize',INIT_PAGE);recU.set('startIndex',S.off);recU.set('facets','');recU.set('flimit','0');
         const recP=fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+recU).then(r=>{if(!r.ok)throw new Error('ALA '+r.status);return r.json()});
-        const facU=new URLSearchParams();facU.set('q',f.q||'*:*');facU.set('fq',fq.join(' AND '));
+        const facU=new URLSearchParams();facU.set('q',f.q||'*:*');appendFQ(facU,fq);
         facU.set('pageSize','0');facU.set('startIndex','0');
         facU.set('facets','kingdom,phylum,class,order,family,genus,species,collection_uid,state,type_status');facU.set('flimit',FLIM);facU.set('fsort','count');
         const facP=fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+facU).then(r=>r.ok?r.json():null).catch(e=>{console.warn('[facets]',e);return null});
@@ -1350,75 +1362,136 @@ async function doSearch(){
   }catch(e){console.error(e);toast('Search failed: '+e.message);showEmpty('Error: '+e.message);showLoad(false)}
 }
 
-/* ALA serves at most ALA_MAX_RESULTS (5000) records per query, and no cursor
-   bypasses it any more. So we offset-page up to that ceiling. To plot MORE than
-   5000 points, the caller partitions the query spatially (see bgLoadAllPages,
-   which splits the area into quadtree tiles each under the window). */
+/* Load georeferenced records for the map.
+   ALA serves at most ALA_MAX_RESULTS (5000) per query and no cursor bypasses
+   that. So for a query with more georeferenced records than the window, we
+   PARTITION space with a quadtree: count each lat/long tile, and recursively
+   split any tile over the window until every leaf is small enough to offset-page
+   in full. Records on a tile boundary can appear in two tiles, so we dedupe by
+   uuid. Tiles only ever match georeferenced records (a lat/long range excludes
+   null coordinates), which is exactly what the map needs. */
 async function bgLoadAllPages(f,loadId){
   /* Prevent concurrent loads with same loadId */
   if(S._bgRunning===loadId)return;
   S._bgRunning=loadId;
   const total=S.total;
   if(total<=0){S._bgRunning=null;return}
-  const target=Math.min(total,ALA_MAX_RESULTS);
+  const cap=S.mapUncapped?Infinity:MAP_POINT_CAP;
+  const API='https://biocache-ws.ala.org.au/ws/occurrences/search?';
+  const seen=new Set();
   const allGeo=[];
   let lastRedraw=0;
-  let failures=0;
-  let fetched=0;
   S.mapFetched=0;
   if(S.view==='map')updateMapInfo();
 
-  /* Offset paging: startIndex 0,100,200,... up to the 5000 window. */
-  for(let off=0; off<target; ){
-    if(S.mapLoadId!==loadId)return;
-    const sz=Math.min(ALA_MAX_PAGE,target-off);
-    try{
-      const fqs=alaBaseFQ(f);
-      const u=new URLSearchParams();
-      u.set('q',f.q||'*:*');u.set('fq',fqs.join(' AND '));
-      u.set('pageSize',sz);u.set('startIndex',off);
-      u.set('facets','');u.set('flimit','0');
-      const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
-      /* Re-check after await — a new search may have started while we were waiting */
-      if(S.mapLoadId!==loadId)return;
-      if(!r.ok)throw new Error('ALA '+r.status);
-      const d=await r.json();
-      if(S.mapLoadId!==loadId)return;
-      const occs=d.occurrences||[];
-      if(occs.length===0)break;
-
-      const recs=occs.map(normRec_A);
-      const geo=recs.filter(r=>r.lat!=null&&r.lng!=null);
-      allGeo.push(...geo);
-      fetched+=occs.length;
-      off+=occs.length;
-
-      /* Guard before writing — ensures stale loads never overwrite fresh data */
-      if(S.mapLoadId!==loadId)return;
-      S.allPts=allGeo;
-      S.mapFetched=fetched;
-      if(S.view==='map'){
-        try{updateMapInfo()}catch(e){}
-        /* Always redraw on first page to show results quickly; then every 2000 pts */
-        if(fetched<=ALA_MAX_PAGE||fetched>=target||allGeo.length-lastRedraw>=2000){
-          try{addMarkers()}catch(e){}
-          lastRedraw=allGeo.length;
-        }
-      }
-      if(occs.length<sz)break; /* short page = no more records */
-    }catch(e){
-      failures++;
-      console.warn(`[bgLoad] ALA offset fail at ${off}:`,e);
-      if(failures>5){console.error('[bgLoad] Too many failures');break}
-      await new Promise(r=>setTimeout(r,500));
+  const cancelled=()=>S.mapLoadId!==loadId;
+  const capReached=()=>!S.mapUncapped&&allGeo.length>=cap;
+  const addGeo=r=>{
+    if(r.lat==null||r.lng==null)return;
+    const k=r.uuid||(r.lat+','+r.lng+'|'+(r.catalog||r.sci||''));
+    if(seen.has(k))return;
+    seen.add(k);allGeo.push(r);
+  };
+  const redraw=force=>{
+    if(cancelled())return;
+    S.allPts=allGeo;S.mapFetched=allGeo.length;
+    if(S.view==='map'){
+      try{updateMapInfo()}catch(e){}
+      if(force||allGeo.length-lastRedraw>=2000){try{addMarkers()}catch(e){}lastRedraw=allGeo.length}
     }
+  };
+
+  const CONCURRENCY=4; /* parallel page fetches — gentle on ALA, ~4x faster than serial */
+  /* One ALA GET with retry on transient failures (5xx / 429 / network). Returns
+     parsed JSON, or null if non-retryable or retries exhausted. */
+  async function fetchJSON(qs){
+    for(let attempt=0;attempt<5;attempt++){
+      if(cancelled())return null;
+      try{
+        const r=await fetch(API+qs);
+        if(cancelled())return null;
+        if(r.ok)return await r.json();
+        if(r.status>=500||r.status===429){await new Promise(z=>setTimeout(z,400*(attempt+1)));continue}
+        return null; /* other 4xx — not retryable */
+      }catch(e){await new Promise(z=>setTimeout(z,400*(attempt+1)))}
+    }
+    return null;
+  }
+  /* Count records matching f within an optional bbox. Returns count, or -1 on failure. */
+  async function countTile(bbox){
+    const ff=bbox?Object.assign({},f,{bbox}):f;
+    const u=new URLSearchParams();
+    u.set('q',f.q||'*:*');appendFQ(u,alaBaseFQ(ff));
+    u.set('pageSize','0');u.set('facets','');u.set('flimit','0');
+    const d=await fetchJSON(''+u);
+    return d?(d.totalRecords||0):-1;
+  }
+  /* Fetch all records (up to the 5000 window) matching f within an optional bbox,
+     paging with bounded concurrency. count = the tile's known total. */
+  async function pageTile(bbox,count){
+    const ff=bbox?Object.assign({},f,{bbox}):f;
+    const fqArr=alaBaseFQ(ff);
+    const n=Math.min(count,ALA_MAX_RESULTS);
+    const offsets=[];for(let off=0;off<n;off+=ALA_MAX_PAGE)offsets.push(off);
+    let idx=0;
+    const worker=async()=>{
+      while(idx<offsets.length){
+        if(cancelled()||capReached())return;
+        const off=offsets[idx++];
+        const sz=Math.min(ALA_MAX_PAGE,n-off);
+        const u=new URLSearchParams();
+        u.set('q',f.q||'*:*');appendFQ(u,fqArr);
+        u.set('pageSize',sz);u.set('startIndex',off);u.set('facets','');u.set('flimit','0');
+        const d=await fetchJSON(''+u);
+        if(cancelled())return;
+        if(d&&d.occurrences)d.occurrences.map(normRec_A).forEach(addGeo);
+        redraw(false);
+      }
+    };
+    await Promise.all(Array.from({length:Math.min(CONCURRENCY,offsets.length||1)},worker));
   }
 
-  if(S.mapLoadId===loadId){
-    S.allPts=allGeo;
-    S.mapFetched=fetched;
+  try{
+    if(total<=ALA_MAX_RESULTS){
+      /* Whole query fits in one window — no partitioning needed. */
+      await pageTile(null,total);
+    }else{
+      /* Seed with the first window for instant feedback (deduped against the tree). */
+      await pageTile(null,ALA_MAX_RESULTS);
+      /* Quadtree: breadth-first over geographic tiles. Root at the active map
+         box if there is one, else the whole globe (empty ocean tiles prune fast). */
+      const MIN_SPAN=0.0005; /* ~50 m — floor to avoid infinite splitting on a single dense locality */
+      const root=f.bbox?{s:f.bbox.s,n:f.bbox.n,w:f.bbox.w,e:f.bbox.e}:{s:-90,n:90,w:-180,e:180};
+      const queue=[root];
+      let hardFails=0;
+      while(queue.length){
+        if(cancelled()||capReached())break;
+        const b=queue.shift();
+        const c=await countTile(b);
+        if(cancelled())return;
+        if(c<0){ /* transient failure after retries — requeue a few times, then skip */
+          b._fails=(b._fails||0)+1;
+          if(b._fails<=3)queue.push(b);
+          else{hardFails++;console.warn('[bgLoad] giving up on tile',b)}
+          if(hardFails>20){console.error('[bgLoad] too many tile failures, stopping');break}
+          continue;
+        }
+        if(c===0)continue;
+        const span=Math.max(b.n-b.s,b.e-b.w);
+        if(c<=ALA_MAX_RESULTS||span<=MIN_SPAN){
+          await pageTile(b,c);
+        }else{
+          const ml=(b.s+b.n)/2,mg=(b.w+b.e)/2;
+          queue.push({s:b.s,n:ml,w:b.w,e:mg},{s:b.s,n:ml,w:mg,e:b.e},
+                     {s:ml,n:b.n,w:b.w,e:mg},{s:ml,n:b.n,w:mg,e:b.e});
+        }
+      }
+    }
+  }catch(e){console.error('[bgLoad]',e)}
+
+  if(!cancelled()){
+    S.allPts=allGeo;S.mapFetched=allGeo.length;
     S._bgRunning=null;
-    /* Map background load complete */
     if(S.view==='map'){try{addMarkers();updateMapInfo()}catch(e){}}
   }
 }
@@ -1446,7 +1519,7 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
       /* Query ALA with UNFILTERED masterF (only institution + bbox — no taxonomy/collection) */
       const fqs=alaBaseFQ(masterF);
       const sz=Math.min(BATCH,ALA_MAX_RESULTS-alaFetched);
-      const u=new URLSearchParams();u.set('q','*:*');u.set('fq',fqs.join(' AND '));
+      const u=new URLSearchParams();u.set('q','*:*');appendFQ(u,fqs);
       u.set('pageSize',sz);u.set('startIndex',alaFetched);
       u.set('sort','id');u.set('dir','asc');
       u.set('facets','');u.set('flimit','0');
@@ -2092,7 +2165,7 @@ function renderGuide(){
           u.set('q',getFilters().q||'*:*');
           const fqs=alaBaseFQ(getFilters());
           fqs.push('multimedia:"Image"');
-          u.set('fq',fqs.join(' AND '));
+          appendFQ(u,fqs);
           u.set('pageSize',Math.min(PAGE,batchSize-startIdx));
           u.set('startIndex',startIdx);
           u.set('facets','');u.set('flimit','0');
@@ -2179,10 +2252,10 @@ function renderGuideFocus(root){
       /* ── Three parallel API calls ── */
       const fqs=alaBaseFQ(getFilters());
       fqs.push(`${rkField}:"${f.name}"`);
-      const baseFQ=fqs.join(' AND ');const qStr=getFilters().q||'*:*';
+      const qStr=getFilters().q||'*:*';
 
-      const facP=fetch(`https://biocache-ws.ala.org.au/ws/occurrences/search?q=${encodeURIComponent(qStr)}&fq=${encodeURIComponent(baseFQ)}&pageSize=0&facets=${facetsToRequest}&flimit=500&fsort=count`).then(r=>r.ok?r.json():null).catch(()=>null);
-      const imgP=fetch(`https://biocache-ws.ala.org.au/ws/occurrences/search?q=${encodeURIComponent(qStr)}&fq=${encodeURIComponent(baseFQ+' AND multimedia:"Image"')}&pageSize=12&facets=&flimit=0`).then(r=>r.ok?r.json():null).catch(()=>null);
+      const facP=fetch(`https://biocache-ws.ala.org.au/ws/occurrences/search?q=${encodeURIComponent(qStr)}&${fqQS(fqs)}&pageSize=0&facets=${facetsToRequest}&flimit=500&fsort=count`).then(r=>r.ok?r.json():null).catch(()=>null);
+      const imgP=fetch(`https://biocache-ws.ala.org.au/ws/occurrences/search?q=${encodeURIComponent(qStr)}&${fqQS([...fqs,'multimedia:"Image"'])}&pageSize=12&facets=&flimit=0`).then(r=>r.ok?r.json():null).catch(()=>null);
       const bieP=cachedFetch(`https://bie-ws.ala.org.au/ws/search?q=${encodeURIComponent(f.name)}&fq=idxtype:TAXON&pageSize=1`).then(r=>r.ok?r.json():null).catch(()=>null);
 
       const [facD,imgD,bieD]=await Promise.all([facP,imgP,bieP]);
@@ -2525,9 +2598,10 @@ function updateMapInfo(){
   const visPts=getVisiblePts();
   const visCount=visPts.length;
   const filtered=S.mapBox||S.mapPoly;
-  const cap=S.mapUncapped?S.total:Math.min(S.total,50000);
+  const cap=S.mapUncapped?S.total:Math.min(S.total,MAP_POINT_CAP);
   const fetched=S.mapFetched||allCount;
-  const loading=fetched<cap;
+  /* A background load (map quadtree or polygon scan) is running iff _bgRunning is set. */
+  const loading=!!S._bgRunning;
   const coordFilter=$('#fCoord')?.value==='true';
   /* Gap = records the API counted but we couldn't extract coordinates from.
      When coord filter is active, this is typically sensitive/withheld data. */
