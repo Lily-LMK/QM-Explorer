@@ -1,16 +1,25 @@
 /* QM Collections Explorer — Service Worker
    Caches static CDN assets and API responses for faster repeat access.
-   
+
    Strategy:
    - Static CDN (Leaflet, fonts): cache-first, indefinite (versioned URLs)
    - API data (ALA, GBIF, Wikipedia, BIE): stale-while-revalidate, 1 hour
    - Specimen images (ALA images): cache-first, 24 hours
    - Everything else: network-only (no caching)
+
+   IMPORTANT — error handling: when a network fetch genuinely fails (a CORS block,
+   DNS/network error, or a rejected request), this SW lets the error PROPAGATE as a
+   real network failure. It must NOT manufacture a synthetic Response (e.g. a fake
+   503), because the page can't tell that apart from a real upstream HTTP error.
+   A previous version returned `new Response('Network error',{status:503})` here,
+   which made an ALA CORS bug look like "ALA 503" and was very hard to diagnose.
+   Real upstream HTTP errors (a genuine 500/503 from ALA) still pass through with
+   their true status, because fetch() resolves for those — only rejections propagate.
 */
 
-const CACHE_STATIC = 'qm-static-v1';
-const CACHE_API = 'qm-api-v1';
-const CACHE_IMG = 'qm-img-v1';
+const CACHE_STATIC = 'qm-static-v2';
+const CACHE_API = 'qm-api-v2';
+const CACHE_IMG = 'qm-img-v2';
 
 const API_MAX_AGE = 60 * 60 * 1000;       // 1 hour
 const IMG_MAX_AGE = 24 * 60 * 60 * 1000;  // 24 hours
@@ -96,20 +105,17 @@ self.addEventListener('fetch', event => {
 
 /* ═══ Strategies ═══ */
 
-/* Cache-first: return cached version, fall back to network */
+/* Cache-first: return cached version, fall back to network.
+   A network failure propagates (no synthetic response). */
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
   if (cached) return cached;
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (err) {
-    return new Response('Network error', { status: 503 });
+  const response = await fetch(request);
+  if (response.ok) {
+    const cache = await caches.open(cacheName);
+    cache.put(request, response.clone());
   }
+  return response;
 }
 
 /* Cache-first with TTL: return cached if fresh, otherwise fetch */
@@ -138,9 +144,9 @@ async function cacheFirstTTL(request, cacheName, maxAge, maxEntries) {
     }
     return response;
   } catch (err) {
-    /* On network failure, return stale cache if available */
+    /* On network failure, fall back to stale cache if we have one; else propagate. */
     if (cached) return cached;
-    return new Response('Network error', { status: 503 });
+    throw err;
   }
 }
 
@@ -149,7 +155,8 @@ async function staleWhileRevalidate(request, cacheName, maxAge, maxEntries) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  /* Always kick off a network fetch to update the cache */
+  /* Always kick off a network fetch to update the cache. Do NOT swallow the
+     rejection here — only the background path below should ignore failures. */
   const networkUpdate = fetch(request).then(async response => {
     if (response.ok) {
       const headers = new Headers(response.headers);
@@ -164,16 +171,19 @@ async function staleWhileRevalidate(request, cacheName, maxAge, maxEntries) {
       trimCache(cacheName, maxEntries);
     }
     return response;
-  }).catch(() => null);
+  });
 
   if (cached) {
-    /* Return cached response immediately; network update runs in background */
+    /* Serve cache immediately; let the network update run in the background and
+       swallow only its errors (the page already has a usable response). */
+    networkUpdate.catch(() => {});
     return cached;
   }
 
-  /* No cache — must wait for network */
-  const response = await networkUpdate;
-  return response || new Response('Network error', { status: 503 });
+  /* No cache — await the network. A genuine network/CORS failure rejects here and
+     propagates as a real network error (not a misleading 503); a real upstream
+     HTTP error resolves and passes through with its true status. */
+  return await networkUpdate;
 }
 
 /* Trim cache to max entries (FIFO by insertion order) */
