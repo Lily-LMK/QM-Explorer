@@ -489,7 +489,11 @@ const S = {
      When active, filter changes apply client-side from this set. */
   _polyMasterRecs:null, _polyMasterDone:false, _polyMasterBboxTotal:0,
 };
-const PAGE=5000, FLIM=500, INIT_PAGE=150;
+/* ALA biocache caps pageSize at 100 — requests above this now return HTTP 503.
+   Every per-page/batch size sent to the occurrences/search endpoint must stay <= ALA_MAX_PAGE.
+   (FLIM is a facet limit, not a page size, so it is exempt.) */
+const ALA_MAX_PAGE=100;
+const PAGE=5000, FLIM=500, INIT_PAGE=ALA_MAX_PAGE;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>(s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[c]));
 const toNum=v=>v!=null&&v!==""&&!isNaN(Number(v))?Number(v):null;
@@ -1175,7 +1179,7 @@ async function doSearch(){
                          hasType:'', coord:'', media:'', country:'', state:'', catNum:'', collCode:'', bbox:f.bbox};
         const pg = S._polyPage || 0;
         const bookmark = S._polyPageBookmarks?.[pg] || {alaId:''};
-        const BATCH = 500;
+        const BATCH = ALA_MAX_PAGE;
         const collected = [];
         let bboxTotal = pg > 0 ? (S._polyBboxTotal || 0) : 0;
         let alaId = bookmark.alaId;
@@ -1357,7 +1361,7 @@ async function bgLoadAllPages(f,loadId){
   if(S.view==='map')updateMapInfo();
   
   /* ALA: cursor-based loading using id sort + range filter */
-  const PAGE_SZ=5000;
+  const PAGE_SZ=ALA_MAX_PAGE;
     let lastId='';
     let fetched=0;
     while(fetched<target){
@@ -1422,8 +1426,8 @@ async function bgLoadAllPages(f,loadId){
 async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
   if(S._bgRunning===loadId)return;
   S._bgRunning=loadId;
-  const BATCH=1000;
-  
+  const BATCH=ALA_MAX_PAGE;
+
   let alaId=cursor.alaId||'';
   let alaFetched=cursor.alaFetched||0;
   let polyCount=startCount;
@@ -2079,7 +2083,7 @@ function renderGuide(){
         const needed=new Set(tilesNeedingImgs.map(g=>g.name));
         const found=new Map(); /* name → imageUrl */
         let startIdx=0;
-        const PAGE=200;
+        const PAGE=ALA_MAX_PAGE;
         /* Paginate through imaged records until we've covered most tiles or exhausted results */
         while(found.size<needed.size&&startIdx<batchSize){
           const u=new URLSearchParams();
@@ -3392,7 +3396,7 @@ async function exportCSV(enriched=false){
     toast(`Fetching all ${fmt(target)} records… 0%`);
     recs=[...S.res]; /* start with what we have */
     const f=getFilters();
-    const BATCH=1000;
+    const BATCH=ALA_MAX_PAGE;
     for(let off=recs.length;off<target;off+=BATCH){
       try{
         const d=await alaFetch(f,off,Math.min(BATCH,target-off));
