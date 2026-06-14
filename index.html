@@ -2747,17 +2747,6 @@ function renderGuideFocus(root){
         root.appendChild(vh);
       }
 
-      /* Holdings story — a readable per-group summary of how QM holds this taxon
-         (records · richness · type specimens · imaging coverage · year range). */
-      const narrative=holdingsSentence(H);
-      if(narrative){
-        const nd=document.createElement('p');
-        nd.className='gf-narrative';
-        nd.style.cssText='margin:2px 0 16px;font-size:15px;line-height:1.55;color:var(--ink);max-width:62ch';
-        nd.textContent=narrative;
-        root.appendChild(nd);
-      }
-
       const row=document.createElement('div');row.className='gu-focus';root.appendChild(row);
 
       /* ── LEFT: collection summary ── */
@@ -2769,6 +2758,9 @@ function renderGuideFocus(root){
       if(collectorFacet.length){lh+=`<div style="margin-top:10px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px">Principal collectors</div><div style="font-size:12px;color:var(--ink)">${collectorFacet.slice(0,5).map(c=>`${esc(c.name)} <span style="color:var(--muted)">(${fmt(c.count)})</span>`).join(' · ')}</div></div>`}
       if(basisFacet.length){lh+=`<div style="margin-top:10px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px">Basis of record</div><div class="cc">${basisFacet.map(b=>`<span class="cc-chip" style="cursor:default">${esc(basisL(b.name)||b.name)}: ${fmt(b.count)}</span>`).join('')}</div></div>`}
       lh+=`<div id="gfDesc" style="margin-top:10px;font-size:12px;line-height:1.6;color:var(--ink);display:none"></div>`;
+      /* Holdings story — readable per-group summary, placed beneath the description. */
+      const narrative=holdingsSentence(H);
+      if(narrative)lh+=`<p class="gf-narrative" style="margin:12px 0 0;padding-top:10px;border-top:1px solid var(--hair);font-size:13px;line-height:1.55;color:var(--ink)">${esc(narrative)}</p>`;
       lh+=`<div class="bar-row"><button class="p" id="gfRec">View Records</button><button id="gfBk">← Back</button></div>`;
       left.innerHTML=lh;
       row.appendChild(left);
