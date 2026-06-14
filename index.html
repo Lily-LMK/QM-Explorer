@@ -2269,15 +2269,28 @@ function _inatCredit(attr){
   return s.replace(/[,;]\s*$/,'').trim();
 }
 
-/* iNaturalist taxon default photo — prefer an exact name match. */
-async function _imgInatCands(name){
+/* iNaturalist taxon default photo — rank-aware to avoid cross-rank homonyms.
+   For high ranks (kingdom/phylum/class/order) a wrong-rank name match means
+   a different organism (e.g. genus Acanthocephala ≠ phylum Acanthocephala);
+   skip iNat in that case so the cascade falls through to Wikipedia. */
+async function _imgInatCands(name,rank){
   try{
     const r=await cachedFetch('https://api.inaturalist.org/v1/taxa?q='+encodeURIComponent(name)+'&per_page=5');
     if(!r.ok)return[];
     const d=await r.json();
     const lo=(name||'').toLowerCase();
     const results=d.results||[];
-    const hit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.default_photo)||results.find(t=>t.default_photo);
+    const HIGH_RANKS=new Set(['kingdom','phylum','class','order']);
+    const rankMatchHit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.rank===rank&&t.default_photo);
+    const nameMatchHit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.default_photo);
+    let hit;
+    if(rankMatchHit){
+      hit=rankMatchHit;
+    }else if(rank&&HIGH_RANKS.has(rank)&&nameMatchHit&&nameMatchHit.rank!==rank){
+      return[]; // homonym at a high rank — wrong taxon; let Wikipedia handle it
+    }else{
+      hit=nameMatchHit||results.find(t=>t.default_photo);
+    }
     const p=hit&&hit.default_photo;
     const url=p&&(p.medium_url||p.url||p.square_url);
     if(!url)return[];
@@ -2349,7 +2362,7 @@ async function _resolveGroupImageUncached(name,rank,opts){
   }
   /* 3. iNaturalist · 4. Wikipedia — living-organism fallbacks (only reached when
         no specimen image exists anywhere) */
-  gens.push(()=>_imgInatCands(name));
+  gens.push(()=>_imgInatCands(name,field));
   gens.push(()=>_imgWikiCands(name));
   /* 5. BIE taxon profile image — last real-image attempt before placeholder */
   gens.push(()=>_imgBieCands(name));
@@ -5077,7 +5090,7 @@ const _localVern={
   reptilia:'reptile',amphibia:'amphibian',insecta:'insect',arachnida:'arachnid',
   malacostraca:'crustacean',maxillopoda:'crustacean',gastropoda:'snail or slug',bivalvia:'bivalve',
   cephalopoda:'cephalopod',polyplacophora:'chiton',scaphopoda:'tusk shell',
-  polychaeta:'polychaete worm',clitellata:'worm',oligochaeta:'earthworm',
+  polychaeta:'polychaete worm',clitellata:'worm',oligochaeta:'earthworm',acanthocephala:'thorny-headed worms',
   demospongiae:'sponge',hexactinellida:'glass sponge',calcarea:'calcareous sponge',
   anthozoa:'coral',hydrozoa:'hydroid',scyphozoa:'jellyfish',cubozoa:'box jellyfish',
   /* Anthozoa subgroups — more specific */
@@ -6888,6 +6901,8 @@ if(_SELFTEST){
         'url='+JSON.stringify((ph.url||'').slice(0,40)));
       assert('placeholder is deterministic for the same name+rank',
         imgPlaceholderCandidate('Chelidae','family').url===ph.url, 'differed across calls');
+      eq("_localVern['acanthocephala'] === 'thorny-headed worms' (cross-rank homonym guard)",
+        _localVern['acanthocephala'], 'thorny-headed worms');
 
       /* ── HOLDINGS STATS (pure derivation, no network) ── */
       const _hf={
