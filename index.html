@@ -6,6 +6,7 @@
 <title>QM Collections Explorer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin=""/>
@@ -235,6 +236,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .gf-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
 .gfb{background:#f7f7f5;border:1px solid var(--hair);border-radius:2px;padding:8px;text-align:center}
 .gfb .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}.gfb .v{font-size:16px;font-weight:900;color:var(--ink)}
+/* ── Browse v2 (8c-1): fresh "specimen plate / archival cabinet" tokens, scoped
+   to the Browse view only so nothing leaks into the other views. Display serif
+   (Fraunces) for taxon names + headings; warm archival palette over the light theme.
+   Card structure / type-badge / feature tiles come in 8c-2+. ── */
+#v-guide{
+  --b-bg:#efe9dd;--b-surface:#faf7f0;--b-ink:#211c14;--b-muted:#6f6555;
+  --b-line:#dcd3c2;--b-serif:'Fraunces',Georgia,serif;
+  background:var(--b-bg);
+}
+#v-guide .gu-hdr h2{font-family:var(--b-serif);font-weight:600;font-size:26px;letter-spacing:-.01em;color:var(--b-ink)}
+#v-guide .gu-grid{background:var(--b-line)}
+#v-guide .gu-tile{background:var(--b-surface)}
+#v-guide .gu-tile:hover{background:#f3eee3}
+#v-guide .gu-tile .gtn{font-family:var(--b-serif);font-weight:600;font-size:16px;letter-spacing:-.005em;color:var(--b-ink)}
+#v-guide .gfp{background:var(--b-surface);border-color:var(--b-line)}
+#v-guide .gfb{background:#f3eee3;border-color:var(--b-line)}
 /* Conservation badge */
 .gf-cons{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 8px;border-radius:2px;margin-bottom:8px;margin-right:4px}
 .gf-cons.cr{background:#6b0012;color:#fff}.gf-cons.en{background:#c5211e;color:#fff}.gf-cons.vu{background:#f7941d;color:#fff}.gf-cons.nt{background:#e8d44d;color:var(--ink)}.gf-cons.lc{background:#60c659;color:#fff}
