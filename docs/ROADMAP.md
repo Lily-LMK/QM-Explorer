@@ -35,44 +35,29 @@ earned by making the foundation correct first — not by polishing visuals over 
 
 ---
 
-## Audit correction (RESOLVED in #3)
+## Done & live (Phases 0–2 foundation)
 
-`lookupSubfamilyVern` (~index.html:4950) was **not dead code — a broken function**
-that always returned `null` because its computed `{name, rank}` results were assigned
-and never returned. Fixed in item #3: both branches now build, cache, and return.
-*Remaining follow-up (not urgent):* the duplicate working copy inlined in
-`batchFetchVernaculars` (~:5285–5338) could be consolidated to call
-`lookupSubfamilyVern` now that it works.
+Shipped to `main`, in order:
 
----
+- **Phase 0** — `?selftest` harness: synchronous invariant checks (constants, CORS-`fq`
+  rules, `isGenericVern`, `singularize`, CSV encoding). Runs only on `?selftest`; normal
+  load unaffected. Re-run it green before every commit.
+- **Phase 1 (stabilise)** — `fetchQualityCounts` CORS fix; `lookupSubfamilyVern` repaired
+  (the genus→subfamily/tribe climb now returns + caches); Browse vernaculars made
+  rank-correct; two `_localVern` hotfixes (Taxa tree trusts curated names; better
+  Lepidoptera family names).
+- **Phase 2 #6** — the museum-first image cascade (detail in the Phase 2 table below).
 
-## Phase 1 — Stabilise (smooth functioning + integrity)
-
-Risk ramps low → medium. Branch: `stabilise` (off `main`).
-
-| # | Commit message | Risk | What / why |
-|---|---|---|---|
-| 1 | `Add no-build ?selftest harness for core invariants` | — | **Done** (commit 643a456). 24 synchronous assertions: constants, CORS-fq invariants, `isGenericVern`, `singularize`, CSV encoding. Runs only on `?selftest`; normal load unaffected. |
-| 2 | `Fix CORS violation in fetchQualityCounts typed-count query` | Low | **Done** (live). The Analytics typed-specimen count AND-joined two clauses into one `fq` (~:964) → ALA dropped the CORS header → count silently failed in browsers (curl saw it fine). Split into separate clauses via `appendFQ`. |
-| 3 | `Fix lookupSubfamilyVern to return + cache its results` | Low | **Done** (live). See audit correction below. Both the iNat and GBIF branches now build the result, write it to `_subTribeCache`, and return it — so the modal's genus→subfamily/tribe climb works (e.g. "dung beetle" for genera GBIF can't name directly). |
-| 4 | `Fix Browse rank-blind vernacular — use shared resolver` | Medium | **Done** (live). Was the live mislabel at every rank (Chelidae → "Fitzroy River Turtle"). Removed the rank-blind record-vern harvest in `renderGuide`; routed both the tile fallback and `fetchGuideInfo` through `lookupVern` keyed by `cleanTaxonTerm`. **KEY LESSON:** the caller must **not** re-apply `isGenericVern` to `lookupVern`'s output — `lookupVern` already filters API results internally and trusts `_localVern`, whose names the auto-populate routine (~:4793) poisons into `_genericVernSet`. Re-filtering blanks correct names (the regression we hit + hotfixed). |
-| 5 | `Surface data-source failures vs empty results` | Medium | **Deferred — folded into #6.** The honest-state work it called for (distinguish "no image" from "load failed" → elegant placeholder, never a dash) is exactly what the image cascade must do. No standalone commit. |
-
-**Phase 1 complete — all four fixes are live on `main`, plus two hotfixes:**
-1. *Taxa tree: trust curated `_localVern` names* — `_fillTreeVern` was running curated
-   dictionary hits through `isGenericVern` (via `show()`), which the auto-populate
-   routine poisons. Now `el.textContent=singularize(dict)` directly. `_localVern` is
-   the highest-trust source; `isGenericVern` is for *API* results only.
-2. *Lepidoptera family names* — replaced generic `'moth'`/`'butterfly'` `_localVern`
-   entries for 10 families with rank-appropriate names (owlet/geometer/snout moth,
-   gossamer-winged/white butterfly, …).
+Two durable lessons from this work (also in **Don't** and `CLAUDE.md`): never re-filter
+`lookupVern`'s output with `isGenericVern`; never set a restrictive `fl=` on biocache
+image queries.
 
 ## Phase 2 — Foundation for the redesign
 
 | # | Commit message | Risk | What / why |
 |---|---|---|---|
-| 6 | `Add image-resolution cascade module` | Medium | QM specimen → ALA-wide/BIE → iNat/Wikipedia → elegant placeholder. Robust to image **load** failures (onerror fallthrough), cached (in-page + SW), carries **provenance + attribution/licence**. Build + verify standalone before Browse consumes it. Reuse `fetchFullAlaRecord`'s URL-shape handling and the modal's iNat/Wiki/BIE fetch patterns. |
-| 7 | `Extract reusable holdings-stats helper` | Low | Most of it already exists in `renderGuideFocus` (counts, types, imaging %, collectors, year range, states). Light consolidation so the redesign reuses it cleanly. |
+| 6 | `Add image-resolution cascade module` + `Browse: resolve tile images via museum-first cascade` | Medium | **Done** (live, 2 commits). `resolveGroupImage(name, rank, opts)` resolves one image per group **museum-first**: QM specimen → another institution's preserved specimen (`basis_of_record:"PreservedSpecimen"`, `-institution_uid:in15`) → iNaturalist → Wikipedia → BIE → generated placeholder. Preloads each URL (`_imgPreload`) and falls through on load failure; cached in `_groupImgCache`; carries provenance + attribution. `renderGuide` keeps the batch QM pass, then resolves QM-empty tiles **lazily** via `_queueGuideImg` + `{skipQM:true}`. **Lesson:** a restrictive `fl=` param silently drops biocache image URLs — don't set `fl` on these image queries. |
+| 7 | `Extract reusable holdings-stats helper` | Low | **← NEXT.** Most of it already exists in `renderGuideFocus` (counts, types, imaging %, collectors, year range, states). Light consolidation into a reusable function so the Phase 3 redesign can render the per-group "holdings story" cleanly. |
 
 ## Phase 3 — Browse redesign (the destination)
 
@@ -83,6 +68,33 @@ See `docs/BROWSE-REDESIGN-BRIEF.md` for the full creative spec.
 | 8 | `Browse: reduced-motion baseline + holdings narrative + URL state` | Med-High | New layout that is excellent *with motion off*; image cascade integrated; per-group holdings story; `guideFocus` added to the URL hash (shareable deep links). |
 | 9 | `Browse: motion + 3D enhancement layer` | High | GSAP / optional Three.js *on top* of the baseline. Honour `prefers-reduced-motion`; clean WebGL teardown on tab switch; bounded cost. |
 | 10 | `Browse: virtualise large ranks` | Medium | Perf for ranks with hundreds of groups (some exceed `FLIM=500`). |
+
+## Later — future options (not scheduled; folded in from the old planning brief)
+
+Real possibilities for after the Browse chapter. None are committed; listed so they
+aren't re-proposed cold or forgotten.
+
+- **Data-source status affordance** (was the deferred Phase-1 item #5): a small, honest
+  indicator distinguishing network/CORS failure vs real ALA error vs genuine empty
+  result, with a retry. Cheap, and pays off given ALA's volatility. The image cascade
+  already does the placeholder side of this; this is the rest of the app.
+- **Large-map performance** (keyless): the quadtree works but fires many 100-record
+  requests (~45k records ≈ 45s). Options: tune `CONCURRENCY` (currently 4) + redraw
+  cadence; a "load visible area only" mode (quadtree the current viewport on pan/zoom);
+  persist loaded tiles in IndexedDB for instant re-visits.
+- **Full CSV / dense-polygon export**: both cap at the 5000 window. The map's quadtree
+  partitioning could be extended to export and to polygon mode if full exports matter.
+- **Single file vs. modules** (open question): everything is inline in `index.html`
+  (~6,200 lines). Still maintainable, but the Phase 3 redesign may justify at least an
+  inline module boundary. Decide when the friction is real, not pre-emptively.
+
+## Decided — do not re-litigate
+
+- **Keyless, purely static, no build, no backend.** A tiny proxy/Worker holding an ALA
+  key (to use the auth'd bulk-download endpoint and bypass the 100/page + 5000 limits)
+  was **declined June 2026** — we accept slower incremental large loads. Revisit only if
+  instant full loads of 100k+ datasets ever become a real need.
+- **Offline/fieldwork mode** — out of scope (decided not necessary).
 
 ---
 
@@ -96,10 +108,10 @@ See `docs/BROWSE-REDESIGN-BRIEF.md` for the full creative spec.
 
 ## Don't
 
-- Don't delete `lookupSubfamilyVern` — fix it.
 - Don't touch `alaBaseFQ`, the map quadtree (`bgLoadAllPages`), or `normRec_A` —
   load-bearing and correct.
-- Don't start visual work (Phase 3) until the resolver (#4) and cascade (#6) are in
-  and verified.
-- Don't reopen keyless/static/no-build/no-backend (decided June 2026).
+- Don't re-apply `isGenericVern` to `lookupVern`'s output (it already filters API
+  results and trusts `_localVern` — re-filtering blanks correct names).
+- Don't set a restrictive `fl=` on biocache image queries (it drops the image URLs).
+- Don't reopen keyless/static/no-build/no-backend, or offline mode (both decided).
 - Offline/fieldwork mode is **out of scope** (decided not necessary).

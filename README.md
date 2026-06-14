@@ -8,7 +8,7 @@ Live data from the [Atlas of Living Australia](https://www.ala.org.au/) (ALA) vi
 
 - **Search** 900,000+ specimen records by common name, scientific name, catalog number, or free text
 - **Filter** by taxonomy (kingdom → species), collection, type status, media, georeferencing, country, state
-- **Browse** visual taxonomy cards with images and common names at any rank level
+- **Browse** visual taxonomy cards at any rank, each resolved to a representative image through a museum-first cascade (QM specimen → another institution's specimen → iNaturalist/Wikipedia → generated placeholder) with source provenance shown, plus a rank-appropriate common name
 - **Map** georeferenced specimens with marker clustering, colour-coded by collection, with polygon spatial filtering via NNTT Indigenous estate boundaries
 - **Analyse** collection composition through interactive charts (taxonomic breakdown, quality metrics, temporal distribution)
 - **View** full specimen detail with multi-image gallery, spatial context (bioregion, LGA, vegetation, marine zones, bathymetry, traditional owner groups), and Wikipedia descriptions
@@ -117,8 +117,6 @@ The app uses two caching layers, which sit on top of the browser's standard HTTP
 
 QLD Government spatial services, NNTT, Geoscience Australia, and Nominatim are deliberately not cached — their responses are location-specific and the services have intermittent availability that caching would obscure.
 
-The service worker is also the foundation for a future offline mode (Service Worker + IndexedDB), which would let users browse previously-loaded records without an internet connection — useful for fieldwork at remote sites.
-
 If `sw.js` is not present, the app runs in standalone mode. The registration call fails silently and the in-page cache continues to handle within-session requests.
 
 To force a cache refresh, increment the version suffix in the cache names (`CACHE_STATIC`, `CACHE_API`, `CACHE_IMG`) in `sw.js`. The activate event automatically purges old caches.
@@ -126,7 +124,8 @@ To force a cache refresh, increment the version suffix in the cache names (`CACH
 ## Known limitations
 
 - **Polygon geometry not in URL**: NNTT polygon geometries are too large for URL encoding. Only the area name is stored — polygon state cannot be fully restored from a shared link.
-- **No offline mode yet**: All data requires live API access. The service worker is in place as the foundation for offline browsing — a future Service Worker + IndexedDB implementation would let users browse previously-loaded records without an internet connection.
+- **Requires a live connection**: all data is fetched from external APIs in real time. There is no offline mode (out of scope by design).
+- **5000-record ceiling per query**: ALA serves nothing past result index 5000. The Map works around this by spatially partitioning (quadtree); plain Records lists and CSV export are capped at 5000 unless similarly partitioned.
 
 ## Credits
 

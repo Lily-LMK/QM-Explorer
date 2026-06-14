@@ -1,9 +1,22 @@
 # Browse redesign brief — a captivating way to explore QM's collections
 
-**For:** the Fable model (creative + technical lead on this chapter)
+**For:** the implementing model (Opus plans; Sonnet/Fable implement — Fable is strong for
+the creative/visual layer)
 **From:** Lily Kumpe (QM collection imager / naturalist) + Claude (codebase context)
-**Read first:** `docs/PLANNING-BRIEF.md` (tool overview + the ALA constraints you must
-respect). This brief is the detailed spec for one feature: the **Browse** view.
+**Read first:** `CLAUDE.md` (ALA constraints + code patterns you must respect) and
+`docs/ROADMAP.md` (where this sits — it's Phase 3). This brief is the detailed creative
+spec for one feature: the **Browse** view.
+
+> **STATUS (current):** Two of this brief's engineering foundations are **already built
+> and live** — do NOT rebuild them, *reuse* them:
+> - **The rank-appropriate image-resolution cascade** → `resolveGroupImage(name, rank, opts)`
+>   (museum-first, lazy, with provenance). Already wired into `renderGuide` tiles.
+> - **Rank-appropriate common names** → `lookupVern` / `_fillTreeVern` (the family-tile
+>   mislabel described below is FIXED).
+>
+> Phase 3 is therefore the **experience layer**: the redesigned layout + motion, the
+> per-group **holdings narrative**, and `guideFocus` in the URL hash. The sections below
+> on images and common names remain as design context, but the build work there is done.
 
 ---
 
@@ -60,7 +73,7 @@ Engineering notes:
 - **Cache** resolved choices (in-page Map + the service worker) so re-browsing is
   instant and you don't re-hit the cascade.
 - **CORS-safe fetching is mandatory:** build every `fq` with separate params via
-  `appendFQ`/`fqQS` — never `join(' AND ')` (see PLANNING-BRIEF constraints). Keep
+  `appendFQ`/`fqQS` — never `join(' AND ')` (see CLAUDE.md constraints). Keep
   `pageSize ≤ 100`.
 - **Scientific correctness:** an ALA-wide or iNat image for a group must actually be
   that taxon (query by the group's scientific name/rank). Prefer a representative /

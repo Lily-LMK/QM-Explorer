@@ -3,8 +3,9 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. For deep planning, also read `docs/PLANNING-BRIEF.md` and the
-current-chapter brief `docs/BROWSE-REDESIGN-BRIEF.md`.
+profile). Read both. For where the project is and what's next, read `docs/ROADMAP.md`;
+the Phase 3 creative spec is `docs/BROWSE-REDESIGN-BRIEF.md`. To start a fresh session,
+`docs/KICKOFF.md` has a ready-to-paste kickoff prompt.
 
 ## What this is
 
@@ -89,6 +90,16 @@ not a real outage.
   you blank correct curated names (the auto-populate at ~:4793 poisons family names
   into `_genericVernSet`).** `lookupSubfamilyVern` (genus→subfamily/tribe climb) now
   works (returns + caches).
+- **Group images (Browse):** `resolveGroupImage(name, rank, opts)` resolves one
+  representative image per taxonomic group through a **museum-first cascade** — QM
+  specimen → another institution's preserved specimen (`basis_of_record:"PreservedSpecimen"`,
+  `-institution_uid:in15`) → iNaturalist → Wikipedia → BIE → generated SVG placeholder.
+  It **preloads each URL** (`_imgPreload`) and falls through on load failure, so the
+  returned candidate is guaranteed to display; result cached in `_groupImgCache` (stores
+  the in-flight promise; evicts placeholders/failures so a blip doesn't lock a group).
+  `renderGuide` fills QM images via the existing batch pass, then for QM-empty tiles
+  calls `resolveGroupImage(...,{skipQM:true})` **lazily** through `_queueGuideImg`
+  (mirrors the Taxa tree's throttle). Every image carries provenance + attribution.
 - **Service worker:** propagates real network/CORS failures (does NOT manufacture a
   synthetic 503); passes real upstream HTTP errors through with their true status.
 
@@ -116,23 +127,27 @@ not a real outage.
 
 ## Current chapter
 
-**Redesign the Browse view** — full spec in `docs/BROWSE-REDESIGN-BRIEF.md`, sequenced
-in `docs/ROADMAP.md`. Phase 1 (stabilise) is **done and live**. Now in **Phase 2
-(foundation)**: the rank-appropriate **image-resolution cascade** (QM specimen →
-ALA-wide/BIE → iNaturalist/Wikipedia → elegant placeholder; robust to `<img>` load
-failures, cached, with provenance + attribution), then the holdings-stats helper.
-Phase 3 is the awwwards-level experience (GSAP/Three.js on a reduced-motion baseline).
-Build in the roadmap's order, one commit at a time, verifying each in-browser.
+**Building toward the Browse redesign** — full plan in `docs/ROADMAP.md`, Phase 3
+creative spec in `docs/BROWSE-REDESIGN-BRIEF.md`. Phases 0–1 (test harness +
+stabilisation) and the Phase 2 **image-resolution cascade** are **done and live**:
+Browse tiles now resolve museum-first (QM specimen → another institution's preserved
+specimen → iNaturalist/Wikipedia → generated placeholder), lazily, with provenance.
+
+**Next:** Phase 2 item 7 — extract a reusable **holdings-stats helper** from
+`renderGuideFocus` (counts, type specimens, imaging %, collectors, year range) so the
+redesign can reuse it. Then Phase 3 — the awwwards-level Browse experience (GSAP/
+Three.js on a reduced-motion baseline, per-group holdings narrative, `guideFocus` in
+the URL hash). Build in the roadmap's order, one commit at a time, verifying each
+in-browser.
 
 Also pending (non-code): send `docs/ALA-API-bug-report.md` to the ALA team.
 
 ## Recent state (June 2026)
 
-Fixed a wave of ALA breaking changes and shipped them live: `pageSize` cap, the
-5000-window + map quadtree, the app-wide CORS `fq` fix, service-worker hardening, and
-Taxa-tree common names (lazy). **Phase 1 stabilisation now also live:** `?selftest`
-harness, the `fetchQualityCounts` CORS fix, `lookupSubfamilyVern` repaired, Browse
-vernaculars made rank-correct, plus two hotfixes (Taxa tree trusts `_localVern`;
-better Lepidoptera family names). Records cards, the specimen modal, Taxa, **and Browse
-common names** are all correct now. Remaining Browse weakness is **images** (blank/
-dashed tiles) — the Phase 2 cascade is the fix.
+All ALA breaking-change fixes are live (`pageSize` cap, 5000-window + map quadtree,
+app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2-cascade are live:** the
+`?selftest` harness; the stabilisation fixes (`fetchQualityCounts` CORS, `lookupSubfamilyVern`
+repaired, Browse vernaculars made rank-correct, two `_localVern` hotfixes); and the
+museum-first image cascade wired into Browse with lazy resolution + provenance. Records,
+the specimen modal, Taxa, and Browse (names **and** images) are all correct. The
+remaining Browse work is the visual redesign itself (Phase 3), built on this foundation.
