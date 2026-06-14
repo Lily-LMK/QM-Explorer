@@ -84,7 +84,11 @@ not a real outage.
   `_vernCache`. Records/cards use `batchFetchVernaculars` / `fetchVernacular`. The Taxa
   tree uses `_fillTreeVern` with **lazy** resolution (IntersectionObserver +
   `_queueTreeVern` throttle) so big expansions don't hammer the APIs — reuse this
-  pattern. NOTE: `lookupSubfamilyVern` has a dead-code bug; prefer `lookupVern`.
+  pattern. **`lookupVern` is the shared resolver: it trusts `_localVern` and already
+  applies `isGenericVern` to API results internally — never re-filter its output, or
+  you blank correct curated names (the auto-populate at ~:4793 poisons family names
+  into `_genericVernSet`).** `lookupSubfamilyVern` (genus→subfamily/tribe climb) now
+  works (returns + caches).
 - **Service worker:** propagates real network/CORS failures (does NOT manufacture a
   synthetic 503); passes real upstream HTTP errors through with their true status.
 
@@ -112,19 +116,23 @@ not a real outage.
 
 ## Current chapter
 
-**Redesign the Browse view** — full spec in `docs/BROWSE-REDESIGN-BRIEF.md` (led by the
-Fable model). Core engineering: a rank-appropriate **image-resolution cascade**
-(QM specimen → ALA-wide → iNaturalist/Wikipedia → elegant placeholder) plus a shared
-rank-aware common-name resolver, then an awwwards-level experience (GSAP/Three.js with
-a reduced-motion baseline). Build it in the brief's phases, one at a time, verifying
-each.
+**Redesign the Browse view** — full spec in `docs/BROWSE-REDESIGN-BRIEF.md`, sequenced
+in `docs/ROADMAP.md`. Phase 1 (stabilise) is **done and live**. Now in **Phase 2
+(foundation)**: the rank-appropriate **image-resolution cascade** (QM specimen →
+ALA-wide/BIE → iNaturalist/Wikipedia → elegant placeholder; robust to `<img>` load
+failures, cached, with provenance + attribution), then the holdings-stats helper.
+Phase 3 is the awwwards-level experience (GSAP/Three.js on a reduced-motion baseline).
+Build in the roadmap's order, one commit at a time, verifying each in-browser.
 
 Also pending (non-code): send `docs/ALA-API-bug-report.md` to the ALA team.
 
 ## Recent state (June 2026)
 
-Fixed a wave of ALA breaking changes and shipped them to the live site: `pageSize`
-cap, the 5000-window + map quadtree, the app-wide CORS `fq` fix, service-worker
-hardening, and Taxa-tree common names (lazy). Records cards, the specimen modal, and
-Taxa are all correct; **Browse still mislabels** (representative species name on family
-tiles) — that's the next chapter, not a regression.
+Fixed a wave of ALA breaking changes and shipped them live: `pageSize` cap, the
+5000-window + map quadtree, the app-wide CORS `fq` fix, service-worker hardening, and
+Taxa-tree common names (lazy). **Phase 1 stabilisation now also live:** `?selftest`
+harness, the `fetchQualityCounts` CORS fix, `lookupSubfamilyVern` repaired, Browse
+vernaculars made rank-correct, plus two hotfixes (Taxa tree trusts `_localVern`;
+better Lepidoptera family names). Records cards, the specimen modal, Taxa, **and Browse
+common names** are all correct now. Remaining Browse weakness is **images** (blank/
+dashed tiles) — the Phase 2 cascade is the fix.

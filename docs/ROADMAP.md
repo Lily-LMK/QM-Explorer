@@ -16,8 +16,8 @@ earned by making the foundation correct first — not by polishing visuals over 
 
 1. Serve: `python3 -m http.server 8000`
 2. Hard-reload first (the SW caches aggressively): **Cmd+Shift+R**
-3. Run the harness: open `http://localhost:8000/?selftest` — must be green
-   (24/24, plus any new assertions) before committing.
+3. Run the harness: open `http://localhost:8000/?selftest` — must be all green
+   (**0 failed**; the assertion count grows as fixes add probes) before committing.
 4. For visual/async work (Phases 2–3) the harness can't help — click through the
    real UI against named taxa (Chelidae, Portunidae, Formicidae).
 
@@ -35,17 +35,14 @@ earned by making the foundation correct first — not by polishing visuals over 
 
 ---
 
-## Audit correction (important)
+## Audit correction (RESOLVED in #3)
 
-`lookupSubfamilyVern` (~index.html:4950) is **not dead code to delete — it's a
-broken function to fix.** It is called in `fetchVernacular` at ~:5067 and ~:5082
-(modal re-enrich path) but always returns `null` because its computed
-`{name, rank}` results (~:4978–4983, ~:5011–5016) are assigned and never returned.
-The *working* copy of the same logic is inlined in `batchFetchVernaculars` at
-~:5285–5338 (cards path). So the genus→subfamily/tribe common-name climb works for
-cards but is silently broken for the modal. **Fix it to return + cache its
-results** (a real functionality gain). The duplication with 5285–5338 is a
-follow-up consolidation candidate, not urgent.
+`lookupSubfamilyVern` (~index.html:4950) was **not dead code — a broken function**
+that always returned `null` because its computed `{name, rank}` results were assigned
+and never returned. Fixed in item #3: both branches now build, cache, and return.
+*Remaining follow-up (not urgent):* the duplicate working copy inlined in
+`batchFetchVernaculars` (~:5285–5338) could be consolidated to call
+`lookupSubfamilyVern` now that it works.
 
 ---
 
@@ -56,13 +53,19 @@ Risk ramps low → medium. Branch: `stabilise` (off `main`).
 | # | Commit message | Risk | What / why |
 |---|---|---|---|
 | 1 | `Add no-build ?selftest harness for core invariants` | — | **Done** (commit 643a456). 24 synchronous assertions: constants, CORS-fq invariants, `isGenericVern`, `singularize`, CSV encoding. Runs only on `?selftest`; normal load unaffected. |
-| 2 | `Fix CORS violation in fetchQualityCounts typed-count query` | Low | The Analytics typed-specimen count AND-joins two clauses into one `fq` (~:964) → ALA drops the CORS header → count silently fails in browsers (curl sees it fine). Split into separate clauses via `appendFQ`. |
-| 3 | `Fix lookupSubfamilyVern to return + cache its results` | Low | See audit correction above. Modal gains working subfamily/tribe resolution (e.g. "dung beetle" for genera GBIF can't name directly). Additive. |
-| 4 | `Fix Browse rank-blind vernacular — use shared resolver` | Medium | The live mislabel bug: Chelidae shown as "Fitzroy River Turtle". `renderGuide` (~:2156–2160 sync, ~:2243–2266 async) and `fetchGuideInfo` (~:2403–2412) take a representative species' name regardless of tile rank and skip `isGenericVern`. Reuse Taxa's working `_fillTreeVern` lazy/throttled/cached infra. Resolves the `_vernCache` keying inconsistency for free. |
-| 5 | `Surface data-source failures vs empty results` | Medium | *(integrity, deferrable)* Enrichment / Browse-image / map-tile failures currently look identical to "no data". Surface a small, non-alarming indicator on genuine network/CORS rejection. Scope tightly — surface, don't re-architect. Do after #4 or defer to reach the Browse foundation sooner. |
+| 2 | `Fix CORS violation in fetchQualityCounts typed-count query` | Low | **Done** (live). The Analytics typed-specimen count AND-joined two clauses into one `fq` (~:964) → ALA dropped the CORS header → count silently failed in browsers (curl saw it fine). Split into separate clauses via `appendFQ`. |
+| 3 | `Fix lookupSubfamilyVern to return + cache its results` | Low | **Done** (live). See audit correction below. Both the iNat and GBIF branches now build the result, write it to `_subTribeCache`, and return it — so the modal's genus→subfamily/tribe climb works (e.g. "dung beetle" for genera GBIF can't name directly). |
+| 4 | `Fix Browse rank-blind vernacular — use shared resolver` | Medium | **Done** (live). Was the live mislabel at every rank (Chelidae → "Fitzroy River Turtle"). Removed the rank-blind record-vern harvest in `renderGuide`; routed both the tile fallback and `fetchGuideInfo` through `lookupVern` keyed by `cleanTaxonTerm`. **KEY LESSON:** the caller must **not** re-apply `isGenericVern` to `lookupVern`'s output — `lookupVern` already filters API results internally and trusts `_localVern`, whose names the auto-populate routine (~:4793) poisons into `_genericVernSet`. Re-filtering blanks correct names (the regression we hit + hotfixed). |
+| 5 | `Surface data-source failures vs empty results` | Medium | **Deferred — folded into #6.** The honest-state work it called for (distinguish "no image" from "load failed" → elegant placeholder, never a dash) is exactly what the image cascade must do. No standalone commit. |
 
-Items 2–4 are the clear wins (three real, user-visible problems). Item 5 is the
-one genuinely optional item.
+**Phase 1 complete — all four fixes are live on `main`, plus two hotfixes:**
+1. *Taxa tree: trust curated `_localVern` names* — `_fillTreeVern` was running curated
+   dictionary hits through `isGenericVern` (via `show()`), which the auto-populate
+   routine poisons. Now `el.textContent=singularize(dict)` directly. `_localVern` is
+   the highest-trust source; `isGenericVern` is for *API* results only.
+2. *Lepidoptera family names* — replaced generic `'moth'`/`'butterfly'` `_localVern`
+   entries for 10 families with rank-appropriate names (owlet/geometer/snout moth,
+   gossamer-winged/white butterfly, …).
 
 ## Phase 2 — Foundation for the redesign
 
