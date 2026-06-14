@@ -2269,10 +2269,11 @@ function _inatCredit(attr){
   return s.replace(/[,;]\s*$/,'').trim();
 }
 
-/* iNaturalist taxon default photo — rank-aware to avoid cross-rank homonyms.
-   For high ranks (kingdom/phylum/class/order) a wrong-rank name match means
-   a different organism (e.g. genus Acanthocephala ≠ phylum Acanthocephala);
-   skip iNat in that case so the cascade falls through to Wikipedia. */
+/* iNaturalist taxon default photo — rank-aware to avoid cross-rank homonyms
+   and stray results. For high ranks (kingdom/phylum/class/order) we only
+   accept an exact name+rank match; anything else (wrong-rank homonym, or no
+   name match that falls back to a random result) returns [] so the cascade
+   falls through to Wikipedia, whose article titles resolve the correct taxon. */
 async function _imgInatCands(name,rank){
   try{
     const r=await cachedFetch('https://api.inaturalist.org/v1/taxa?q='+encodeURIComponent(name)+'&per_page=5');
@@ -2282,13 +2283,13 @@ async function _imgInatCands(name,rank){
     const results=d.results||[];
     const HIGH_RANKS=new Set(['kingdom','phylum','class','order']);
     const rankMatchHit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.rank===rank&&t.default_photo);
-    const nameMatchHit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.default_photo);
     let hit;
     if(rankMatchHit){
       hit=rankMatchHit;
-    }else if(rank&&HIGH_RANKS.has(rank)&&nameMatchHit&&nameMatchHit.rank!==rank){
-      return[]; // homonym at a high rank — wrong taxon; let Wikipedia handle it
+    }else if(rank&&HIGH_RANKS.has(rank)){
+      return[]; // no exact rank match — don't guess; let Wikipedia/BIE handle it
     }else{
+      const nameMatchHit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.default_photo);
       hit=nameMatchHit||results.find(t=>t.default_photo);
     }
     const p=hit&&hit.default_photo;
@@ -5091,6 +5092,7 @@ const _localVern={
   malacostraca:'crustacean',maxillopoda:'crustacean',gastropoda:'snail or slug',bivalvia:'bivalve',
   cephalopoda:'cephalopod',polyplacophora:'chiton',scaphopoda:'tusk shell',
   polychaeta:'polychaete worm',clitellata:'worm',oligochaeta:'earthworm',acanthocephala:'thorny-headed worms',
+  ciliophora:'ciliate',nucleocytoviricota:'giant DNA virus',
   demospongiae:'sponge',hexactinellida:'glass sponge',calcarea:'calcareous sponge',
   anthozoa:'coral',hydrozoa:'hydroid',scyphozoa:'jellyfish',cubozoa:'box jellyfish',
   /* Anthozoa subgroups — more specific */
@@ -6903,6 +6905,10 @@ if(_SELFTEST){
         imgPlaceholderCandidate('Chelidae','family').url===ph.url, 'differed across calls');
       eq("_localVern['acanthocephala'] === 'thorny-headed worms' (cross-rank homonym guard)",
         _localVern['acanthocephala'], 'thorny-headed worms');
+      eq("_localVern['ciliophora'] === 'ciliate'",
+        _localVern['ciliophora'], 'ciliate');
+      eq("_localVern['nucleocytoviricota'] === 'giant DNA virus'",
+        _localVern['nucleocytoviricota'], 'giant DNA virus');
 
       /* ── HOLDINGS STATS (pure derivation, no network) ── */
       const _hf={
