@@ -133,7 +133,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .meta-hint .copy-block{font-family:'Barlow',monospace;font-size:11px;background:#f4f4f2;padding:4px 8px;border-radius:2px;margin-top:4px;word-break:break-all;user-select:all}
 .card-basis{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 6px;border-radius:2px;background:#f4f4f2;color:var(--muted);margin-top:3px;width:fit-content}
 /* Density toggle */
-.gal-bar{display:none;align-items:center;justify-content:space-between;padding:4px 8px;gap:4px}
+.gal-bar{display:none;align-items:center;justify-content:space-between;gap:4px;position:sticky;top:0;z-index:30;margin:-14px -14px 6px;padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--hair)}
 .gal-bar.vis{display:flex}
 .nav-btn{font-size:18px;font-weight:700;width:44px;height:44px;border:1px solid var(--hair);border-radius:2px;background:#fff;cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
 .nav-btn:hover:not(:disabled){background:var(--ink);color:#fff}
@@ -448,7 +448,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
     <div class="scroll" id="scroll">
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
-        <div class="gal-bar" id="galBar"><button class="nav-btn" id="navPrev" disabled title="Previous record" aria-label="Previous record">‹</button><button class="nav-btn" id="navNext" title="Next record" aria-label="Next record">›</button><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" class="on" title="Grid view" aria-label="Grid view" aria-pressed="true">⊞</button><button data-d="compact" title="List view" aria-label="List view" aria-pressed="false">☰</button></div></div>
+        <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" class="on" title="Grid view" aria-label="Grid view" aria-pressed="true">⊞</button><button data-d="compact" title="List view" aria-label="List view" aria-pressed="false">☰</button></div></div>
         <div id="gal" class="gal" role="list" aria-label="Specimen records"></div><div id="galLoad"></div>
         <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
@@ -493,7 +493,7 @@ const S = {
   treeCache:new Map(),
   mapBox:null, mapBoxState:null, mapPoly:null,
   mapColorBy:'family', mapLegendShut:false, mapSpiderfy:false, mapDirty:true, mapYearRange:null, mapUncapped:false,
-  modalIdx:-1, modalPhotos:[], modalPhotoIdx:0, navIdx:0,
+  modalIdx:-1, modalPhotos:[], modalPhotoIdx:0,
   qc:{georef:null,media:null,typed:null},
   richness:{families:0,genera:0,species:0},
   mapLoadId:0, mapFetched:0, _searchStale:false, _qcStale:false, _searchId:0, _smartMatch:null,
@@ -4786,10 +4786,7 @@ function renderSpatialSection(r){
    ═════════════════════════════════════════════════ */
 function openModal(idx){
   try{
-  const r=S.res[idx];if(!r)return;S.modalIdx=idx;S.navIdx=idx;
-  /* Update nav buttons */
-  $('#navPrev').disabled=idx<=0;
-  $('#navNext').disabled=idx>=S.res.length-1;
+  const r=S.res[idx];if(!r)return;S.modalIdx=idx;
   /* Title: species name + catalog number */
   const catBit=r.cat?` <span style="font-style:normal;font-weight:600;color:var(--green-d);font-size:14px">${esc(r.cat)}</span>`:'';
   $('#mSci').className='m-sci'+(shouldItalic(r.sci)?' it':'');
@@ -6640,8 +6637,6 @@ $('#galBar').querySelectorAll('.density-tog button').forEach(b=>b.addEventListen
 $('#csvBtn').addEventListener('click',e=>{e.stopPropagation();exportCSV($('#csvPlusBtn').classList.contains('on'))});
 $('#csvPlusBtn').addEventListener('click',e=>{e.stopPropagation();const btn=$('#csvPlusBtn');btn.classList.toggle('on');btn.setAttribute('aria-pressed',btn.classList.contains('on'));toast(btn.classList.contains('on')?'CSV+ on — export will include full spatial enrichment':'CSV+ off — fast export')});
 /* Nav: open sequential records in modal */
-$('#navPrev').addEventListener('click',()=>{if(S.navIdx>0){S.navIdx--;openModal(S.navIdx)}});
-$('#navNext').addEventListener('click',()=>{if(S.navIdx<S.res.length-1){S.navIdx++;openModal(S.navIdx)}else if(S.res.length>0){S.navIdx=0;openModal(0)}});
 /* Toggle removed — ALA only */
 // Modal events
 $('#mX').addEventListener('click',closeModal);$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
