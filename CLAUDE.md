@@ -55,6 +55,11 @@ that often surfaces as a misleading **"ALA 503"**.
    returning a queryable `id`); `cursorMark` is unsupported. To exceed 5000 you must
    **partition** the query — the Map uses a lat/long **quadtree** (`bgLoadAllPages`):
    count a tile, and if >5000 split into 4, else offset-page it, dedupe by uuid.
+   **Offset paging MUST send a stable sort** (`sort=id&dir=asc`). ALA's default order is
+   unstable across `startIndex`, so paging silently skips/duplicates ~8–16% of rows; the
+   map quadtree (`pageTile`), the Records pager, and `bgPolyScan` all sort by id, and any
+   new paging loop must too. (Also: `geospatial_kosher:true` ≠ plottable — ~4% return no
+   coordinate; the map labels those honestly, never as "sensitive" without evidence.)
 4. **CORS — the big one. NEVER AND-join filters into one `fq`.** ALA drops the
    `Access-Control-Allow-Origin` header when a single `fq` contains
    `A AND B AND …`; the browser then blocks the response (looks like "ALA 503").
@@ -127,45 +132,50 @@ not a real outage.
 
 ## Current chapter
 
-**Building toward the Browse redesign** — full plan in `docs/ROADMAP.md`, Phase 3
-creative spec in `docs/BROWSE-REDESIGN-BRIEF.md`. The whole Phase 2 foundation is now
-done and merged to `main`: the **image-resolution cascade** (#6) and the
-**holdings-stats helper** (#7). Browse tiles resolve museum-first (QM specimen → another
-institution's preserved specimen → iNaturalist/Wikipedia → generated placeholder),
-lazily, with provenance; and `deriveHoldingsStats(facets, opts)` derives the per-group
-holdings story (counts, year range, imaged + `imagedPct`, type specimens, states,
-collectors, basis, child richness).
+**Phase 3 — Browse redesign, plus a Records/Map polish detour.** Full plan in
+`docs/ROADMAP.md`, creative spec in `docs/BROWSE-REDESIGN-BRIEF.md`, Browse slice plan in
+`docs/BROWSE-8C-PLAN.md`. Work happens on `phase3-browse` and deploys to live `main` per
+verified slice (maintenance mode — push often). Governing decision: **elevate within the
+app's existing design language** (palette, Barlow, sharp geometry) — no separate skin (an
+8c-1 divergent palette/serif was reverted). Phases 0–2 foundation (image cascade #6,
+`deriveHoldingsStats` #7) and Browse 8a/8b/8c-a remain live.
 
-**Now:** Phase 3 — the Browse redesign — is **in progress on `phase3-browse`, deploying
-to live `main` per verified slice** (the site is in maintenance mode, so we push often).
-Full slice plan + the next-session start point: `docs/BROWSE-8C-PLAN.md`. Governing
-decision after a misstep: **elevate Browse *within* the app's existing design language**
-(palette, Barlow, sharp geometry) — no separate skin (an 8c-1 divergent palette/serif was
-reverted). Done & live so far in #8/8c: **8a** `guideFocus` URL deep links · **8b**
-per-group holdings narrative (`holdingsSentence`) · **8c-a** keyboard-operable tiles +
-image-source provenance overlay (external credit sits ON the image; QM keeps the green
-pill) + tidy iNat credits · grid capped to the **top 200**. **8c-c** (per-tile type-badge)
-was shipped then **reverted** (design team: confusing) — types stay a headline in the
-focus view only.
+**Done & live since the last doc sync:**
+- **Browse 8c** — common names now resolve for **all ~200 tiles** via a bounded pool
+  (`_queueGuideVern`; dropped the old `slice(0,50)` + sequential `lookupVern`). Homonym
+  fixes via `_localVern` + rank-aware iNat: **Acanthocephala** (thorny-headed worms, not
+  the bug genus), **Ciliophora**, **Nucleocytoviricota**.
+- **Records gallery redesign** — every tile fills its 4:3 frame: real photo where it
+  exists, else the shared **museum "specimen-drawer" placeholder** (muted seeded tone +
+  serif genus monogram + engraved contours + hairline frame + family eyebrow — redesigned
+  inside `imgPlaceholderCandidate`, so it lifts **Records and Browse** together). Images
+  full-bleed (`object-fit:cover`); the rich **Gallery is the default** (auto-switch-to-List
+  removed; List is opt-in); the redundant ‹ › record-stepper arrows removed; the density
+  toggle **pinned** on scroll (sticky `.gal-bar`, `top:-14px` to clear the scroll padding).
+- **Map data integrity** — fixed a marker **undercount**: `bgLoadAllPages`/`pageTile` (and
+  the Records pager) offset-paged with no sort, so ALA's unstable default order silently
+  skipped ~8–16% of records. Both now use `sort=id&dir=asc` (matching `bgPolyScan`).
+  And **honest labelling** in `updateMapInfo`: the residual (records ALA counts but returns
+  no coordinate for) shows as "*N of M have no mapped coordinate*", replacing the old
+  unverified "sensitive taxa" claim.
 
-**Next session (tracked in `docs/BROWSE-8C-PLAN.md` → "Next session"):** (1) resolve
-common names for all ~200 tiles — they currently stop after ~8 rows (`renderGuide`
-`slice(0,50)` + sequential `lookupVern`); (2) Acanthocephala homonym — curated `_localVern`
-name + rank-aware iNat image. Then 8c-b (feature-tile grid), 8c-d (focus "drawer"), 8c-e
-(a11y pass); then #9 (motion) and #10 (virtualise large ranks).
+**Next session:** **8c-b** (curated feature-tile grid) → **8c-d** (redesigned group focus
+"drawer") → **8c-e** (a11y / responsive / reduced-motion pass) — see `docs/BROWSE-8C-PLAN.md`;
+then **#9** (motion layer) and **#10** (virtualise large ranks). Build on the live
+placeholders, all-tile vernaculars, and `deriveHoldingsStats` — don't rebuild them.
 
 Also pending (non-code): send `docs/ALA-API-bug-report.md` to the ALA team.
 
 ## Recent state (June 2026)
 
 All ALA breaking-change fixes are live (`pageSize` cap, 5000-window + map quadtree,
-app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2 are complete:** the
-`?selftest` harness; the stabilisation fixes (`fetchQualityCounts` CORS, `lookupSubfamilyVern`
-repaired, Browse vernaculars made rank-correct, two `_localVern` hotfixes); the
-museum-first image cascade wired into Browse with lazy resolution + provenance; and the
-`deriveHoldingsStats` helper (#7), all on `main`. Records, the specimen modal, Taxa, and
-Browse (names **and** images) are correct. Phase 3 is underway and **live** (8a deep
-links, 8b narrative, 8c-a provenance/keyboard, 200-cap). Two known Browse gaps tracked for
-the next session (see `docs/BROWSE-8C-PLAN.md`): vernaculars only resolve for ~the first
-50 tiles (sequential), and the Acanthocephala phylum/bug homonym (name + image). The rest
-of the visual redesign (8c-b/8c-d/8c-e) is the remaining Browse work.
+app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2 complete** (`?selftest`
+harness; stabilisation fixes; museum-first image cascade; `deriveHoldingsStats` #7).
+**Phase 3 is live and well advanced:** Browse 8a/8b/8c-a + all-tile vernaculars + the
+Acanthocephala/Ciliophora/Nucleocytoviricota homonym fixes; the **Records gallery
+redesign** (museum specimen-drawer placeholders shared with Browse, full-bleed images,
+Gallery-default, pinned toggle, sticky-bar fix); and the **Map integrity pass** (stable-sort
+paging fixes the marker undercount; honest "no mapped coordinate" labelling). Records, the
+specimen modal, Taxa, Browse (names **and** images), and the Map count are all correct.
+Remaining Browse work: **8c-b** (feature tiles), **8c-d** (focus drawer), **8c-e** (a11y
+pass); then **#9** (motion) and **#10** (virtualise large ranks).

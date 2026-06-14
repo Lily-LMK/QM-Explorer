@@ -28,6 +28,9 @@ earned by making the foundation correct first — not by polishing visuals over 
   *inside* a single parenthesised clause — e.g. the `hasType=false` exclusion — is
   fine; the harness checks the distinction.)
 - **`pageSize ≤ 100`** (`ALA_MAX_PAGE`); **result window ≤ 5000** (`ALA_MAX_RESULTS`).
+- **Stable-sort paging:** every offset-paging loop sends `sort=id&dir=asc`. ALA's default
+  order is unstable across `startIndex` and silently skips/duplicates rows (this caused the
+  map marker undercount). `geospatial_kosher:true` ≠ plottable — label the residual honestly.
 - **Keyless, purely static, single file, no build, no backend.** Deps via CDN only.
 - **Never mislabel:** a blank common name beats a wrong-rank one. Provenance +
   attribution on every external image.
@@ -75,12 +78,30 @@ split into slices and is shipping to live `main` per verified slice (maintenance
 | 8c-a | Keyboard-operable tiles + image-source provenance overlay (+ tidy iNat credits) | **Done & live** |
 | — | Grid capped to the top 200 groups by record count | **Done & live** |
 | 8c-c | Per-tile type-specimen badge | **Reverted** (design: confusing; types stay in focus only) |
-| — | **Next session:** resolve common names for all ~200 tiles (now stop at ~50, sequential); Acanthocephala homonym (name + rank-aware iNat image) | Tracked in `BROWSE-8C-PLAN.md` |
+| — | All-tile common names (bounded pool, dropped `slice(0,50)`); homonym fixes — Acanthocephala, Ciliophora, Nucleocytoviricota (`_localVern` + rank-aware iNat) | **Done & live** |
 | 8c-b | Curated feature-tile grid | Planned |
 | 8c-d | Redesigned group focus ("opened drawer") | Planned |
 | 8c-e | a11y, responsive & reduced-motion pass | Planned |
 | 9 | Motion + 3D enhancement layer (GSAP / optional Three.js) *on top* of the baseline; honour `prefers-reduced-motion`; clean teardown; bounded cost | Planned |
 | 10 | Virtualise large ranks | Planned |
+
+## Records gallery & Map integrity — shipped June 2026 (parallel detour)
+
+A polish/correctness detour off the Browse thread, all verified and on live `main`:
+
+| Commit | What |
+|---|---|
+| Records: remove ‹ › arrows; pin the view toggle | Dropped the confusing record-stepper arrows; density toggle made sticky (`.gal-bar`, `top:-14px`) so it survives scroll (incl. the sliver fix). |
+| Records: generative placeholders + full-bleed | Every gallery tile fills its 4:3 frame (photo or placeholder, `object-fit:cover`); auto-switch-to-List removed → rich **Gallery is the default**, List opt-in. |
+| Placeholders: museum "specimen-drawer" plate | Redesigned the shared `imgPlaceholderCandidate` (muted seeded tone + serif genus monogram + engraved contours + hairline frame + family eyebrow). Lifts Records **and** Browse. |
+| Map: fix marker undercount (stable id sort) | `bgLoadAllPages`/`pageTile` offset-paged with no sort; ALA's unstable order skipped ~8–16% of records. Added `sort=id&dir=asc` (matches `bgPolyScan`). |
+| Records: stable pagination (id sort) | Same fix for the Records Next/Prev pager. |
+| Map: honest labelling | Residual (records ALA counts but returns no coordinate for) shown as "*N of M have no mapped coordinate*"; dropped the unverified "sensitive taxa" claim. |
+
+**Durable lesson (now also in `CLAUDE.md`):** ALA offset paging needs a **stable sort**
+(`sort=id&dir=asc`) — the default order is unstable across `startIndex` and silently
+skips/duplicates rows. And `geospatial_kosher:true` ≠ plottable (~4% return no coordinate)
+— label that honestly, never as "sensitive" without evidence.
 
 ## Later — future options (not scheduled; folded in from the old planning brief)
 

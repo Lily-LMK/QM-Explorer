@@ -84,7 +84,23 @@ Elevation comes from **composition**, not new colour or type:
 Accessibility is **baked into each slice**, not deferred; 8c-e is the audit/cleanup gate
 before the #9 motion layer.
 
-## ▶ Next session — start here (two tracked fixes from 14 June)
+## ✅ Done — the two 14-June fixes (shipped & live)
+
+Both tracked fixes are **done and on live `main`**: common names now resolve for all ~200
+tiles via a bounded pool (`_queueGuideVern`; no more `slice(0,50)` + sequential
+`lookupVern`), and the Acanthocephala homonym is fixed via `_localVern` + rank-aware iNat —
+the same pattern also fixed **Ciliophora** and **Nucleocytoviricota**. The Records gallery
+redesign + Map-integrity pass also shipped alongside (see `docs/ROADMAP.md`). Original task
+detail kept below for reference.
+
+## ▶ Next session — start here
+
+**8c-b — curated feature-tile grid** (see the sub-slices table above), then **8c-d**
+(redesigned group focus "drawer") and **8c-e** (a11y / responsive / reduced-motion pass).
+Build on the live placeholders, all-tile vernaculars, the museum specimen-drawer plate, and
+`deriveHoldingsStats` — don't rebuild them.
+
+### Original task detail (done — reference only)
 
 1. **Resolve common names for all ~200 tiles** (currently they stop after ~the 8th row).
    Root cause in `renderGuide` (`index.html` ~line 2632): vernacular resolution is capped
