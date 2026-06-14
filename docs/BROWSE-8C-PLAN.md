@@ -15,74 +15,72 @@ group — beautiful enough for a design portfolio, fully usable with motion off.
 
 Decisions locked with Lily:
 - **Open at Family**; drill all the way to **species** (via focus child taxa).
-- **Fresh visual language** defined for Browse (harmonised with the app's light theme).
-- **Type specimens are a headline stat** (tiles *and* focus).
+- **Cohesion first** — *no separate visual language for Browse.* Keep the app's existing
+  palette, **Barlow** type, and sharp 2px geometry. The "awwwards" lift comes from
+  **layout, hierarchy, imagery, spacing, and interaction craft**, not a new skin.
+- **Type specimens are a headline stat** (tiles *and* focus), using the existing **red**
+  accent; QM provenance keeps the existing **green** badge.
 - Claude drives the layout craft.
 
-## Design language (fresh — "specimen plate / archival cabinet")
+> **Course correction (June 2026):** a first attempt (8c-1) gave Browse its own warm
+> serif/bone palette scoped to `#v-guide`. It read as *two different products* and was
+> reverted (commit `022b98a`). Lesson baked in above: elevate **within** the existing
+> language; never let one view diverge.
 
-Light, warm, editorial — a herbarium-sheet / museum-plate feel that elevates the
-existing light theme rather than fighting it. Imagery-forward. Type specimens proud.
+## Design approach — craft within the existing language
 
-**Browse-scoped tokens** (defined on the guide view container only, so nothing leaks
-into Records/Taxa/Map/Analytics):
+Use only the existing tokens: `--bg #f2f1ed`, `--panel #fff`, `--ink #111`, `--muted`,
+`--hair #ddd`, accents `--green/--green-d` (QM provenance) and `--red #c5211e` (type
+specimens / alerts), `--font 'Barlow'`, 2px radii, hairline borders, `--tr` transitions.
+Elevation comes from **composition**, not new colour or type:
 
-```
---b-bg:      #EFE9DD   /* warm bone ground            */
---b-surface: #FAF7F0   /* plate / card                */
---b-ink:     #211C14   /* warm near-black text        */
---b-muted:   #6F6555   /* secondary text              */
---b-line:    #DCD3C2   /* hairline / plate edge       */
---b-type:    var(--red)        /* #c5211e — TYPE-specimen accent (the headline) */
---b-qm:      var(--green-d)     /* QM provenance badge (existing, keep)         */
-```
-All text/background pairs must clear **WCAG AA** (verify in 8c-5).
+- **Imagery-forward** — let the cascade images carry the page; larger, cleaner image
+  areas; consistent aspect; the existing skeleton-shimmer for loading.
+- **Stronger hierarchy & rhythm** — clear rank eyebrow (reuse the existing `.gtr`
+  uppercase-tracked label style), prominent name (Barlow heavy, italic for genus/species),
+  muted vernacular, then the stat line. Generous, consistent spacing.
+- **Curated grid** — a few **feature tiles** (top groups by record count / most types)
+  span larger for an editorial, cabinet-of-curiosities rhythm; DOM/tab order stays logical.
+- **Refined interaction** — subtle hover/focus using the existing `--tr` (image settle /
+  hairline emphasis), **disabled under `prefers-reduced-motion`**; always a visible focus
+  ring; tiles keyboard-operable.
 
-**Type system:** a display serif — **Fraunces** (variable, optical sizing; characterful,
-portfolio-grade) — for taxon names and section headings; the existing UI sans for labels,
-stats, and chrome. Load via Google Fonts CDN (`fonts.googleapis.com` / `fonts.gstatic.com`
-are already SW `STATIC_HOSTS`, cache-first — no `sw.js` change, no cache-version bump).
-Use `font-display:swap` + a `Georgia, serif` fallback so there's no FOIT/jank.
-
-**Group card ("specimen plate"):**
+**Group card (existing language):**
 ```
 ┌───────────────────────────┐
-│                           │  ← cascade image (4/5), plate-edge inner border
-│        [ image ]          │     QM-provenance badge if QM-imaged (kept)
-│                           │
+│                           │  ← cascade image; QM badge (green) if QM-imaged
+│        [ image ]          │
 ├───────────────────────────┤
-│ FAMILY                    │  ← rank eyebrow (sans, tracked)
-│ Portunidae                │  ← serif name (italic for genus/species)
+│ FAMILY                    │  ← rank eyebrow (.gtr — Barlow uppercase, tracked)
+│ Portunidae                │  ← name (Barlow heavy; italic for genus/species)
 │ swimming crabs            │  ← rank-appropriate vernacular (lookupVern)
-│ 5,124 records   ▲ 10 types│  ← record count + TYPE BADGE (accent) when >0
+│ 5,124 records    ◆ 10 types│  ← record count + TYPE badge (red) when >0
 └───────────────────────────┘
 ```
-Composition: a refined responsive grid where a few **feature plates** (top groups by
-record count, or most type specimens) span larger — curated, not uniform — while DOM/tab
-order stays logical. Hover/focus: gentle image zoom + plate lift (transform/opacity),
-**disabled under `prefers-reduced-motion`**; always a visible focus ring.
 
-**Focus / detail ("opened drawer"):**
-- Full-bleed hero image (cascade) + name · vernacular · conservation.
-- **Holdings narrative (8b)** as the prominent lead sentence.
-- **Headline stat strip:** Records · **TYPE SPECIMENS (hero, accent)** · Imaged % · Years
-  — all from the existing `deriveHoldingsStats(H)`.
-- Child taxa as elegant navigable plates/list (drill continues to species).
+**Focus / detail ("opened drawer", same language):**
+- Hero image (cascade) + name · vernacular · conservation.
+- **Headline stat strip:** Records · **TYPE SPECIMENS (red)** · Imaged % · Years —
+  from the existing `deriveHoldingsStats(H)`.
+- **Holdings narrative (8b)** beneath the description (current placement Lily approved).
+- Child taxa as navigable chips/plates (drill continues to species).
 - QM specimen thumbnail gallery; BIE/Wikipedia blurb.
-- One-tap jumps: **View Records / Map / Analytics** for this group (reuse existing
-  filter + hash wiring). Must preserve **8a** (`guideFocus` URL state) and **8b**.
+- One-tap jumps: **View Records / Map / Analytics** for this group (reuse existing filter
+  + hash wiring). Must preserve **8a** (`guideFocus` URL state) and **8b**.
 
 ## Sub-slices (one commit each; verify in-browser → ff `main` → push to live)
 
+8c-1 is **void** (the divergent-skin attempt, reverted). The real work is compositional:
+
 | # | Commit | What | Risk |
 |---|--------|------|------|
-| 8c-1 | `Browse: fresh design tokens + display type (scoped)` | Browse-scoped CSS custom properties + Fraunces via CDN; apply lightly to existing markup (names→serif, bg/surface). No structural change. Default rank confirmed = Family. | Low |
-| 8c-2 | `Browse: specimen-plate group cards + curated grid` | New tile markup/CSS: imagery-forward plate, rank eyebrow, serif name, vernacular, record count, QM badge; feature-tile composition; reduced-motion-safe hover/focus; tiles keyboard-operable (button semantics, Enter/Space, focus ring). | Med |
-| 8c-3 | `Browse: type-specimen headline on tiles` | One CORS-safe faceted query (rank field faceted, filtered to type specimens) → map group→typeCount; lazy accent badge on tiles with types (honest: only when >0). Cached; no request bursts. | Med |
-| 8c-4 | `Browse: redesigned group focus ("opened drawer")` | Hero + narrative lead + headline stat strip (types as hero) + child plates + specimen gallery + blurb + cross-view jumps. Builds on 8b/`deriveHoldingsStats`; **keeps 8a URL state + 8b narrative**. | Med-High |
-| 8c-5 | `Browse: a11y, responsive & reduced-motion pass` | Keyboard nav, focus visibility, ARIA labels (group + key stats), AA contrast audit, laptop/mobile breakpoints, `prefers-reduced-motion` verification; `?selftest` probes for any new pure helpers (tile-emphasis selector, type-facet parser). | Low-Med |
+| 8c-a | `Browse: imagery-forward group cards + hierarchy` | Refine tile markup/CSS within the existing language: larger image area, rank eyebrow (`.gtr`), clearer name/vernacular/stat hierarchy, spacing/rhythm. Keyboard-operable, reduced-motion-safe hover, visible focus ring. No new colour/font. | Med |
+| 8c-b | `Browse: curated feature-tile grid` | A few larger feature tiles (top groups / most types) for editorial rhythm; responsive; DOM/tab order preserved; graceful on large ranks (keep today's cap + note). | Med |
+| 8c-c | `Browse: type-specimen headline on tiles` | One CORS-safe faceted query (rank field faceted, filtered to type specimens) → map group→typeCount; lazy **red** badge on tiles with types (honest: only when >0). Cached; no bursts. | Med |
+| 8c-d | `Browse: redesigned group focus ("opened drawer")` | Hero + headline stat strip (types in red) + narrative (8b) + child plates + specimen gallery + blurb + cross-view jumps. Builds on `deriveHoldingsStats`; **keeps 8a + 8b**. No new colour/font. | Med-High |
+| 8c-e | `Browse: a11y, responsive & reduced-motion pass` | Keyboard nav, focus visibility, ARIA labels (group + key stats), AA contrast audit (existing tokens already pass — confirm), laptop/mobile breakpoints, `prefers-reduced-motion` verification; `?selftest` probes for any new pure helpers (tile-emphasis selector, type-facet parser). | Low-Med |
 
-Accessibility is **baked into each slice**, not deferred; 8c-5 is the audit/cleanup gate
+Accessibility is **baked into each slice**, not deferred; 8c-e is the audit/cleanup gate
 before the #9 motion layer.
 
 ## Reuse (do not rebuild)
