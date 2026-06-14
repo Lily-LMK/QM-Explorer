@@ -1456,7 +1456,7 @@ async function bgLoadAllPages(f,loadId){
         const sz=Math.min(ALA_MAX_PAGE,n-off);
         const u=new URLSearchParams();
         u.set('q',f.q||'*:*');appendFQ(u,fqArr);
-        u.set('pageSize',sz);u.set('startIndex',off);u.set('facets','');u.set('flimit','0');
+        u.set('pageSize',sz);u.set('startIndex',off);u.set('sort','id');u.set('dir','asc');u.set('facets','');u.set('flimit','0');
         const d=await fetchJSON(''+u);
         if(cancelled())return;
         if(d&&d.occurrences)d.occurrences.map(normRec_A).forEach(addGeo);
