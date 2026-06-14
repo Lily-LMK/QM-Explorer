@@ -37,7 +37,7 @@ earned by making the foundation correct first — not by polishing visuals over 
 
 ## Done & live (Phases 0–2 foundation)
 
-Shipped to `main`, in order:
+Shipped to `main` (except #7, on the Phase 3 branch awaiting the phase-boundary merge), in order:
 
 - **Phase 0** — `?selftest` harness: synchronous invariant checks (constants, CORS-`fq`
   rules, `isGenericVern`, `singularize`, CSV encoding). Runs only on `?selftest`; normal
@@ -47,6 +47,8 @@ Shipped to `main`, in order:
   rank-correct; two `_localVern` hotfixes (Taxa tree trusts curated names; better
   Lepidoptera family names).
 - **Phase 2 #6** — the museum-first image cascade (detail in the Phase 2 table below).
+- **Phase 2 #7** — `deriveHoldingsStats` helper extracted from `renderGuideFocus`
+  (detail in the Phase 2 table below). On the Phase 3 branch, not yet merged to `main`.
 
 Two durable lessons from this work (also in **Don't** and `CLAUDE.md`): never re-filter
 `lookupVern`'s output with `isGenericVern`; never set a restrictive `fl=` on biocache
@@ -57,7 +59,7 @@ image queries.
 | # | Commit message | Risk | What / why |
 |---|---|---|---|
 | 6 | `Add image-resolution cascade module` + `Browse: resolve tile images via museum-first cascade` | Medium | **Done** (live, 2 commits). `resolveGroupImage(name, rank, opts)` resolves one image per group **museum-first**: QM specimen → another institution's preserved specimen (`basis_of_record:"PreservedSpecimen"`, `-institution_uid:in15`) → iNaturalist → Wikipedia → BIE → generated placeholder. Preloads each URL (`_imgPreload`) and falls through on load failure; cached in `_groupImgCache`; carries provenance + attribution. `renderGuide` keeps the batch QM pass, then resolves QM-empty tiles **lazily** via `_queueGuideImg` + `{skipQM:true}`. **Lesson:** a restrictive `fl=` param silently drops biocache image URLs — don't set `fl` on these image queries. |
-| 7 | `Extract reusable holdings-stats helper` | Low | **← NEXT.** Most of it already exists in `renderGuideFocus` (counts, types, imaging %, collectors, year range, states). Light consolidation into a reusable function so the Phase 3 redesign can render the per-group "holdings story" cleanly. |
+| 7 | `Extract reusable holdings-stats helper` | Low | **Done.** Pure, DOM/network-free `deriveHoldingsStats(facets, opts)` lifted out of `renderGuideFocus` (counts, year range, imaged count + `imagedPct`, type specimens, states, collectors, basis-of-record, child-taxa richness). Behaviour-preserving refactor; `renderGuideFocus` unpacks into the same locals. 7 synchronous `?selftest` probes added. Phase 3 consumes it. |
 
 ## Phase 3 — Browse redesign (the destination)
 

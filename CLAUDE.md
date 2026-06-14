@@ -128,26 +128,28 @@ not a real outage.
 ## Current chapter
 
 **Building toward the Browse redesign** — full plan in `docs/ROADMAP.md`, Phase 3
-creative spec in `docs/BROWSE-REDESIGN-BRIEF.md`. Phases 0–1 (test harness +
-stabilisation) and the Phase 2 **image-resolution cascade** are **done and live**:
-Browse tiles now resolve museum-first (QM specimen → another institution's preserved
-specimen → iNaturalist/Wikipedia → generated placeholder), lazily, with provenance.
+creative spec in `docs/BROWSE-REDESIGN-BRIEF.md`. The whole Phase 2 foundation is now
+done: the **image-resolution cascade** (#6, live on `main`) and the **holdings-stats
+helper** (#7, on the `phase2-holdings-stats` branch, awaiting the phase-boundary merge).
+Browse tiles resolve museum-first (QM specimen → another institution's preserved
+specimen → iNaturalist/Wikipedia → generated placeholder), lazily, with provenance; and
+`deriveHoldingsStats(facets, opts)` derives the per-group holdings story (counts, year
+range, imaged + `imagedPct`, type specimens, states, collectors, basis, child richness).
 
-**Next:** Phase 2 item 7 — extract a reusable **holdings-stats helper** from
-`renderGuideFocus` (counts, type specimens, imaging %, collectors, year range) so the
-redesign can reuse it. Then Phase 3 — the awwwards-level Browse experience (GSAP/
-Three.js on a reduced-motion baseline, per-group holdings narrative, `guideFocus` in
-the URL hash). Build in the roadmap's order, one commit at a time, verifying each
-in-browser.
+**Next:** Phase 3 — the awwwards-level Browse experience, built in the roadmap's order:
+#8 (reduced-motion baseline + holdings narrative + `guideFocus` in the URL hash), then
+#9 (GSAP/Three.js motion layer on top), then #10 (virtualise large ranks). One commit
+at a time, verifying each in-browser.
 
 Also pending (non-code): send `docs/ALA-API-bug-report.md` to the ALA team.
 
 ## Recent state (June 2026)
 
 All ALA breaking-change fixes are live (`pageSize` cap, 5000-window + map quadtree,
-app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2-cascade are live:** the
+app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2 are complete:** the
 `?selftest` harness; the stabilisation fixes (`fetchQualityCounts` CORS, `lookupSubfamilyVern`
-repaired, Browse vernaculars made rank-correct, two `_localVern` hotfixes); and the
-museum-first image cascade wired into Browse with lazy resolution + provenance. Records,
+repaired, Browse vernaculars made rank-correct, two `_localVern` hotfixes); the
+museum-first image cascade wired into Browse with lazy resolution + provenance; and the
+`deriveHoldingsStats` helper (#7, on `phase2-holdings-stats`, not yet merged). Records,
 the specimen modal, Taxa, and Browse (names **and** images) are all correct. The
 remaining Browse work is the visual redesign itself (Phase 3), built on this foundation.
