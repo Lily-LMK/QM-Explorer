@@ -2652,6 +2652,29 @@ function deriveHoldingsStats(facets, opts){
   };
 }
 
+/* Pure: one-sentence holdings story for a Browse group, from a deriveHoldingsStats()
+   result. Plain text (the caller styles it). Reuses fmt + RPLURAL. Honest about gaps
+   (0% / <1% imaged). Richness reflects the focus query's flimit, so very large groups
+   may under-count child taxa. Returns '' when the group has no QM records. */
+function holdingsSentence(H){
+  if(!H||!H.records)return '';
+  let lead=`${fmt(H.records)} QM specimen${H.records===1?'':'s'}`;
+  const childN=H.childRank&&H.childRank.items?H.childRank.items.length:0;
+  if(childN){
+    const plural=(RPLURAL[H.childRank.label]||H.childRank.label||'taxa').toLowerCase();
+    lead+=` across ${fmt(childN)} ${plural}`;
+  }
+  if(H.types&&H.types.total){
+    lead+=`, including ${fmt(H.types.total)} type specimen${H.types.total===1?'':'s'}`;
+  }
+  const pct=(H.imagedPct||0)*100;
+  const segs=[`${pct===0?'0%':pct<1?'<1%':Math.round(pct)+'%'} imaged`];
+  if(H.yearFirst&&H.yearLast){
+    segs.push(H.yearFirst===H.yearLast?`collected ${H.yearFirst}`:`collected ${H.yearFirst}–${H.yearLast}`);
+  }
+  return lead+' · '+segs.join(' · ');
+}
+
 function renderGuideFocus(root){
   const f=S.guideFocus;const isIt=['Genus','Species'].includes(f.rank);
   const nm=isIt?`<em>${esc(f.name)}</em>`:esc(f.name);
@@ -2722,6 +2745,17 @@ function renderGuideFocus(root){
       }else{
         const vh=document.createElement('div');vh.id='gfVern';vh.style.cssText='font-size:14px;color:var(--muted);margin-bottom:10px';
         root.appendChild(vh);
+      }
+
+      /* Holdings story — a readable per-group summary of how QM holds this taxon
+         (records · richness · type specimens · imaging coverage · year range). */
+      const narrative=holdingsSentence(H);
+      if(narrative){
+        const nd=document.createElement('p');
+        nd.className='gf-narrative';
+        nd.style.cssText='margin:2px 0 16px;font-size:15px;line-height:1.55;color:var(--ink);max-width:62ch';
+        nd.textContent=narrative;
+        root.appendChild(nd);
       }
 
       const row=document.createElement('div');row.className='gu-focus';root.appendChild(row);
@@ -6823,6 +6857,16 @@ if(_SELFTEST){
       eq('holdings yearLast', _H.yearLast, '2024');
       eq('holdings types.total excludes notAType', _H.types.total, 10);
       eq('holdings childRank resolves class_ alias', _H.childRank.label, 'class');
+
+      /* ── HOLDINGS SENTENCE (pure formatter) ── */
+      const _Hs={records:5124,imaged:60,imagedPct:60/5124,yearFirst:'1861',yearLast:'2024',
+        types:{total:10,items:[]},states:[],collectors:[],basis:[],childRank:{label:'genus',items:new Array(22).fill(0)}};
+      eq('holdingsSentence full story', holdingsSentence(_Hs),
+        '5,124 QM specimens across 22 genera, including 10 type specimens · 1% imaged · collected 1861–2024');
+      eq('holdingsSentence empty when no records', holdingsSentence({records:0}), '');
+      eq('holdingsSentence <1% imaged + singular record',
+        holdingsSentence({records:1,imaged:0,imagedPct:0,childRank:{label:'genus',items:[]},types:{total:0}}),
+        '1 QM specimen · 0% imaged');
     }catch(e){
       bad('harness ran to completion', (e&&e.message)||String(e));
     }
