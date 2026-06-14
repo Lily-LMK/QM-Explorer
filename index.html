@@ -4980,9 +4980,11 @@ async function lookupSubfamilyVern(genusName){
             /* Prefer _localVern (curated); fall back to iNat common name */
             if(tribe){
               const name=_localVern[tribe]||(tribeName&&tribeName.includes(' ')&&!isGenericVern(tribeName)?tribeName:null);
+              if(name){const r={name,rank:'tribe'};_subTribeCache.set(lo,r);return r;}
             }
             if(subfamily){
               const name=_localVern[subfamily]||(subfamName&&subfamName.includes(' ')&&!isGenericVern(subfamName)?subfamName:null);
+              if(name){const r={name,rank:'subfamily'};_subTribeCache.set(lo,r);return r;}
             }
           }else{
           }
@@ -5012,10 +5014,10 @@ async function lookupSubfamilyVern(genusName){
       if(r==='SUBFAMILY'&&cn)subfamily=cn;
     }
     if(tribe&&_localVern[tribe]){
-      const result={name:_localVern[tribe],rank:'tribe'};
+      const r={name:_localVern[tribe],rank:'tribe'};_subTribeCache.set(lo,r);return r;
     }
     if(subfamily&&_localVern[subfamily]){
-      const result={name:_localVern[subfamily],rank:'subfamily'};
+      const r={name:_localVern[subfamily],rank:'subfamily'};_subTribeCache.set(lo,r);return r;
     }
   }catch(e){console.warn('[Vern] GBIF failed for',ck,e)}
 
@@ -6373,6 +6375,11 @@ if(_SELFTEST){
       assert("singularize('side-necked turtles') ends with 'turtle'",
         /turtle$/.test(singularize('side-necked turtles')),
         'got '+JSON.stringify(singularize('side-necked turtles')));
+
+      /* ── VERNACULAR RESOLVER STRUCTURE (no network — function presence only) ── */
+      assert('lookupSubfamilyVern is a function',
+        typeof lookupSubfamilyVern==='function',
+        'got '+typeof lookupSubfamilyVern);
 
       /* ── CSV ENCODING (mirrors the exportCSV quoting pattern) ── */
       const csvEnc=x=>{const s=String(x);return /[,"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
