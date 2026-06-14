@@ -230,9 +230,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .gu-tile .gt-body{padding:11px 11px 9px;flex:1;display:flex;flex-direction:column;gap:3px}
 .gu-tile .gtn{font-weight:700;font-size:14px;line-height:1.2;color:var(--ink)}.gu-tile .gtn.it{font-style:italic}
 .gu-tile .gt-vern{font-size:12px;color:var(--muted);font-weight:400;line-height:1.2}
-.gu-tile .gts{font-size:11px;color:var(--muted2);margin-top:auto;padding-top:4px;display:flex;align-items:center;justify-content:space-between;gap:6px}
-/* Type-specimen headline badge (red), parallel to the QM green provenance pill */
-.gu-tile .gt-types{flex-shrink:0;color:var(--red);background:rgba(197,33,30,.10);border:1px solid rgba(197,33,30,.30);border-radius:9px;padding:1px 7px;font-size:10px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.gu-tile .gts{font-size:11px;color:var(--muted2);margin-top:auto;padding-top:4px}
 .gu-tile .gtr{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:2px}
 .gu-tile .gti{display:flex;gap:3px;margin-top:8px}
 .gu-tile .gti img{width:44px;height:44px;border-radius:2px;object-fit:cover}
@@ -2166,7 +2164,6 @@ function applyTaxonFilter(rank,name){
    Placeholder / failed resolves are evicted on settle so a later call can
    retry (a placeholder must never be locked in by a transient network blip). */
 const _groupImgCache=new Map();
-const _guideTypeCache=new Map(); /* rank+filters → Map(groupName → type-specimen count) */
 
 /* Normalise any rank token to a biocache Solr field. Accepts the filter-object
    key 'class_' and the ALL-CAPS variants; defaults to 'family' if unknown. */
@@ -2561,7 +2558,7 @@ function renderGuide(){
        NEVER a dash; the batch pass or the lazy cascade fills it. */
     const hasImg=g.imgs.length>0;
     const heroImg=hasImg?`<img src="${esc(g.imgs[0])}" alt="${esc('Representative image of '+g.name)}" loading="lazy">`:'';
-    tile.innerHTML=`<div class="gt-img${hasImg?'':' gt-load'}">${heroImg}</div><div class="gt-body"><div class="gtn${isIt?' it':''}">${esc(g.name)}</div>${g.vern?`<div class="gt-vern">${esc(g.vern)}</div>`:''}<div class="gts"><span>${fmt(g.count)} record${g.count!==1?'s':''}</span></div></div>`;
+    tile.innerHTML=`<div class="gt-img${hasImg?'':' gt-load'}">${heroImg}</div><div class="gt-body"><div class="gtn${isIt?' it':''}">${esc(g.name)}</div>${g.vern?`<div class="gt-vern">${esc(g.vern)}</div>`:''}<div class="gts">${fmt(g.count)} record${g.count!==1?'s':''}</div></div>`;
     if(hasImg)_guideSetProv(tile,{source:'qm'});
     /* Keyboard-operable: real button semantics (the tile is a div for layout). */
     tile.setAttribute('role','button');tile.tabIndex=0;
@@ -2571,43 +2568,6 @@ function renderGuide(){
     tile.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();drill()}};
     grid.appendChild(tile)});
   root.appendChild(grid);
-
-  /* ── Type-specimen headline (8c-c): ONE CORS-safe faceted query for how many type
-     specimens QM holds per group at this rank, painting a red "N types" badge on the
-     count line. Cached per rank+filters; skipped in polygon mode (the server query
-     isn't polygon-scoped, so a count there could mislead). ── */
-  if(!S.mapPoly){
-    const _tf=getFilters();
-    const _tsig=rk.k+'|'+JSON.stringify(_tf);
-    const _paintTypes=(map)=>{
-      if(imgGen!==_guideImgGen||!grid.isConnected)return;
-      map.forEach((cnt,nm)=>{
-        if(!(cnt>0))return;
-        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(nm)}"]`);
-        if(!tile||tile.querySelector('.gt-types'))return;
-        const gts=tile.querySelector('.gts'); if(!gts)return;
-        const b=document.createElement('span');b.className='gt-types';
-        b.textContent=`${fmt(cnt)} type${cnt!==1?'s':''}`;
-        b.title=`Queensland Museum holds ${fmt(cnt)} type specimen${cnt!==1?'s':''} in this group`;
-        gts.appendChild(b);
-        tile.setAttribute('aria-label',tile.getAttribute('aria-label')+`, ${fmt(cnt)} type specimen${cnt!==1?'s':''}`);
-      });
-    };
-    if(_guideTypeCache.has(_tsig)){_paintTypes(_guideTypeCache.get(_tsig));}
-    else{
-      const _u=new URLSearchParams();
-      _u.set('q',_tf.q||'*:*');_u.set('pageSize','0');_u.set('facets',rk.k);_u.set('flimit',String(FLIM));_u.set('fsort','count');
-      const _fqs=[...alaBaseFQ(_tf),'-type_status:"notatype"','type_status:[* TO *]'];
-      fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+_u.toString()+'&'+fqQS(_fqs))
-        .then(r=>r.ok?r.json():null).then(d=>{
-          if(!d)return;
-          const fac=extractFacets_A(d)[rk.k]||[];
-          const map=new Map();fac.forEach(c=>{if(c.count>0)map.set(c.name,c.count)});
-          _guideTypeCache.set(_tsig,map);
-          _paintTypes(map);
-        }).catch(()=>{});
-    }
-  }
 
   /* ── Async: batch-fetch QM images, then lazily cascade the rest ──
      One biocache query (CORS-safe) covers QM images for many tiles at once. Tiles
