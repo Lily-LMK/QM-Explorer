@@ -214,6 +214,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .gu-tile .gt-img{aspect-ratio:4/3;background:#e8e7e3;overflow:hidden;position:relative}
 .gu-tile .gt-img img{width:100%;height:100%;object-fit:cover;display:block}
 .gu-tile .gt-img .gt-no{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:24px;font-weight:300}
+/* Loading skeleton while a tile's image resolves (never a dash) */
+.gu-tile .gt-img.gt-load{background:linear-gradient(100deg,#e8e7e3 25%,#f1f0ec 50%,#e8e7e3 75%);background-size:200% 100%;animation:gtShimmer 1.3s ease-in-out infinite}
+@keyframes gtShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.gu-tile .gt-img.gt-load{animation:none}}
+/* Provenance caption — where the tile image came from */
+.gu-tile .gt-prov{font-size:10px;line-height:1.3;color:var(--muted2);font-weight:500;margin-top:5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gu-tile .gt-prov.prov-qm{align-self:flex-start;color:var(--green-d);background:rgba(0,165,97,.10);border:1px solid rgba(0,165,97,.30);border-radius:9px;padding:1px 7px;font-weight:700;letter-spacing:.2px}
 .gu-tile .gt-body{padding:10px 10px 8px;flex:1;display:flex;flex-direction:column;gap:1px}
 .gu-tile .gtn{font-weight:700;font-size:14px;line-height:1.2;color:var(--ink)}.gu-tile .gtn.it{font-style:italic}
 .gu-tile .gt-vern{font-size:12px;color:var(--muted);font-weight:400;line-height:1.2}
@@ -2302,13 +2309,16 @@ function imgPlaceholderCandidate(name,rank){
 }
 
 /* ── The cascade (uncached core) ── */
-async function _resolveGroupImageUncached(name,rank){
+async function _resolveGroupImageUncached(name,rank,opts){
+  opts=opts||{};
   const field=_imgRankField(rank);
   const rkClause=`${field}:"${(name||'').replace(/"/g,'')}"`;
   const inst=S.alaInst?`institution_uid:${S.alaInst}`:'';
   const gens=[];
-  /* 1. QM specimen — what WE hold (institution-scoped imaged records) */
-  if(inst)gens.push(()=>_imgBiocacheCands([inst,rkClause,'multimedia:"Image"'],
+  /* 1. QM specimen — what WE hold (institution-scoped imaged records).
+        opts.skipQM bypasses this tier: the Browse view fills QM images via one
+        batch query, so per-tile cascades skip QM to avoid re-querying it per tile. */
+  if(inst&&!opts.skipQM)gens.push(()=>_imgBiocacheCands([inst,rkClause,'multimedia:"Image"'],
       {source:'qm',sourceLabel:'QM specimen',attribution:'Queensland Museum',limit:6}));
   /* 2. Other-museum specimen — PreservedSpecimen images from OTHER institutions,
         so Browse keeps a museum feel instead of surfacing living iNat photos.
@@ -2335,13 +2345,16 @@ async function _resolveGroupImageUncached(name,rank){
   return imgPlaceholderCandidate(name,rank);
 }
 
-/* Public entry point. Returns Promise<Candidate>. Caches real-source results;
-   evicts placeholders/failures so they can be retried later. */
-function resolveGroupImage(name,rank){
-  const key=_imgRankField(rank)+'|'+(name||'').toLowerCase();
+/* Public entry point. Returns Promise<Candidate>. `opts.skipQM` skips the QM
+   tier (Browse fills QM via a batch pass). Caches real-source results; evicts
+   placeholders/failures so they can be retried later. The skipQM variant is
+   cached under a separate key so it never collides with a QM-inclusive resolve. */
+function resolveGroupImage(name,rank,opts){
+  opts=opts||{};
+  const key=(opts.skipQM?'noqm|':'')+_imgRankField(rank)+'|'+(name||'').toLowerCase();
   const hit=_groupImgCache.get(key);
   if(hit)return hit;
-  const p=_resolveGroupImageUncached(name,rank).then(cand=>{
+  const p=_resolveGroupImageUncached(name,rank,opts).then(cand=>{
     if(!cand||cand.source==='placeholder')_groupImgCache.delete(key);
     return cand;
   }).catch(()=>{_groupImgCache.delete(key);return imgPlaceholderCandidate(name,rank)});
@@ -2349,9 +2362,96 @@ function resolveGroupImage(name,rank){
   return p;
 }
 
+/* ── Browse tile images: lazy cascade resolution (mirrors the Taxa-tree pattern) ──
+   renderGuide re-runs on every rank-pill change, so we keep ONE observer + a
+   generation counter. Each render bumps _guideImgGen and tears down the prior
+   observer; async writes are guarded by both the generation and tile.isConnected
+   so nothing leaks into a stale grid. Concurrency is throttled like the tree's
+   vernacular queue so a big rank doesn't storm the APIs. */
+let _guideImgObserver=null; let _guideImgGen=0;
+const _guideImgQ=[]; let _guideImgActive=0; const _GUIDE_IMG_CONC=4;
+function _queueGuideImg(task){
+  return new Promise(resolve=>{
+    _guideImgQ.push(async()=>{ try{resolve(await task())}catch(e){resolve(null)} });
+    _drainGuideImg();
+  });
+}
+function _drainGuideImg(){
+  while(_guideImgActive<_GUIDE_IMG_CONC&&_guideImgQ.length){
+    const job=_guideImgQ.shift(); _guideImgActive++;
+    job().finally(()=>{ _guideImgActive--; _drainGuideImg(); });
+  }
+}
+/* Tear down before a re-render: bump the generation (abandons in-flight writes)
+   and disconnect the old observer so pending tiles never resolve into a dead grid. */
+function _guideImgTeardown(){
+  _guideImgGen++;
+  if(_guideImgObserver){ _guideImgObserver.disconnect(); _guideImgObserver=null; }
+}
+/* Build the provenance caption (text + class) for a resolved candidate. */
+function _guideProvCaption(cand){
+  if(!cand)return null;
+  const s=cand.source;
+  if(s==='qm')return{cls:'gt-prov prov-qm',text:'QM specimen'};
+  if(s==='placeholder')return{cls:'gt-prov',text:'Illustration'};
+  if(s==='ala'||s==='bie')return{cls:'gt-prov',text:cand.sourceLabel||cand.attribution||'ALA'};
+  /* iNaturalist / Wikipedia — credit the photographer + licence, without doubling:
+     iNat attributions already carry their own © and licence (e.g.
+     "© lynsh, some rights reserved (CC BY-NC)"), and Wikipedia's attribution just
+     repeats the source label — so add © / licence only when not already present. */
+  const label=cand.sourceLabel||'';
+  let credit=(cand.attribution||'').trim();
+  if(credit&&label&&credit.toLowerCase()===label.toLowerCase())credit=''; // don't repeat the label
+  const norm=x=>(x||'').replace(/[\s_-]/g,'').toUpperCase();
+  const lic=cand.license||'';
+  let t=label;
+  if(credit){
+    const hasMark=/©|\(c\)/i.test(credit);
+    t+=(t?' · ':'')+(hasMark?credit:('© '+credit));
+  }
+  if(lic&&!norm(credit).includes(norm(lic)))t+=(t?' ':'')+`(${lic})`;
+  return{cls:'gt-prov',text:t||label};
+}
+/* Write/refresh the provenance caption as the last line of the tile body. */
+function _guideSetProv(tile,cand){
+  const body=tile&&tile.querySelector('.gt-body'); if(!body)return;
+  const cap=_guideProvCaption(cand);
+  let el=body.querySelector('.gt-prov');
+  if(!cap||!cap.text){ if(el)el.remove(); return; }
+  if(!el){ el=document.createElement('div'); body.appendChild(el); }
+  el.className=cap.cls; el.textContent=cap.text; el.title=cap.text;
+}
+/* Place a resolved candidate's image into the tile (clearing the skeleton) and
+   render its provenance. resolveGroupImage already verified the URL loads, so no
+   onerror handler is needed — just set src. */
+function _guideSetImage(tile,cand){
+  if(!tile||!cand)return;
+  const imgDiv=tile.querySelector('.gt-img'); if(!imgDiv)return;
+  imgDiv.classList.remove('gt-load');
+  const nm=tile.dataset.gn||'';
+  const alt=cand.source==='placeholder'?'':(nm?'Representative image of '+nm:'');
+  imgDiv.innerHTML=`<img src="${esc(cand.url)}" alt="${esc(alt)}" loading="lazy">`;
+  _guideSetProv(tile,cand);
+}
+/* Attach lazy cascade resolution to a tile QM didn't fill. Resolves only when the
+   tile scrolls into view, throttled, and skips the QM tier (batch handled QM). */
+function _attachGuideLazy(tile,name,rank,gen){
+  const resolve=async()=>{
+    if(gen!==_guideImgGen||!tile.isConnected)return;
+    const cand=await _queueGuideImg(()=>resolveGroupImage(name,rank,{skipQM:true}));
+    if(gen!==_guideImgGen||!tile.isConnected)return;
+    _guideSetImage(tile,cand||imgPlaceholderCandidate(name,rank));
+  };
+  if(_guideImgObserver){
+    tile._imgResolve=resolve;
+    requestAnimationFrame(()=>{ if(tile._imgResolve&&tile.isConnected)_guideImgObserver.observe(tile); });
+  } else resolve(); /* no IntersectionObserver support — resolve eagerly */
+}
+
 /* BROWSE — visual taxonomy browser */
 function renderGuide(){
   const root=$('#guideRoot');root.innerHTML='';
+  _guideImgTeardown();
   if(S.guideFocus){renderGuideFocus(root);return}
   const polyName=S.mapPoly?.name;
   const contextLabel=polyName?`in ${polyName}`:'matching current filters';
@@ -2409,25 +2509,42 @@ function renderGuide(){
     note.textContent=`Showing top ${sorted.length} by record count. Use filters to narrow results.`;
     root.appendChild(note);
   }
+  /* Fresh observer for this render generation (teardown already bumped the gen) */
+  _guideImgObserver=('IntersectionObserver' in window)?new IntersectionObserver(entries=>{
+    for(const e of entries){
+      if(!e.isIntersecting)continue;
+      _guideImgObserver.unobserve(e.target);
+      const fn=e.target._imgResolve; e.target._imgResolve=null;
+      if(fn)fn();
+    }
+  },{rootMargin:'200px'}):null;
+  const imgGen=_guideImgGen;
+
   const grid=document.createElement('div');grid.className='gu-grid';
   sorted.forEach(g=>{const isIt=rk.i>=3;const tile=document.createElement('div');tile.className='gu-tile';tile.dataset.gn=g.name;
-    const heroImg=g.imgs.length?`<img src="${esc(g.imgs[0])}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gt-no\\'>—</div>'">`:`<div class="gt-no">—</div>`;
-    tile.innerHTML=`<div class="gt-img" data-need="${g.imgs.length?'':'1'}">${heroImg}</div><div class="gt-body"><div class="gtn${isIt?' it':''}">${esc(g.name)}</div>${g.vern?`<div class="gt-vern">${esc(g.vern)}</div>`:''}<div class="gts">${fmt(g.count)} record${g.count!==1?'s':''}</div></div>`;
+    /* Records already loaded for this rank carry QM specimen media — show them
+       immediately (no API call) with a QM badge. Otherwise start on a skeleton —
+       NEVER a dash; the batch pass or the lazy cascade fills it. */
+    const hasImg=g.imgs.length>0;
+    const heroImg=hasImg?`<img src="${esc(g.imgs[0])}" alt="${esc('Representative image of '+g.name)}" loading="lazy">`:'';
+    tile.innerHTML=`<div class="gt-img${hasImg?'':' gt-load'}">${heroImg}</div><div class="gt-body"><div class="gtn${isIt?' it':''}">${esc(g.name)}</div>${g.vern?`<div class="gt-vern">${esc(g.vern)}</div>`:''}<div class="gts">${fmt(g.count)} record${g.count!==1?'s':''}</div></div>`;
+    if(hasImg)_guideSetProv(tile,{source:'qm'});
     tile.onclick=()=>{S.guideFocus={rank:g.rank,name:g.name};setFilterSilent(rk.k,g.name);renderGuide()};grid.appendChild(tile)});
   root.appendChild(grid);
 
-  /* ── Async: batch-fetch images for tiles that need them ──
-     Instead of one API call per tile (which gets rate-limited), fetch a large batch
-     of imaged records and distribute them by rank grouping. One query, many tiles. */
+  /* ── Async: batch-fetch QM images, then lazily cascade the rest ──
+     One biocache query (CORS-safe) covers QM images for many tiles at once. Tiles
+     QM hasn't imaged are NOT dashed — they resolve through the museum-first cascade
+     lazily as they scroll into view (skipQM, since QM is handled here). */
+  const rkField=rk.k==='class_'?'class':rk.k;
   const tilesNeedingImgs=sorted.filter(g=>g.imgs.length<1);
   if(tilesNeedingImgs.length){
     (async()=>{
+      const found=new Map(); /* name → imageUrl (QM) */
       try{
-        const rkField=rk.k==='class_'?'class':rk.k;
         /* Fetch a generous batch of imaged records — each record gives us one image for its group */
         const batchSize=Math.min(tilesNeedingImgs.length*2, 500);
         const needed=new Set(tilesNeedingImgs.map(g=>g.name));
-        const found=new Map(); /* name → imageUrl */
         let startIdx=0;
         const PAGE=ALA_MAX_PAGE;
         /* Paginate through imaged records until we've covered most tiles or exhausted results */
@@ -2455,26 +2572,22 @@ function renderGuide(){
           startIdx+=occs.length;
           if(startIdx>=d.totalRecords)break;
         }
-        /* Apply found images to tiles */
-        for(const [name,url] of found){
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
-          if(tile){
-            const imgDiv=tile.querySelector('.gt-img');
-            if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML=`<img src="${esc(url)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gt-no\\'>—</div>'">`;
-          }
+      }catch(e){ /* keep whatever the batch found; the rest fall to the lazy cascade */ }
+      if(imgGen!==_guideImgGen)return;            // a re-render superseded us
+      /* Apply found QM images with a QM-specimen badge */
+      const remaining=new Set(tilesNeedingImgs.map(g=>g.name));
+      for(const [name,url] of found){
+        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(name)}"]`);
+        if(tile&&tile.isConnected&&!tile.querySelector('.gt-img img')){
+          _guideSetImage(tile,{url,source:'qm',sourceLabel:'QM specimen',attribution:'Queensland Museum',license:'',href:''});
+          remaining.delete(name);
         }
-        /* Mark remaining tiles as no-image */
-        for(const g of tilesNeedingImgs){
-          if(found.has(g.name))continue;
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
-          if(tile){const imgDiv=tile.querySelector('.gt-img');if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML='<div class="gt-no">—</div>'}
-        }
-      }catch(e){
-        /* On error, clear loading states */
-        for(const g of tilesNeedingImgs){
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
-          if(tile){const imgDiv=tile.querySelector('.gt-img');if(imgDiv&&!imgDiv.querySelector('img'))imgDiv.innerHTML='<div class="gt-no">—</div>'}
-        }
+      }
+      /* Everything QM didn't image: resolve lazily through the cascade (no dashes) */
+      for(const g of tilesNeedingImgs){
+        if(!remaining.has(g.name))continue;
+        const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
+        if(tile&&tile.isConnected)_attachGuideLazy(tile,g.name,rkField,imgGen);
       }
     })();
   }
