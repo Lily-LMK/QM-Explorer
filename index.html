@@ -2401,6 +2401,22 @@ function _drainGuideImg(){
     job().finally(()=>{ _guideImgActive--; _drainGuideImg(); });
   }
 }
+/* Bounded pool for Browse tile vernaculars — same shape as the image queue above, so a
+   ~200-tile rank resolves all names without bursting the GBIF/iNat APIs. Generation guard
+   is the caller's responsibility (it checks _guideImgGen before writing). */
+const _guideVernQ=[]; let _guideVernActive=0; const _GUIDE_VERN_CONC=6;
+function _queueGuideVern(task){
+  return new Promise(resolve=>{
+    _guideVernQ.push(async()=>{ try{resolve(await task())}catch(e){resolve(null)} });
+    _drainGuideVern();
+  });
+}
+function _drainGuideVern(){
+  while(_guideVernActive<_GUIDE_VERN_CONC&&_guideVernQ.length){
+    const job=_guideVernQ.shift(); _guideVernActive++;
+    job().finally(()=>{ _guideVernActive--; _drainGuideVern(); });
+  }
+}
 /* Tear down before a re-render: bump the generation (abandons in-flight writes)
    and disconnect the old observer so pending tiles never resolve into a dead grid. */
 function _guideImgTeardown(){
@@ -2630,35 +2646,35 @@ function renderGuide(){
       }
     })();
   }
-  /* Async: fetch vernacular names — sequential with small batches to avoid rate limiting */
-  const needVern=sorted.filter(g=>!g.vern).slice(0,50);
-  if(needVern.length){
-    (async()=>{
-      for(const g of needVern){
-        try{
-          const ck=cleanTaxonTerm(g.name);
-          let nm;
-          if(_vernCache.has(ck)){
-            nm=_vernCache.get(ck);            // may be null (known miss) — respect it
-          }else{
-            const result=await lookupVern(g.name); // already rank/generic-filtered internally; trusts _localVern
-            nm=(result&&result.name)||null;
-            _vernCache.set(ck,nm);
-          }
-          if(!nm)continue;                    // blank, never a dash — honest empty state
-          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
-          if(!tile)continue;
-          let vernDiv=tile.querySelector('.gt-vern');
-          if(!vernDiv){
-            vernDiv=document.createElement('div');
-            vernDiv.className='gt-vern';
-            const gtn=tile.querySelector('.gtn');
-            if(gtn)gtn.after(vernDiv);
-          }
-          vernDiv.textContent=singularize(nm); // NO isGenericVern — see CONTEXT above
-        }catch(e){}
+  /* Async: resolve vernaculars for ALL eligible tiles (≤200) through a bounded pool so
+     far-down rows get names too, without bursting the APIs. Generation-guarded (imgGen)
+     so a re-render abandons stale writes; results cached in _vernCache. */
+  const needVern=sorted.filter(g=>!g.vern);
+  for(const g of needVern){
+    _queueGuideVern(async()=>{
+      if(imgGen!==_guideImgGen)return;        // a re-render superseded us
+      const ck=cleanTaxonTerm(g.name);
+      let nm;
+      if(_vernCache.has(ck)){
+        nm=_vernCache.get(ck);                // may be null (known miss) — respect it
+      }else{
+        const result=await lookupVern(g.name);// already rank/generic-filtered internally; trusts _localVern
+        nm=(result&&result.name)||null;
+        _vernCache.set(ck,nm);
       }
-    })();
+      if(imgGen!==_guideImgGen)return;        // re-check after the await
+      if(!nm)return;                          // blank, never a dash — honest empty state
+      const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
+      if(!tile||!tile.isConnected)return;
+      let vernDiv=tile.querySelector('.gt-vern');
+      if(!vernDiv){
+        vernDiv=document.createElement('div');
+        vernDiv.className='gt-vern';
+        const gtn=tile.querySelector('.gtn');
+        if(gtn)gtn.after(vernDiv);
+      }
+      vernDiv.textContent=singularize(nm);    // NO isGenericVern — re-filtering blanks curated names
+    });
   }
 }
 /* Pure: derive the per-group holdings story from an extractFacets_A() result.
