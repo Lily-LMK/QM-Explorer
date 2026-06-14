@@ -2155,18 +2155,15 @@ function renderGuide(){
 
   /* Supplement images + ecological data from loaded records */
   if(S.res.length){
-    const imgMap=new Map();const vernMap=new Map();
+    const imgMap=new Map();
     const recs=S._polyAllRecs||S.res;
     recs.forEach(r=>{
       let nm=r[rk.k]||'';if(rk.k==='species'&&!nm)nm=r.sci;if(!nm)return;
       if(!imgMap.has(nm))imgMap.set(nm,[]);
       const arr=imgMap.get(nm);
       if(r.media?.length&&arr.length<3)arr.push(r.media[0]);
-      /* Capture best vernacular name */
-      if(r.vern&&!vernMap.has(nm)&&r.vernRank==='species')vernMap.set(nm,singularize(r.vern));
-      else if(r.vern&&!vernMap.has(nm))vernMap.set(nm,singularize(r.vern));
     });
-    sorted.forEach(g=>{g.imgs=imgMap.get(g.name)||[];g.vern=vernMap.get(g.name)||''});
+    sorted.forEach(g=>{g.imgs=imgMap.get(g.name)||[];g.vern=''});
   }
 
   if(!sorted.length){
@@ -2254,21 +2251,26 @@ function renderGuide(){
     (async()=>{
       for(const g of needVern){
         try{
-          const mr=await cachedFetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(g.name)}&strict=true`);
-          if(!mr.ok)continue;const md=await mr.json();if(!md.usageKey)continue;
-          const vr=await cachedFetch(`https://api.gbif.org/v1/species/${md.usageKey}/vernacularNames?limit=20`);
-          if(!vr.ok)continue;const vd=await vr.json();
-          const names=(vd.results||[]).filter(v=>v.language==='eng'||v.language==='en');
-          const au=names.find(v=>/australia/i.test(v.source||''));
-          const best=au||names[0];
-          if(best?.vernacularName){
-            const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
-            if(tile){
-              let vernDiv=tile.querySelector('.gt-vern');
-              if(!vernDiv){vernDiv=document.createElement('div');vernDiv.className='gt-vern';const gtn=tile.querySelector('.gtn');if(gtn)gtn.after(vernDiv)}
-              vernDiv.textContent=best.vernacularName;
-            }
+          const ck=cleanTaxonTerm(g.name);
+          let nm;
+          if(_vernCache.has(ck)){
+            nm=_vernCache.get(ck);            // may be null (known miss) — respect it
+          }else{
+            const result=await lookupVern(g.name); // already rank/generic-filtered internally; trusts _localVern
+            nm=(result&&result.name)||null;
+            _vernCache.set(ck,nm);
           }
+          if(!nm)continue;                    // blank, never a dash — honest empty state
+          const tile=grid.querySelector(`.gu-tile[data-gn="${CSS.escape(g.name)}"]`);
+          if(!tile)continue;
+          let vernDiv=tile.querySelector('.gt-vern');
+          if(!vernDiv){
+            vernDiv=document.createElement('div');
+            vernDiv.className='gt-vern';
+            const gtn=tile.querySelector('.gtn');
+            if(gtn)gtn.after(vernDiv);
+          }
+          vernDiv.textContent=singularize(nm); // NO isGenericVern — see CONTEXT above
         }catch(e){}
       }
     })();
@@ -2403,23 +2405,16 @@ async function fetchGuideInfo(name){
   const vernEl=$('#gfVern'),descEl=$('#gfDesc');
   if(!vernEl||!descEl)return;
   /* Common name from GBIF */
-  const terms=[name];
-  for(const term of terms){
-    if(_vernCache.has(term)&&_vernCache.get(term)){
-      vernEl.textContent=_vernCache.get(term);break;
-    }
+  const ck=cleanTaxonTerm(name);
+  if(_vernCache.has(ck)){
+    const cached=_vernCache.get(ck);
+    if(cached)vernEl.textContent=singularize(cached);
+  }else{
     try{
-      const mr=await cachedFetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(term)}&strict=true`);
-      if(!mr.ok)continue;const md=await mr.json();if(!md.usageKey)continue;
-      const vr=await cachedFetch(`https://api.gbif.org/v1/species/${md.usageKey}/vernacularNames?limit=100`);
-      if(!vr.ok)continue;const vd=await vr.json();
-      const names=(vd.results||[]).filter(v=>v.language==='eng'||v.language==='en');
-      const au=names.find(v=>/australia/i.test(v.source||''));
-      const best=au||names[0];
-      if(best?.vernacularName){
-        _vernCache.set(term,best.vernacularName);
-        vernEl.textContent=best.vernacularName;
-      }
+      const result=await lookupVern(name); // trusts _localVern; filters API results internally
+      const nm=(result&&result.name)||null;
+      _vernCache.set(ck,nm);
+      if(nm)vernEl.textContent=singularize(nm); // NO isGenericVern here either
     }catch(e){}
   }
   /* Description: Wikipedia → ALA BIE fallback */
