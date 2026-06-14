@@ -37,7 +37,7 @@ earned by making the foundation correct first — not by polishing visuals over 
 
 ## Done & live (Phases 0–2 foundation)
 
-Shipped to `main` (except #7, on the Phase 3 branch awaiting the phase-boundary merge), in order:
+Shipped to `main`, in order:
 
 - **Phase 0** — `?selftest` harness: synchronous invariant checks (constants, CORS-`fq`
   rules, `isGenericVern`, `singularize`, CSV encoding). Runs only on `?selftest`; normal
@@ -48,7 +48,7 @@ Shipped to `main` (except #7, on the Phase 3 branch awaiting the phase-boundary 
   Lepidoptera family names).
 - **Phase 2 #6** — the museum-first image cascade (detail in the Phase 2 table below).
 - **Phase 2 #7** — `deriveHoldingsStats` helper extracted from `renderGuideFocus`
-  (detail in the Phase 2 table below). On the Phase 3 branch, not yet merged to `main`.
+  (detail in the Phase 2 table below). Merged to `main` at the Phase 2 boundary.
 
 Two durable lessons from this work (also in **Don't** and `CLAUDE.md`): never re-filter
 `lookupVern`'s output with `isGenericVern`; never set a restrictive `fl=` on biocache
