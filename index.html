@@ -2256,6 +2256,19 @@ async function _imgBieCands(name){
   }catch(e){return[]}
 }
 
+/* Reduce iNaturalist's verbose attribution to just the photographer's name.
+   iNat sends e.g. "(c) Dave Holland, some rights reserved (CC BY-NC), uploaded by
+   Dave Holland" — we keep "Dave Holland" and show the licence separately (it's a
+   distinct field), so the tile credit reads "iNaturalist · Dave Holland · CC BY-NC". */
+function _inatCredit(attr){
+  let s=(attr||'').replace(/\(c\)/gi,'©').trim();
+  s=s.replace(/^©\s*/,'');                                  // leading ©
+  s=s.replace(/,?\s*(some|all|no)\s+rights\s+reserved\b/i,''); // rights-reserved phrase
+  s=s.replace(/\s*\(CC[^)]*\)/i,'');                        // inline (CC …) — licence shown separately
+  s=s.replace(/,?\s*uploaded by\b.*$/i,'');                 // "uploaded by …" tail
+  return s.replace(/[,;]\s*$/,'').trim();
+}
+
 /* iNaturalist taxon default photo — prefer an exact name match. */
 async function _imgInatCands(name){
   try{
@@ -2270,7 +2283,7 @@ async function _imgInatCands(name){
     if(!url)return[];
     return[{
       url,source:'inat',sourceLabel:'iNaturalist',
-      attribution:(p.attribution||'').replace(/\(c\)/gi,'©'),
+      attribution:_inatCredit(p.attribution),
       license:_imgNormLicense(p.license_code),
       href:'https://www.inaturalist.org/taxa/'+hit.id
     }];
@@ -2401,22 +2414,20 @@ function _guideProvCaption(cand){
   if(s==='qm')return{cls:'gt-prov prov-qm',text:'QM specimen'};
   if(s==='placeholder')return{cls:'gt-prov',text:'Illustration'};
   if(s==='ala'||s==='bie')return{cls:'gt-prov',text:cand.sourceLabel||cand.attribution||'ALA'};
-  /* iNaturalist / Wikipedia — credit the photographer + licence, without doubling:
-     iNat attributions already carry their own © and licence (e.g.
-     "© lynsh, some rights reserved (CC BY-NC)"), and Wikipedia's attribution just
-     repeats the source label — so add © / licence only when not already present. */
-  const label=cand.sourceLabel||'';
+  /* iNaturalist / Wikipedia — compose "source · creator · licence" as separate,
+     de-duplicated segments. The iNat creator is already reduced to a bare name by
+     _inatCredit; Wikipedia's attribution just repeats the source label (dropped).
+     Licence is normalised for display (CC-BY-NC → CC BY-NC). */
+  const label=(cand.sourceLabel||'').trim();
   let credit=(cand.attribution||'').trim();
   if(credit&&label&&credit.toLowerCase()===label.toLowerCase())credit=''; // don't repeat the label
+  const licDisp=(cand.license||'').replace(/^CC-/,'CC ').trim();
   const norm=x=>(x||'').replace(/[\s_-]/g,'').toUpperCase();
-  const lic=cand.license||'';
-  let t=label;
-  if(credit){
-    const hasMark=/©|\(c\)/i.test(credit);
-    t+=(t?' · ':'')+(hasMark?credit:('© '+credit));
-  }
-  if(lic&&!norm(credit).includes(norm(lic)))t+=(t?' ':'')+`(${lic})`;
-  return{cls:'gt-prov',text:t||label};
+  const segs=[];
+  if(label)segs.push(label);
+  if(credit)segs.push(credit);
+  if(licDisp&&!segs.some(x=>norm(x).includes(norm(licDisp))))segs.push(licDisp);
+  return{cls:'gt-prov',text:segs.join(' · ')||label};
 }
 /* Write/refresh the provenance caption. QM specimens get the green pill in the body
    (our holdings, a point of pride); every OTHER source (another museum, iNaturalist,
@@ -6885,6 +6896,19 @@ if(_SELFTEST){
       eq('holdingsSentence <1% imaged + singular record',
         holdingsSentence({records:1,imaged:0,imagedPct:0,childRank:{label:'genus',items:[]},types:{total:0}}),
         '1 QM specimen · 0% imaged');
+
+      /* ── PROVENANCE CAPTION (pure) ── */
+      eq('_inatCredit strips rights/uploaded boilerplate',
+        _inatCredit('(c) Dave Holland, some rights reserved (CC BY-NC), uploaded by Dave Holland'),
+        'Dave Holland');
+      eq('_inatCredit passes a bare name through', _inatCredit('Jane Doe'), 'Jane Doe');
+      eq('iNat caption → source · creator · licence',
+        _guideProvCaption({source:'inat',sourceLabel:'iNaturalist',attribution:'Dave Holland',license:'CC-BY-NC'}).text,
+        'iNaturalist · Dave Holland · CC BY-NC');
+      eq('Wikipedia caption drops repeated label',
+        _guideProvCaption({source:'wikipedia',sourceLabel:'Wikipedia',attribution:'Wikipedia',license:''}).text,
+        'Wikipedia');
+      eq('QM caption stays the pill text', _guideProvCaption({source:'qm'}).text, 'QM specimen');
     }catch(e){
       bad('harness ran to completion', (e&&e.message)||String(e));
     }
