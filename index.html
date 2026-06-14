@@ -1979,7 +1979,13 @@ function _fillTreeVern(el,name,rank,ancestors){
 
   /* 1. Curated dictionary — instant and trusted (all classes/orders, common families) */
   const dict=_localVern[lo];
-  if(dict){ show(dict); return; }
+  /* Curated dictionary names are rank-appropriate by construction (e.g.
+     Formicidae→"ant", Noctuidae→"owlet moth"), so trust them directly — do NOT
+     gate on isGenericVern here. Family-level _localVern values are deliberately
+     injected into _genericVernSet by the auto-populate IIFE so that GENUS lookups
+     climb to subfamily/tribe; running that same gate over a FAMILY node's own
+     curated name would wrongly blank the tile. Still singularize for display. */
+  if(dict){ el.textContent=singularize(dict); return; }
 
   /* 2. Already cached (from a prior lookup anywhere) — instant, no network */
   if(_vernCache.has(ck)){
@@ -6364,7 +6370,12 @@ if(_SELFTEST){
       eq("isGenericVern('fish')", isGenericVern('fish'), true);
       eq("isGenericVern('animal')", isGenericVern('animal'), true);
       eq("isGenericVern('Christmas beetle')", isGenericVern('Christmas beetle'), false);
-      eq("isGenericVern('jewel beetle')", isGenericVern('jewel beetle'), false);
+      /* Family-level _localVern values (e.g. Buprestidae→"jewel beetle") are
+         auto-injected into _genericVernSet so GENUS lookups that only resolve to
+         a family name climb to subfamily/tribe. Hence this is generic by design.
+         Family-tile DISPLAY trusts _localVern directly (see _fillTreeVern) and
+         does NOT gate on isGenericVern, so tiles are not blanked. */
+      eq("isGenericVern('jewel beetle') — family name, generic by design", isGenericVern('jewel beetle'), true);
       eq("isGenericVern('golden silk orb-weaver')", isGenericVern('golden silk orb-weaver'), false);
       eq("isGenericVern(null)", isGenericVern(null), true);
       eq("isGenericVern('')", isGenericVern(''), true);
