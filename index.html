@@ -1344,7 +1344,7 @@ async function doSearch(){
       S._polyMasterRecs=null;S._polyMasterDone=false;S._polyMasterBboxTotal=0;
       const fq=alaBaseFQ(f);
         const recU=new URLSearchParams();recU.set('q',f.q||'*:*');appendFQ(recU,fq);
-        recU.set('pageSize',INIT_PAGE);recU.set('startIndex',S.off);recU.set('facets','');recU.set('flimit','0');
+        recU.set('pageSize',INIT_PAGE);recU.set('startIndex',S.off);recU.set('sort','id');recU.set('dir','asc');recU.set('facets','');recU.set('flimit','0');
         const recP=fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+recU).then(r=>{if(!r.ok)throw new Error('ALA '+r.status);return r.json()});
         const facU=new URLSearchParams();facU.set('q',f.q||'*:*');appendFQ(facU,fq);
         facU.set('pageSize','0');facU.set('startIndex','0');
