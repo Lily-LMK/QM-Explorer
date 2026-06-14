@@ -3118,17 +3118,17 @@ function updateMapInfo(){
   const fetched=S.mapFetched||allCount;
   /* A background load (map quadtree or polygon scan) is running iff _bgRunning is set. */
   const loading=!!S._bgRunning;
-  const coordFilter=$('#fCoord')?.value==='true';
-  /* Gap = records the API counted but we couldn't extract coordinates from.
-     When coord filter is active, this is typically sensitive/withheld data. */
-  const gap=fetched>0&&!loading?(fetched-allCount):0;
+  /* Records ALA counts for this query but the loader can't place — no released
+     coordinate. Meaningful only after loading completes, in standard (non-box/poly)
+     mode, and when we're not hitting the 50k cap. */
+  const capped=!S.mapUncapped&&S.total>MAP_POINT_CAP;
+  const unmapped=(!loading&&!capped&&!filtered)?Math.max(0,S.total-allCount):0;
   $('#mapC').querySelectorAll('.map-info').forEach(e=>e.remove());
   const info=document.createElement('div');info.className='map-info';
   let txt=`<b>Markers:</b> ${fmt(visCount)}`;
   if(filtered&&visCount!==allCount)txt+=` <span style="color:#007a47">${S.mapPoly?'in '+esc(S.mapPoly.source==='drawn'?'drawn area':S.mapPoly.source||'area'):'in box'}</span> / ${fmt(allCount)} loaded`;
   if(loading)txt+=` <span style="color:#f7941d">(loading… ${Math.round(fetched/cap*100)}%)</span>`;
-  else if(gap>0&&coordFilter)txt+=` of ${fmt(S.total)} <span style="color:var(--muted)" title="${gap} records have coordinates withheld by ALA (sensitive taxa)">(${fmt(gap)} coords withheld)</span>`;
-  else if(gap>0)txt+=` of ${fmt(S.total)} total <span style="color:var(--muted)">(${fmt(allCount)} with coords)</span>`;
+  else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records are counted by ALA as georeferenced but return no usable coordinate, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
   else txt+=` of ${fmt(S.total)} total`;
   if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
   else if(S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--orange);font-weight:600">(uncapped)</span>`;
