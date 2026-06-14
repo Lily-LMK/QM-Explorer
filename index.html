@@ -2512,10 +2512,12 @@ function renderGuide(){
 
   /* Use facets for the full dataset counts */
   const facetData=S.facets[rk.fk]||S.facets[rk.k]||[];
-  const sorted=facetData
+  const GUIDE_CAP=200;
+  const sortedAll=facetData
     .filter(f=>f.name&&f.count>0)
     .map(f=>({name:f.name,count:f.count,imgs:[],vern:'',rank:rk.l}))
     .sort((a,b)=>b.count-a.count);
+  const sorted=sortedAll.slice(0,GUIDE_CAP);
 
   /* Supplement images + ecological data from loaded records */
   if(S.res.length){
@@ -2535,9 +2537,9 @@ function renderGuide(){
     else{root.innerHTML+='<div class="empty"><div class="ico">📖</div><h3>No taxa</h3></div>'}
     return;
   }
-  if(sorted.length>=FLIM){
+  if(sortedAll.length>sorted.length){
     const note=document.createElement('div');note.style.cssText='font-size:12px;color:var(--muted);padding:4px 0;margin-bottom:4px';
-    note.textContent=`Showing top ${sorted.length} by record count. Use filters to narrow results.`;
+    note.textContent=`Showing the top ${sorted.length} groups by record count. Use filters to narrow results.`;
     root.appendChild(note);
   }
   /* Fresh observer for this render generation (teardown already bumped the gen) */
