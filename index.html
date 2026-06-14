@@ -2529,7 +2529,7 @@ function renderGuide(){
     const heroImg=hasImg?`<img src="${esc(g.imgs[0])}" alt="${esc('Representative image of '+g.name)}" loading="lazy">`:'';
     tile.innerHTML=`<div class="gt-img${hasImg?'':' gt-load'}">${heroImg}</div><div class="gt-body"><div class="gtn${isIt?' it':''}">${esc(g.name)}</div>${g.vern?`<div class="gt-vern">${esc(g.vern)}</div>`:''}<div class="gts">${fmt(g.count)} record${g.count!==1?'s':''}</div></div>`;
     if(hasImg)_guideSetProv(tile,{source:'qm'});
-    tile.onclick=()=>{S.guideFocus={rank:g.rank,name:g.name};setFilterSilent(rk.k,g.name);renderGuide()};grid.appendChild(tile)});
+    tile.onclick=()=>{S.guideFocus={rank:g.rank,name:g.name};setFilterSilent(rk.k,g.name);renderGuide();pushURLState()};grid.appendChild(tile)});
   root.appendChild(grid);
 
   /* ── Async: batch-fetch QM images, then lazily cascade the rest ──
@@ -2758,7 +2758,7 @@ function renderGuideFocus(root){
         const sc=$('#scroll');sc.classList.remove('mm');sc.style.overflow='auto';doSearch();
       });
       left.querySelector('#gfBk')?.addEventListener('click',()=>{guideBack()});
-      right.querySelectorAll('.cc-chip[data-rk]').forEach(ch=>{ch.style.cursor='pointer';ch.onclick=()=>{const rk=ch.dataset.rk;const nm=ch.dataset.nm;S.guideFocus={rank:RLABEL[rk]||rk,name:nm};setFilterSilent(rk,nm);renderGuide()}});
+      right.querySelectorAll('.cc-chip[data-rk]').forEach(ch=>{ch.style.cursor='pointer';ch.onclick=()=>{const rk=ch.dataset.rk;const nm=ch.dataset.nm;S.guideFocus={rank:RLABEL[rk]||rk,name:nm};setFilterSilent(rk,nm);renderGuide();pushURLState()}});
 
       fetchGuideInfo(f.name);
       
@@ -6603,6 +6603,9 @@ function pushURLState(){
   /* Sort */
   const sort=$('#fSort')?.value;
   if(sort&&sort!=='count')p.set('sort',sort);
+  /* Browse drill-in focus — shareable deep link (the taxon filter itself is
+     already serialised above via _URL_KEYS; this captures the focus state). */
+  if(S.view==='guide'&&S.guideFocus){p.set('gfRank',S.guideFocus.rank);p.set('gfName',S.guideFocus.name)}
   /* Build hash */
   const h=p.toString();
   const newHash=h?'#'+h:'';
@@ -6638,6 +6641,9 @@ function restoreFromURL(){
   /* Sort */
   const sort=p.get('sort');
   if(sort&&$('#fSort'))$('#fSort').value=sort;
+  /* Browse drill-in focus */
+  const gfRank=p.get('gfRank'),gfName=p.get('gfName');
+  if(gfRank&&gfName){S.guideFocus={rank:gfRank,name:gfName};any=true}
   /* NNTT area name — stored for reference but polygon restore requires user action
      (polygon data isn't in URL, only the name) */
   _urlSuppressPush=false;
@@ -6669,10 +6675,16 @@ window.addEventListener('hashchange',()=>{
   }
   if(p.get('q')){S.q=p.get('q');$('#q').value=S.q}else{S.q='';$('#q').value=''}
   const sort=p.get('sort');if($('#fSort'))$('#fSort').value=sort||'count';
+  /* Browse drill-in focus (set before render so switchView/renderGuide see it) */
+  const gfRank=p.get('gfRank'),gfName=p.get('gfName');
+  S.guideFocus=(gfRank&&gfName)?{rank:gfRank,name:gfName}:null;
   _urlSuppressPush=false;
   doSearch();
   const view=p.get('view')||'gallery';
   if(S.view!==view)switchView(view);
+  /* Re-render Browse for back/forward within the guide view (switchView is
+     skipped when the view is unchanged, e.g. drilling in/out of a focus). */
+  if(view==='guide'){try{renderGuide()}catch(e){}}
 });
 
 /* BOOT */
@@ -6682,6 +6694,9 @@ if(hadURLState&&S.view!=='gallery'){
   $$('.tab[role="tab"]').forEach(t=>{const on=t.dataset.v===S.view;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});
   $$('.vp').forEach(p=>p.classList.remove('on'));$('#v-'+S.view)?.classList.add('on');
   const sc=$('#scroll');if(S.view==='map'){sc.classList.add('mm');sc.style.overflow='hidden'}
+  /* Deep-linked Browse focus: render the group detail (renderGuideFocus fetches
+     its own data; the trailing doSearch populates records for "View Records"). */
+  if(S.view==='guide'&&S.guideFocus){try{renderGuide()}catch(e){}}
 }
 /* Self-test mode (?selftest) skips the live search so no API calls fire. */
 const _SELFTEST = new URLSearchParams(location.search).has('selftest');
