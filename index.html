@@ -2329,16 +2329,30 @@ function _imgHash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.cha
 function imgPlaceholderCandidate(name,rank,labelOverride){
   const field=_imgRankField(rank);
   const seed=_imgHash((field+'|'+(name||'')).toLowerCase());
-  const h1=seed%360,h2=(h1+38)%360;
   const initial=esc((((name||'?').trim()[0])||'?').toUpperCase());
   const label=esc(((labelOverride!=null&&labelOverride!=='')?labelOverride:(RLABEL[field]||'')).toUpperCase());
+  /* Restrained, desaturated "specimen-drawer" palette (sage/sepia/slate/oxblood/petrol/
+     olive) — seeded by taxon, never saturated, so the real photos still read as jewels. */
+  const TONES=[['#3b4a40','#222c26'],['#46392f','#2a221c'],['#39394a','#23232d'],['#4a3338','#2c1f23'],['#324349','#1d2629'],['#45402f','#29261c'],['#2f4038','#1c2723'],['#42333a','#271d22']];
+  const t=TONES[seed%TONES.length];
+  /* Deterministic seeded RNG — NO Math.random (output must be stable for the cache and
+     the ?selftest determinism probe). */
+  let _s=seed>>>0; const rnd=()=>{_s=(_s*1664525+1013904223)>>>0;return _s/4294967296};
+  let contours='';
+  for(let i=0;i<6;i++){
+    const baseY=30+i*46+rnd()*14, amp=10+rnd()*22, ph=rnd()*6.28, fr=1.3+rnd()*1.6;
+    let d='M -20 '+baseY.toFixed(1);
+    for(let x=0;x<=420;x+=20){const y=baseY+Math.sin((x/400)*fr*6.28+ph)*amp;d+=' L '+x+' '+y.toFixed(1)}
+    contours+=`<path d="${d}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1.5"/>`;
+  }
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">`
-    +`<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">`
-    +`<stop offset="0" stop-color="hsl(${h1},40%,33%)"/>`
-    +`<stop offset="1" stop-color="hsl(${h2},36%,19%)"/></linearGradient></defs>`
+    +`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">`
+    +`<stop offset="0" stop-color="${t[0]}"/><stop offset="1" stop-color="${t[1]}"/></linearGradient></defs>`
     +`<rect width="400" height="300" fill="url(#g)"/>`
-    +`<text x="200" y="176" font-family="Georgia,serif" font-size="150" fill="rgba(255,255,255,0.13)" text-anchor="middle">${initial}</text>`
-    +`<text x="200" y="272" font-family="Arial,Helvetica,sans-serif" font-size="13" letter-spacing="3" fill="rgba(255,255,255,0.55)" text-anchor="middle">${label}</text>`
+    +contours
+    +`<text x="300" y="300" font-family="Georgia,'Times New Roman',serif" font-size="260" fill="rgba(255,255,255,0.07)" text-anchor="middle">${initial}</text>`
+    +`<rect x="12" y="12" width="376" height="276" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>`
+    +`<text x="24" y="40" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,0.62)">${label}</text>`
     +`</svg>`;
   return{url:'data:image/svg+xml,'+encodeURIComponent(svg),source:'placeholder',sourceLabel:'',attribution:'',license:'',href:''};
 }
@@ -6900,6 +6914,7 @@ if(_SELFTEST){
         'url='+JSON.stringify((ph.url||'').slice(0,40)));
       assert('placeholder is deterministic for the same name+rank',
         imgPlaceholderCandidate('Chelidae','family').url===ph.url, 'differed across calls');
+      eq("placeholder dropped the saturated hsl gradient", imgPlaceholderCandidate('Chelidae','family').url.includes('hsl('), false);
       eq("imgPlaceholderCandidate label override",
         decodeURIComponent(imgPlaceholderCandidate('Meliphaga lewinii','species','Meliphagidae').url).includes('MELIPHAGIDAE'), true);
       eq("imgPlaceholderCandidate default label unchanged",
