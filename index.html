@@ -1979,7 +1979,7 @@ function _fillTreeVern(el,name,rank,ancestors){
 
   /* 1. Curated dictionary — instant and trusted (all classes/orders, common families) */
   const dict=_localVern[lo];
-  if(dict){ el.textContent=dict; return; }
+  if(dict){ show(dict); return; }
 
   /* 2. Already cached (from a prior lookup anywhere) — instant, no network */
   if(_vernCache.has(ck)){
@@ -4656,9 +4656,9 @@ const _localVern={
   miridae:'plant bug',lygaeidae:'seed bug',nabidae:'damsel bug',gerridae:'water strider',
   notonectidae:'backswimmer',belostomatidae:'giant water bug',nepidae:'water scorpion',
   /* Lepidoptera families */
-  noctuidae:'moth',geometridae:'moth',pyralidae:'moth',erebidae:'moth',tortricidae:'moth',
-  oecophoridae:'moth',crambidae:'moth',sphingidae:'hawk moth',saturniidae:'emperor moth',
-  nymphalidae:'butterfly',lycaenidae:'butterfly',pieridae:'butterfly',papilionidae:'swallowtail butterfly',
+  noctuidae:'owlet moth',geometridae:'geometer moth',pyralidae:'snout moth',erebidae:'erebid moth',tortricidae:'leafroller moth',
+  oecophoridae:'concealer moth',crambidae:'grass moth',sphingidae:'hawk moth',saturniidae:'emperor moth',
+  nymphalidae:'brush-footed butterfly',lycaenidae:'gossamer-winged butterfly',pieridae:'white butterfly',papilionidae:'swallowtail butterfly',
   hesperiidae:'skipper butterfly',zygaenidae:'burnet moth',hepialidae:'ghost moth',
   /* Coleoptera families */
   scarabaeidae:'scarab beetle',cerambycidae:'longhorn beetle',chrysomelidae:'leaf beetle',
