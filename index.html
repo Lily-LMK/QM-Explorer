@@ -2622,6 +2622,36 @@ function renderGuide(){
     })();
   }
 }
+/* Pure: derive the per-group holdings story from an extractFacets_A() result.
+   No network, no DOM. Reused by the Browse focus panel (and the Phase 3 redesign).
+   facets: output of extractFacets_A(facD). opts: {totalCount, mediaTotal, childRanks}. */
+function deriveHoldingsStats(facets, opts){
+  opts = opts || {};
+  const records = opts.totalCount || 0;
+  const imaged  = opts.mediaTotal || 0;
+  const childRanks = opts.childRanks || [];
+  const yearFacet = (facets.year||[])
+    .filter(y=>y.name && parseInt(y.name)>1700)
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  const types = (facets.type_status||[]).filter(t=>t.name && !/notatype/i.test(t.name) && t.count>0);
+  let childLabel='', childItems=[];
+  for(const cr of childRanks){
+    const fdata = facets[cr] || facets[cr==='class'?'class_':cr] || [];
+    if(fdata.length){ childLabel=cr; childItems=fdata.slice().sort((a,b)=>b.count-a.count); break; }
+  }
+  return {
+    records, imaged,
+    imagedPct: records ? imaged/records : 0,
+    yearFirst: yearFacet.length ? yearFacet[0].name : '',
+    yearLast:  yearFacet.length ? yearFacet[yearFacet.length-1].name : '',
+    types: { total: types.reduce((s,t)=>s+t.count,0), items: types },
+    states:     (facets.state||[]).filter(s=>s.name && s.count>0).sort((a,b)=>b.count-a.count),
+    collectors: (facets.collector||[]).filter(c=>c.name && c.count>0).sort((a,b)=>b.count-a.count),
+    basis:      facets.basis_of_record || facets.basisofrecord || [],
+    childRank:  { label: childLabel, items: childItems }
+  };
+}
+
 function renderGuideFocus(root){
   const f=S.guideFocus;const isIt=['Genus','Species'].includes(f.rank);
   const nm=isIt?`<em>${esc(f.name)}</em>`:esc(f.name);
@@ -2655,20 +2685,13 @@ function renderGuideFocus(root){
       const imgRecs=(imgD?.occurrences||[]).map(normRec_A);
       const bieHit=(bieD?.searchResults?.results||[])[0]||null;
 
-      /* Derive from facets */
-      let childRankLabel='',childItems=[];
-      for(const cr of childRanks){
-        const fdata=facets[cr]||facets[cr==='class'?'class_':cr]||[];
-        if(fdata.length){childRankLabel=cr;childItems=fdata.sort((a,b)=>b.count-a.count);break}
-      }
-      const yearFacet=(facets.year||[]).filter(y=>y.name&&parseInt(y.name)>1700).sort((a,b)=>a.name.localeCompare(b.name));
-      const yr1=yearFacet.length?yearFacet[0].name:'';
-      const yr2=yearFacet.length?yearFacet[yearFacet.length-1].name:'';
-      const basisFacet=facets.basis_of_record||facets.basisofrecord||[];
-      const stateFacet=(facets.state||[]).filter(s=>s.name&&s.count>0).sort((a,b)=>b.count-a.count);
-      const collectorFacet=(facets.collector||[]).filter(c=>c.name&&c.count>0).sort((a,b)=>b.count-a.count);
-      const typeFacet=(facets.type_status||[]).filter(t=>t.name&&!/notatype/i.test(t.name)&&t.count>0);
-      const typeTotal=typeFacet.reduce((s,t)=>s+t.count,0);
+      /* Derive the holdings story (counts, types, year range, states, collectors,
+         basis, child-taxa richness) via the shared pure helper. */
+      const H=deriveHoldingsStats(facets,{totalCount,mediaTotal,childRanks});
+      const yr1=H.yearFirst, yr2=H.yearLast;
+      const childRankLabel=H.childRank.label, childItems=H.childRank.items;
+      const basisFacet=H.basis, stateFacet=H.states, collectorFacet=H.collectors;
+      const typeFacet=H.types.items, typeTotal=H.types.total;
 
       /* Conservation status from BIE */
       let consHtml='';
@@ -6769,6 +6792,22 @@ if(_SELFTEST){
         'url='+JSON.stringify((ph.url||'').slice(0,40)));
       assert('placeholder is deterministic for the same name+rank',
         imgPlaceholderCandidate('Chelidae','family').url===ph.url, 'differed across calls');
+
+      /* ── HOLDINGS STATS (pure derivation, no network) ── */
+      const _hf={
+        year:[{name:'2024',count:3},{name:'1861',count:1},{name:'1650',count:9}],
+        type_status:[{name:'Holotype',count:4},{name:'Paratype',count:6},{name:'notAType',count:99}],
+        state:[{name:'Queensland',count:50},{name:'NSW',count:5}],
+        class_:[{name:'Malacostraca',count:40}]
+      };
+      const _H=deriveHoldingsStats(_hf,{totalCount:100,mediaTotal:1,childRanks:['class','order','family']});
+      eq('holdings records', _H.records, 100);
+      eq('holdings imagedPct (1/100)', _H.imagedPct, 0.01);
+      eq('holdings imagedPct guard (records=0)', deriveHoldingsStats(_hf,{totalCount:0,mediaTotal:5,childRanks:[]}).imagedPct, 0);
+      eq('holdings yearFirst respects >1700 + sort', _H.yearFirst, '1861');
+      eq('holdings yearLast', _H.yearLast, '2024');
+      eq('holdings types.total excludes notAType', _H.types.total, 10);
+      eq('holdings childRank resolves class_ alias', _H.childRank.label, 'class');
     }catch(e){
       bad('harness ran to completion', (e&&e.message)||String(e));
     }
