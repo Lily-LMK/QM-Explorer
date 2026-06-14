@@ -2116,6 +2116,239 @@ function applyTaxonFilter(rank,name){
   S.off=0;doSearch();
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   IMAGE-RESOLUTION CASCADE (Browse redesign — Phase 2, item 6a)
+   ────────────────────────────────────────────────────────────────────────
+   Resolves ONE representative image for a taxonomic GROUP at any rank, with
+   provenance + attribution. Falls through on BOTH failure modes:
+     (a) a source returns no usable URL, and
+     (b) a returned URL fails to actually load in the browser.
+
+   Priority cascade (museum feel — preserved specimens before living photos):
+     1. QM specimen      — institution-scoped biocache image (what WE hold)
+     2. other-museum spec— biocache PreservedSpecimen image from OTHER institutions
+     3. iNaturalist      — taxon default_photo (a live photo; CC-attributed)
+     4. Wikipedia        — REST summary lead image
+     5. BIE taxon image  — curated profile image (last real-image attempt)
+     6. placeholder      — elegant generated SVG (NEVER a dash)
+
+   NOTE: there is deliberately NO generic "ALA-wide, any basis_of_record" image
+   step — biocache without a basis filter is dominated by iNaturalist
+   HumanObservation photos of living organisms, which broke the museum feel.
+   Specimens come only from tiers 1–2; living images only from tiers 3–4.
+
+   Candidate object shape (exact keys):
+     { url, source, sourceLabel, attribution, license, href }
+       source: 'qm' | 'ala' | 'bie' | 'inat' | 'wikipedia' | 'placeholder'
+
+   STANDALONE: nothing here is called yet — renderGuide is wired up in 6b.
+   CORS-safe: every biocache filter is sent as a SEPARATE fq via appendFQ —
+   never AND-joined into one fq (see CLAUDE.md rule #4).
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Resolved-image cache: key `${rankField}|${name}` → Promise<Candidate>.
+   Stores the in-flight promise too, so concurrent tiles dedupe to one resolve.
+   Placeholder / failed resolves are evicted on settle so a later call can
+   retry (a placeholder must never be locked in by a transient network blip). */
+const _groupImgCache=new Map();
+
+/* Normalise any rank token to a biocache Solr field. Accepts the filter-object
+   key 'class_' and the ALL-CAPS variants; defaults to 'family' if unknown. */
+function _imgRankField(rank){
+  let r=(rank||'').toString().toLowerCase().replace(/_+$/,'');
+  const ok=new Set(['kingdom','phylum','class','order','superfamily','family','genus','species']);
+  return ok.has(r)?r:'family';
+}
+
+/* Normalise an iNaturalist/biocache licence code → display form. */
+function _imgNormLicense(code){
+  if(!code)return'';
+  const c=code.toString().toLowerCase();
+  if(c==='cc0')return'CC0';
+  if(c.startsWith('cc-'))return c.toUpperCase();
+  return code.toString();
+}
+
+/* Try to actually load a URL as an <img>. Resolves true only if the browser
+   decodes a real bitmap. No crossOrigin — we only need to display it, so no
+   CORS is required. Bounded by a timeout so a hung host can't stall the cascade. */
+function _imgPreload(url,timeout){
+  return new Promise(resolve=>{
+    if(!url){resolve(false);return}
+    const img=new Image();let done=false;
+    const finish=ok=>{if(done)return;done=true;clearTimeout(t);img.onload=img.onerror=null;resolve(ok)};
+    const t=setTimeout(()=>finish(false),timeout||9000);
+    img.onload=()=>finish(img.naturalWidth>0);
+    img.onerror=()=>finish(false);
+    img.src=url;
+  });
+}
+
+/* ── Candidate generators (each returns Candidate[]; never throws) ── */
+
+/* Biocache occurrence images. `clauses` is a CORS-safe fq array (each clause a
+   SEPARATE fq — appendFQ enforces this). `opts`:
+     { source, sourceLabel, attribution, perRecord, limit }
+   When perRecord is set, each candidate's sourceLabel/attribution come from the
+   record's own institutionName (used by the other-museum tier so the badge names
+   the holding institution); otherwise the fixed opts values are used.
+   NB: NO `fl` is set — biocache only includes the assembled image URLs
+   (largeImageUrl/imageUrl/smallImageUrl) and institutionName in its DEFAULT field
+   set; a restrictive `fl` silently DROPS them (verified against the live API). */
+async function _imgBiocacheCands(clauses,opts){
+  opts=opts||{};
+  try{
+    const u=new URLSearchParams();
+    u.set('q','*:*');
+    appendFQ(u,clauses);
+    u.set('pageSize',String(Math.min(opts.limit||6,ALA_MAX_PAGE)));
+    u.set('startIndex','0');u.set('facets','');u.set('flimit','0');
+    const r=await cachedFetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u.toString());
+    if(!r.ok)return[];
+    const d=await r.json();
+    const out=[],seen=new Set();
+    for(const o of (d.occurrences||[])){
+      const url=o.largeImageUrl||o.imageUrl||o.smallImageUrl||'';
+      if(!url)continue;
+      const id=imgId(url);if(seen.has(id))continue;seen.add(id);
+      const inst=(o.institutionName||o.dataResourceName||'').toString();
+      out.push({
+        url,
+        source:opts.source,
+        sourceLabel:opts.perRecord?(inst||opts.sourceLabel||'ALA specimen'):opts.sourceLabel,
+        attribution:opts.perRecord?inst:(o.dataResourceName||opts.attribution||'').toString(),
+        license:'',
+        href:o.uuid?('https://biocache.ala.org.au/occurrences/'+encodeURIComponent(o.uuid)):''
+      });
+    }
+    return out;
+  }catch(e){return[]}
+}
+
+/* ALA BIE taxon profile image (a curated representative for the taxon). */
+async function _imgBieCands(name){
+  try{
+    const r=await cachedFetch('https://bie-ws.ala.org.au/ws/search?q='+encodeURIComponent(name)+'&fq=idxtype:TAXON&pageSize=5');
+    if(!r.ok)return[];
+    const d=await r.json();
+    const results=d?.searchResults?.results||[];
+    const lo=(name||'').toLowerCase();
+    const pref=results.find(t=>(t.name||'').toLowerCase()===lo&&(t.imageUrl||t.thumbnailUrl||t.largeImageUrl))
+            ||results.find(t=>t.imageUrl||t.thumbnailUrl||t.largeImageUrl);
+    if(!pref)return[];
+    const url=pref.imageUrl||pref.largeImageUrl||pref.thumbnailUrl||'';
+    if(!url)return[];
+    return[{url,source:'bie',sourceLabel:'ALA',attribution:(pref.imageSource||'').toString(),
+      license:'',href:pref.guid?('https://bie.ala.org.au/species/'+encodeURIComponent(pref.guid)):''}];
+  }catch(e){return[]}
+}
+
+/* iNaturalist taxon default photo — prefer an exact name match. */
+async function _imgInatCands(name){
+  try{
+    const r=await cachedFetch('https://api.inaturalist.org/v1/taxa?q='+encodeURIComponent(name)+'&per_page=5');
+    if(!r.ok)return[];
+    const d=await r.json();
+    const lo=(name||'').toLowerCase();
+    const results=d.results||[];
+    const hit=results.find(t=>(t.name||'').toLowerCase()===lo&&t.default_photo)||results.find(t=>t.default_photo);
+    const p=hit&&hit.default_photo;
+    const url=p&&(p.medium_url||p.url||p.square_url);
+    if(!url)return[];
+    return[{
+      url,source:'inat',sourceLabel:'iNaturalist',
+      attribution:(p.attribution||'').replace(/\(c\)/gi,'©'),
+      license:_imgNormLicense(p.license_code),
+      href:'https://www.inaturalist.org/taxa/'+hit.id
+    }];
+  }catch(e){return[]}
+}
+
+/* Wikipedia REST summary lead image (skips disambiguation pages). */
+async function _imgWikiCands(name){
+  try{
+    const title=encodeURIComponent((name||'').trim().replace(/\s+/g,'_'));
+    if(!title)return[];
+    const r=await cachedFetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+title);
+    if(!r.ok)return[];
+    const d=await r.json();
+    if(d.type&&/disambiguation/i.test(d.type))return[];
+    const url=(d.originalimage&&d.originalimage.source)||(d.thumbnail&&d.thumbnail.source)||'';
+    if(!url)return[];
+    return[{url,source:'wikipedia',sourceLabel:'Wikipedia',attribution:'Wikipedia',
+      license:'CC-BY-SA',href:(d.content_urls&&d.content_urls.desktop&&d.content_urls.desktop.page)||''}];
+  }catch(e){return[]}
+}
+
+/* ── Placeholder — deterministic, elegant, never a dash ── */
+function _imgHash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+/* Build the placeholder candidate: a soft diagonal gradient keyed to the name,
+   the group's initial as a faint serif glyph, and the rank as a quiet label. */
+function imgPlaceholderCandidate(name,rank){
+  const field=_imgRankField(rank);
+  const seed=_imgHash((field+'|'+(name||'')).toLowerCase());
+  const h1=seed%360,h2=(h1+38)%360;
+  const initial=esc((((name||'?').trim()[0])||'?').toUpperCase());
+  const label=esc((RLABEL[field]||'').toUpperCase());
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">`
+    +`<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">`
+    +`<stop offset="0" stop-color="hsl(${h1},40%,33%)"/>`
+    +`<stop offset="1" stop-color="hsl(${h2},36%,19%)"/></linearGradient></defs>`
+    +`<rect width="400" height="300" fill="url(#g)"/>`
+    +`<text x="200" y="176" font-family="Georgia,serif" font-size="150" fill="rgba(255,255,255,0.13)" text-anchor="middle">${initial}</text>`
+    +`<text x="200" y="272" font-family="Arial,Helvetica,sans-serif" font-size="13" letter-spacing="3" fill="rgba(255,255,255,0.55)" text-anchor="middle">${label}</text>`
+    +`</svg>`;
+  return{url:'data:image/svg+xml,'+encodeURIComponent(svg),source:'placeholder',sourceLabel:'',attribution:'',license:'',href:''};
+}
+
+/* ── The cascade (uncached core) ── */
+async function _resolveGroupImageUncached(name,rank){
+  const field=_imgRankField(rank);
+  const rkClause=`${field}:"${(name||'').replace(/"/g,'')}"`;
+  const inst=S.alaInst?`institution_uid:${S.alaInst}`:'';
+  const gens=[];
+  /* 1. QM specimen — what WE hold (institution-scoped imaged records) */
+  if(inst)gens.push(()=>_imgBiocacheCands([inst,rkClause,'multimedia:"Image"'],
+      {source:'qm',sourceLabel:'QM specimen',attribution:'Queensland Museum',limit:6}));
+  /* 2. Other-museum specimen — PreservedSpecimen images from OTHER institutions,
+        so Browse keeps a museum feel instead of surfacing living iNat photos.
+        basis_of_record:"PreservedSpecimen" verified against the live API. */
+  {
+    const c=[rkClause,'multimedia:"Image"','basis_of_record:"PreservedSpecimen"'];
+    if(inst)c.push(`-institution_uid:${S.alaInst}`);
+    gens.push(()=>_imgBiocacheCands(c,{source:'ala',sourceLabel:'ALA specimen',perRecord:true,limit:1}));
+  }
+  /* 3. iNaturalist · 4. Wikipedia — living-organism fallbacks (only reached when
+        no specimen image exists anywhere) */
+  gens.push(()=>_imgInatCands(name));
+  gens.push(()=>_imgWikiCands(name));
+  /* 5. BIE taxon profile image — last real-image attempt before placeholder */
+  gens.push(()=>_imgBieCands(name));
+  for(const gen of gens){
+    let cands=[];
+    try{cands=(await gen())||[]}catch(e){cands=[]}
+    for(const c of cands){
+      if(!c||!c.url)continue;
+      if(await _imgPreload(c.url))return c;
+    }
+  }
+  return imgPlaceholderCandidate(name,rank);
+}
+
+/* Public entry point. Returns Promise<Candidate>. Caches real-source results;
+   evicts placeholders/failures so they can be retried later. */
+function resolveGroupImage(name,rank){
+  const key=_imgRankField(rank)+'|'+(name||'').toLowerCase();
+  const hit=_groupImgCache.get(key);
+  if(hit)return hit;
+  const p=_resolveGroupImageUncached(name,rank).then(cand=>{
+    if(!cand||cand.source==='placeholder')_groupImgCache.delete(key);
+    return cand;
+  }).catch(()=>{_groupImgCache.delete(key);return imgPlaceholderCandidate(name,rank)});
+  _groupImgCache.set(key,p);
+  return p;
+}
+
 /* BROWSE — visual taxonomy browser */
 function renderGuide(){
   const root=$('#guideRoot');root.innerHTML='';
@@ -6325,6 +6558,16 @@ if(!_SELFTEST) doSearch();
    not call doSearch(), fetch(), or touch the DOM beyond replacing <body>.
    ════════════════════════════════════════════════════════════════════════ */
 if(_SELFTEST){
+  /* Async cascade probe — NOT part of the synchronous report (it hits the network).
+     Run manually from the console, e.g.  await _imgCascadeTest('Chelidae','family').
+     Logs the resolved source/label/attribution so you can confirm a specimen tier
+     (qm / ala) fires before any living iNat/Wikipedia fallback. */
+  window._imgCascadeTest=async(name,rank)=>{
+    const c=await resolveGroupImage(name,rank||'family');
+    const {url,...meta}=c;
+    console.log(`[cascade] ${name} (${rank||'family'}) → source=${c.source}`,meta,'\n  url:',(url||'').slice(0,90));
+    return c;
+  };
   const _run=()=>{
     const results=[];
     const ok =(name)=>results.push({pass:true ,name});
@@ -6392,6 +6635,27 @@ if(_SELFTEST){
       eq('CSV quotes a comma value', csvEnc('a,b'), '"a,b"');
       eq('CSV doubles an embedded quote', csvEnc('a"b'), '"a""b"');
       eq('CSV quotes a newline value', csvEnc('a\nb'), '"a\nb"');
+
+      /* ── IMAGE-RESOLUTION CASCADE (synchronous parts only — no network) ── */
+      eq("_imgRankField('class_') → 'class'", _imgRankField('class_'), 'class');
+      eq("_imgRankField('Family') → 'family'", _imgRankField('Family'), 'family');
+      eq("_imgRankField('bogus') → 'family' (default)", _imgRankField('bogus'), 'family');
+      eq("_imgNormLicense('cc-by-nc') → 'CC-BY-NC'", _imgNormLicense('cc-by-nc'), 'CC-BY-NC');
+      eq("_imgNormLicense('cc0') → 'CC0'", _imgNormLicense('cc0'), 'CC0');
+      eq("_imgNormLicense('') → ''", _imgNormLicense(''), '');
+      assert('resolveGroupImage is a function', typeof resolveGroupImage==='function',
+        'got '+typeof resolveGroupImage);
+      const ph=imgPlaceholderCandidate('Chelidae','family');
+      const phKeys=['url','source','sourceLabel','attribution','license','href'];
+      assert('placeholder candidate has exactly the 6 candidate keys',
+        phKeys.every(k=>k in ph)&&Object.keys(ph).length===6,
+        'keys='+JSON.stringify(Object.keys(ph)));
+      eq("placeholder source === 'placeholder'", ph.source, 'placeholder');
+      assert('placeholder url is an inline SVG data URI (never a dash)',
+        typeof ph.url==='string'&&ph.url.startsWith('data:image/svg+xml,'),
+        'url='+JSON.stringify((ph.url||'').slice(0,40)));
+      assert('placeholder is deterministic for the same name+rank',
+        imgPlaceholderCandidate('Chelidae','family').url===ph.url, 'differed across calls');
     }catch(e){
       bad('harness ran to completion', (e&&e.message)||String(e));
     }
