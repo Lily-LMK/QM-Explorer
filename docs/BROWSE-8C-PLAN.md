@@ -72,16 +72,40 @@ Elevation comes from **composition**, not new colour or type:
 
 8c-1 is **void** (the divergent-skin attempt, reverted). The real work is compositional:
 
-| # | Commit | What | Risk |
-|---|--------|------|------|
-| 8c-a | `Browse: imagery-forward group cards + hierarchy` | Refine tile markup/CSS within the existing language: larger image area, rank eyebrow (`.gtr`), clearer name/vernacular/stat hierarchy, spacing/rhythm. Keyboard-operable, reduced-motion-safe hover, visible focus ring. No new colour/font. | Med |
-| 8c-b | `Browse: curated feature-tile grid` | A few larger feature tiles (top groups / most types) for editorial rhythm; responsive; DOM/tab order preserved; graceful on large ranks (keep today's cap + note). | Med |
-| 8c-c | `Browse: type-specimen headline on tiles` | One CORS-safe faceted query (rank field faceted, filtered to type specimens) → map group→typeCount; lazy **red** badge on tiles with types (honest: only when >0). Cached; no bursts. | Med |
-| 8c-d | `Browse: redesigned group focus ("opened drawer")` | Hero + headline stat strip (types in red) + narrative (8b) + child plates + specimen gallery + blurb + cross-view jumps. Builds on `deriveHoldingsStats`; **keeps 8a + 8b**. No new colour/font. | Med-High |
-| 8c-e | `Browse: a11y, responsive & reduced-motion pass` | Keyboard nav, focus visibility, ARIA labels (group + key stats), AA contrast audit (existing tokens already pass — confirm), laptop/mobile breakpoints, `prefers-reduced-motion` verification; `?selftest` probes for any new pure helpers (tile-emphasis selector, type-facet parser). | Low-Med |
+| # | Commit | What | Status |
+|---|--------|------|--------|
+| 8c-a | `Browse 8c-a: keyboard-operable tiles + image-source provenance overlay` | Tiles keyboard-operable (role=button, Enter/Space, focus ring); image-source provenance split — QM keeps the green pill in the body, all other sources (other museum / iNat / Wikipedia / illustration) credited as an overlay ON the image so an institution name can't read as part of the QM record count; refined hover (reduced-motion-safe). **Plus** a follow-up tidying iNat credits to "iNaturalist · Creator · CC BY-NC". | **Done & live** |
+| — | `Browse: cap the grid to the top 200 groups` | Grid shows the top 200 by record count (was up to 500); truncation note updated. | **Done & live** |
+| 8c-c | ~~type-specimen headline badge on tiles~~ | Built, shipped, then **reverted** — the design team found the per-tile "N types" badge confusing. Type specimens remain a headline in the **focus** view only. | **Reverted** |
+| 8c-b | `Browse: curated feature-tile grid` | A few larger feature tiles (top groups) for editorial rhythm; responsive; DOM/tab order preserved; graceful on the 200-cap. | Planned |
+| 8c-d | `Browse: redesigned group focus ("opened drawer")` | Hero + headline stat strip (types in red) + narrative (8b) + child plates + specimen gallery + blurb + cross-view jumps. Builds on `deriveHoldingsStats`; **keeps 8a + 8b**. No new colour/font. | Planned |
+| 8c-e | `Browse: a11y, responsive & reduced-motion pass` | Keyboard nav, focus visibility, ARIA labels, AA contrast audit, laptop/mobile breakpoints, `prefers-reduced-motion` verification; `?selftest` probes for any new pure helpers. | Planned |
 
 Accessibility is **baked into each slice**, not deferred; 8c-e is the audit/cleanup gate
 before the #9 motion layer.
+
+## ▶ Next session — start here (two tracked fixes from 14 June)
+
+1. **Resolve common names for all ~200 tiles** (currently they stop after ~the 8th row).
+   Root cause in `renderGuide` (`index.html` ~line 2632): vernacular resolution is capped
+   at `slice(0,50)` **and** runs fully sequentially with the slow thorough `lookupVern`,
+   so far rows never get names and even the 50 crawl. Fix: drop the 50-cap and resolve all
+   `sorted` (≤200) with **bounded concurrency** (a small worker pool, ~6) — or lazily via an
+   IntersectionObserver mirroring `_queueGuideImg` — guarded by `imgGen`/`_guideImgGen` so a
+   re-render stops stale work, results cached in `_vernCache`. Keep `lookupVern` (coverage)
+   so the homonym fix below stays a curated `_localVern` concern. Verify all 200 fill in.
+
+2. **Acanthocephala homonym** (phylum = thorny-headed *worms*, but a true-bug genus shares
+   the name → tile showed "spine-headed bug" + a bug photo):
+   - **Name:** add `'acanthocephala':'thorny-headed worms'` to `_localVern` (~line 5055).
+     Both resolvers check `_localVern` first, so the curated name wins before the rank-blind
+     iNat branch. (General lesson: cross-rank homonyms are handled via `_localVern`.)
+   - **Image:** make the iNat tier rank-aware — pass the rank `field` into `_imgInatCands`
+     (cascade call ~line 2352) and prefer an iNat taxon whose `rank` matches; for a high
+     rank (kingdom/phylum/class/order) with only a wrong-rank name match, **skip iNat**
+     (return `[]`) so the cascade falls through to Wikipedia (whose "Acanthocephala" article
+     *is* the worm phylum) / BIE / placeholder. Add a cheap `?selftest` probe asserting the
+     `_localVern` entry; verify the tile shows the worm name and a worm/placeholder image.
 
 ## Reuse (do not rebuild)
 

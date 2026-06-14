@@ -136,13 +136,23 @@ lazily, with provenance; and `deriveHoldingsStats(facets, opts)` derives the per
 holdings story (counts, year range, imaged + `imagedPct`, type specimens, states,
 collectors, basis, child richness).
 
-**Next:** Phase 3 — the awwwards-level Browse experience, on the `phase3-browse` branch
-(merges to `main` at the phase boundary). Built in the roadmap's order: #8 split into
-slices — **8a** `guideFocus` in the URL hash (shareable deep links) and **8b** the
-per-group holdings narrative (`holdingsSentence`) are **done on the branch**; **8c**, the
-reduced-motion baseline layout redesign, is next and needs creative direction first. Then
-#9 (GSAP/Three.js motion layer on top) and #10 (virtualise large ranks). One commit at a
-time, verifying each in-browser.
+**Now:** Phase 3 — the Browse redesign — is **in progress on `phase3-browse`, deploying
+to live `main` per verified slice** (the site is in maintenance mode, so we push often).
+Full slice plan + the next-session start point: `docs/BROWSE-8C-PLAN.md`. Governing
+decision after a misstep: **elevate Browse *within* the app's existing design language**
+(palette, Barlow, sharp geometry) — no separate skin (an 8c-1 divergent palette/serif was
+reverted). Done & live so far in #8/8c: **8a** `guideFocus` URL deep links · **8b**
+per-group holdings narrative (`holdingsSentence`) · **8c-a** keyboard-operable tiles +
+image-source provenance overlay (external credit sits ON the image; QM keeps the green
+pill) + tidy iNat credits · grid capped to the **top 200**. **8c-c** (per-tile type-badge)
+was shipped then **reverted** (design team: confusing) — types stay a headline in the
+focus view only.
+
+**Next session (tracked in `docs/BROWSE-8C-PLAN.md` → "Next session"):** (1) resolve
+common names for all ~200 tiles — they currently stop after ~8 rows (`renderGuide`
+`slice(0,50)` + sequential `lookupVern`); (2) Acanthocephala homonym — curated `_localVern`
+name + rank-aware iNat image. Then 8c-b (feature-tile grid), 8c-d (focus "drawer"), 8c-e
+(a11y pass); then #9 (motion) and #10 (virtualise large ranks).
 
 Also pending (non-code): send `docs/ALA-API-bug-report.md` to the ALA team.
 
@@ -154,6 +164,8 @@ app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2 are complete:*
 repaired, Browse vernaculars made rank-correct, two `_localVern` hotfixes); the
 museum-first image cascade wired into Browse with lazy resolution + provenance; and the
 `deriveHoldingsStats` helper (#7), all on `main`. Records, the specimen modal, Taxa, and
-Browse (names **and** images) are all correct. Phase 3 is underway on the `phase3-browse`
-branch (8a URL deep-links + 8b holdings narrative done); the visual redesign (8c) is the
-remaining Browse work, built on this foundation.
+Browse (names **and** images) are correct. Phase 3 is underway and **live** (8a deep
+links, 8b narrative, 8c-a provenance/keyboard, 200-cap). Two known Browse gaps tracked for
+the next session (see `docs/BROWSE-8C-PLAN.md`): vernaculars only resolve for ~the first
+50 tiles (sequential), and the Acanthocephala phylum/bug homonym (name + image). The rest
+of the visual redesign (8c-b/8c-d/8c-e) is the remaining Browse work.

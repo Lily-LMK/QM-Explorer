@@ -61,15 +61,26 @@ image queries.
 | 6 | `Add image-resolution cascade module` + `Browse: resolve tile images via museum-first cascade` | Medium | **Done** (live, 2 commits). `resolveGroupImage(name, rank, opts)` resolves one image per group **museum-first**: QM specimen → another institution's preserved specimen (`basis_of_record:"PreservedSpecimen"`, `-institution_uid:in15`) → iNaturalist → Wikipedia → BIE → generated placeholder. Preloads each URL (`_imgPreload`) and falls through on load failure; cached in `_groupImgCache`; carries provenance + attribution. `renderGuide` keeps the batch QM pass, then resolves QM-empty tiles **lazily** via `_queueGuideImg` + `{skipQM:true}`. **Lesson:** a restrictive `fl=` param silently drops biocache image URLs — don't set `fl` on these image queries. |
 | 7 | `Extract reusable holdings-stats helper` | Low | **Done.** Pure, DOM/network-free `deriveHoldingsStats(facets, opts)` lifted out of `renderGuideFocus` (counts, year range, imaged count + `imagedPct`, type specimens, states, collectors, basis-of-record, child-taxa richness). Behaviour-preserving refactor; `renderGuideFocus` unpacks into the same locals. 7 synchronous `?selftest` probes added. Phase 3 consumes it. |
 
-## Phase 3 — Browse redesign (the destination)
+## Phase 3 — Browse redesign (the destination) — IN PROGRESS, LIVE
 
-See `docs/BROWSE-REDESIGN-BRIEF.md` for the full creative spec.
+Creative spec: `docs/BROWSE-REDESIGN-BRIEF.md`. Detailed slice plan + the next-session
+start point: **`docs/BROWSE-8C-PLAN.md`**. Governing decision: elevate Browse **within the
+app's existing design language** (an 8c-1 divergent palette/serif was reverted). #8 was
+split into slices and is shipping to live `main` per verified slice (maintenance mode).
 
-| # | Commit message | Risk | What / why |
-|---|---|---|---|
-| 8 | `Browse: reduced-motion baseline + holdings narrative + URL state` | Med-High | New layout that is excellent *with motion off*; image cascade integrated; per-group holdings story; `guideFocus` added to the URL hash (shareable deep links). |
-| 9 | `Browse: motion + 3D enhancement layer` | High | GSAP / optional Three.js *on top* of the baseline. Honour `prefers-reduced-motion`; clean WebGL teardown on tab switch; bounded cost. |
-| 10 | `Browse: virtualise large ranks` | Medium | Perf for ranks with hundreds of groups (some exceed `FLIM=500`). |
+| # | Item | Status |
+|---|---|---|
+| 8a | `guideFocus` in the URL hash (shareable deep links) | **Done & live** |
+| 8b | Per-group holdings narrative (`holdingsSentence`) | **Done & live** |
+| 8c-a | Keyboard-operable tiles + image-source provenance overlay (+ tidy iNat credits) | **Done & live** |
+| — | Grid capped to the top 200 groups by record count | **Done & live** |
+| 8c-c | Per-tile type-specimen badge | **Reverted** (design: confusing; types stay in focus only) |
+| — | **Next session:** resolve common names for all ~200 tiles (now stop at ~50, sequential); Acanthocephala homonym (name + rank-aware iNat image) | Tracked in `BROWSE-8C-PLAN.md` |
+| 8c-b | Curated feature-tile grid | Planned |
+| 8c-d | Redesigned group focus ("opened drawer") | Planned |
+| 8c-e | a11y, responsive & reduced-motion pass | Planned |
+| 9 | Motion + 3D enhancement layer (GSAP / optional Three.js) *on top* of the baseline; honour `prefers-reduced-motion`; clean teardown; bounded cost | Planned |
+| 10 | Virtualise large ranks | Planned |
 
 ## Later — future options (not scheduled; folded in from the old planning brief)
 
