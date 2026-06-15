@@ -447,7 +447,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
     <div class="scroll" id="scroll">
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
-        <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" class="on" title="Grid view" aria-label="Grid view" aria-pressed="true">⊞</button><button data-d="compact" title="List view" aria-label="List view" aria-pressed="false">☰</button></div></div>
+        <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Grid view" aria-pressed="false">⊞</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">☰</button></div></div>
         <div id="gal" class="gal" role="list" aria-label="Specimen records"></div><div id="galLoad"></div>
         <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
@@ -1810,10 +1810,14 @@ function renderGallery(){
   if(S.mapPoly)countTxt+=` · <span style="color:#2d6a4f;font-weight:600">${esc(S.mapPoly.name)}</span>`;
   else if(S.mapBox)countTxt+=' · <span style="color:#007a47">box filter</span>';
   $('#galCount').innerHTML=countTxt;
-  /* Gallery (photos + generative placeholders) is the default; List is opt-in via toggle. */
-  const density=S.galDensity||'grid';
+  /* Default is the simplified text tiles ('compact'); applying the Has-Media filter
+     auto-switches to the full photo grid (and clearing it switches back) — UNLESS the
+     user has manually picked a density this session, which then wins. */
+  const mediaFilter=!!$('#fMedia')?.value;
+  const autoDensity=mediaFilter?'grid':'compact';
+  const density=(S._densityManual&&S.galDensity)?S.galDensity:autoDensity;
   g.className=density==='compact'?'gal compact':'gal';
-  bar.querySelectorAll('.density-tog button').forEach(b=>b.classList.toggle('on',b.dataset.d===density));
+  bar.querySelectorAll('.density-tog button').forEach(b=>{const on=b.dataset.d===density;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false')});
 
   g.innerHTML=S.res.map((r,i)=>{
     const hasImg=r.media?.length>0;
@@ -2329,7 +2333,6 @@ function _imgHash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.cha
 function imgPlaceholderCandidate(name,rank,labelOverride){
   const field=_imgRankField(rank);
   const seed=_imgHash((field+'|'+(name||'')).toLowerCase());
-  const initial=esc((((name||'?').trim()[0])||'?').toUpperCase());
   const label=esc(((labelOverride!=null&&labelOverride!=='')?labelOverride:(RLABEL[field]||'')).toUpperCase());
   /* Restrained, desaturated "specimen-drawer" palette (sage/sepia/slate/oxblood/petrol/
      olive) — seeded by taxon, never saturated, so the real photos still read as jewels. */
@@ -2350,9 +2353,9 @@ function imgPlaceholderCandidate(name,rank,labelOverride){
     +`<stop offset="0" stop-color="${t[0]}"/><stop offset="1" stop-color="${t[1]}"/></linearGradient></defs>`
     +`<rect width="400" height="300" fill="url(#g)"/>`
     +contours
-    +`<text x="300" y="300" font-family="Georgia,'Times New Roman',serif" font-size="260" fill="rgba(255,255,255,0.07)" text-anchor="middle">${initial}</text>`
     +`<rect x="12" y="12" width="376" height="276" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>`
     +`<text x="24" y="40" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,0.62)">${label}</text>`
+    +`<text x="200" y="162" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="600" letter-spacing="2.5" fill="rgba(255,255,255,0.34)" text-anchor="middle">NO IMAGE AVAILABLE</text>`
     +`</svg>`;
   return{url:'data:image/svg+xml,'+encodeURIComponent(svg),source:'placeholder',sourceLabel:'',attribution:'',license:'',href:''};
 }

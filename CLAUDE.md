@@ -147,11 +147,17 @@ app's existing design language** (palette, Barlow, sharp geometry) — no separa
   the bug genus), **Ciliophora**, **Nucleocytoviricota**.
 - **Records gallery redesign** — every tile fills its 4:3 frame: real photo where it
   exists, else the shared **museum "specimen-drawer" placeholder** (muted seeded tone +
-  serif genus monogram + engraved contours + hairline frame + family eyebrow — redesigned
-  inside `imgPlaceholderCandidate`, so it lifts **Records and Browse** together). Images
-  full-bleed (`object-fit:cover`); the rich **Gallery is the default** (auto-switch-to-List
-  removed; List is opt-in); the redundant ‹ › record-stepper arrows removed; the density
-  toggle **pinned** on scroll (sticky `.gal-bar`, `top:-14px` to clear the scroll padding).
+  subtle centred **"NO IMAGE AVAILABLE"** + engraved contours + hairline frame + family
+  eyebrow — defined in `imgPlaceholderCandidate`, so it lifts **Records and Browse**
+  together). Images full-bleed (`object-fit:cover`); the redundant ‹ › record-stepper
+  arrows removed; the density toggle **pinned** on scroll (sticky `.gal-bar`, `top:-14px`
+  to clear the scroll padding).
+- **Records view default + media auto-switch** — Records opens on the **simplified text
+  tiles** (`compact` density). Applying the **Has-Media** filter (`#fMedia`) auto-switches
+  to the **full photo grid**; clearing it switches back. A manual density-toggle click sets
+  `S._densityManual` and then wins (the auto-switch yields to the user's explicit choice).
+  Logic lives at the top of `renderGallery`; reset paths clear `S._densityManual`. (The old
+  "serif genus monogram + Gallery-default, List opt-in" behaviour is superseded.)
 - **Map data integrity** — fixed a marker **undercount**: `bgLoadAllPages`/`pageTile` (and
   the Records pager) offset-paged with no sort, so ALA's unstable default order silently
   skipped ~8–16% of records. Both now use `sort=id&dir=asc` (matching `bgPolyScan`).
@@ -173,8 +179,9 @@ app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2 complete** (`?
 harness; stabilisation fixes; museum-first image cascade; `deriveHoldingsStats` #7).
 **Phase 3 is live and well advanced:** Browse 8a/8b/8c-a + all-tile vernaculars + the
 Acanthocephala/Ciliophora/Nucleocytoviricota homonym fixes; the **Records gallery
-redesign** (museum specimen-drawer placeholders shared with Browse, full-bleed images,
-Gallery-default, pinned toggle, sticky-bar fix); and the **Map integrity pass** (stable-sort
+redesign** ("no image available" specimen-drawer placeholders shared with Browse, full-bleed
+images, simplified-tiles default + Has-Media auto-switch to the photo grid, pinned toggle,
+sticky-bar fix); and the **Map integrity pass** (stable-sort
 paging fixes the marker undercount; honest "no mapped coordinate" labelling). Records, the
 specimen modal, Taxa, Browse (names **and** images), and the Map count are all correct.
 Remaining Browse work: **8c-b** (feature tiles), **8c-d** (focus drawer), **8c-e** (a11y
