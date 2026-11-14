@@ -3,9 +3,12 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. For where the project is and what's next, read `docs/ROADMAP.md`;
-the Phase 3 creative spec is `docs/BROWSE-REDESIGN-BRIEF.md`. To start a fresh session,
-`docs/KICKOFF.md` has a ready-to-paste kickoff prompt.
+profile). Read both. Last updated 14 November 2026.
+
+For where the project is and what is next, read "Current chapter" below, then
+`project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
+planning documents in `docs/` (`ROADMAP.md`, `BROWSE-REDESIGN-BRIEF.md`, `BROWSE-8C-PLAN.md`,
+`KICKOFF.md`) are kept for the Browse work that is folded into the redesign stage.
 
 ## What this is
 
@@ -19,7 +22,7 @@ services. Deployed on GitHub Pages: <https://lily-lmk.github.io/QM-Explorer>.
 - `sw.js` — optional service worker: caches CDN assets + API responses. App runs
   without it.
 - `README.md` — architecture, data sources, deployment, caching.
-- `docs/` — planning briefs and the ALA bug report (see "Current chapter").
+- `docs/` — June 2026 planning briefs and the ALA bug report (see "Current chapter").
 
 Five views: **Records, Taxa, Browse, Map, Analytics**, plus CSV export. All ALA
 queries are scoped to QM via `institution_uid:in15` (state field `S.alaInst`).
@@ -58,7 +61,7 @@ that often surfaces as a misleading **"ALA 503"**.
    **Offset paging MUST send a stable sort** (`sort=id&dir=asc`). ALA's default order is
    unstable across `startIndex`, so paging silently skips/duplicates ~8–16% of rows; the
    map quadtree (`pageTile`), the Records pager, and `bgPolyScan` all sort by id, and any
-   new paging loop must too. (Also: `geospatial_kosher:true` ≠ plottable — ~4% return no
+   new paging loop must too. (Also: `geospatial_kosher:true` ≠ plottable — about 14% return no
    coordinate; the map labels those honestly, never as "sensitive" without evidence.)
 4. **CORS — the big one. NEVER AND-join filters into one `fq`.** ALA drops the
    `Access-Control-Allow-Origin` header when a single `fq` contains
@@ -130,59 +133,95 @@ not a real outage.
 - Small, focused commits with clear messages; verify in the browser before committing.
 - Push only when Lily asks.
 
-## Current chapter
+## Current chapter (November 2026)
 
-**Phase 3 — Browse redesign, plus a Records/Map polish detour.** Full plan in
-`docs/ROADMAP.md`, creative spec in `docs/BROWSE-REDESIGN-BRIEF.md`, Browse slice plan in
-`docs/BROWSE-8C-PLAN.md`. Work happens on `phase3-browse` and deploys to live `main` per
-verified slice (maintenance mode — push often). Governing decision: **elevate within the
-app's existing design language** (palette, Barlow, sharp geometry) — no separate skin (an
-8c-1 divergent palette/serif was reverted). Phases 0–2 foundation (image cascade #6,
-`deriveHoldingsStats` #7) and Browse 8a/8b/8c-a remain live.
+**Read-only audits first, then repairs, then supplied names, then the redesign.** Lily's
+decisions and the live status are in `project-notes/HANDOVER.md` (private, git-ignored;
+present only in Lily's working copy). If that folder is absent, ask before assuming.
 
-**Done & live since the last doc sync:**
-- **Browse 8c** — common names now resolve for **all ~200 tiles** via a bounded pool
-  (`_queueGuideVern`; dropped the old `slice(0,50)` + sequential `lookupVern`). Homonym
-  fixes via `_localVern` + rank-aware iNat: **Acanthocephala** (thorny-headed worms, not
-  the bug genus), **Ciliophora**, **Nucleocytoviricota**.
-- **Records gallery redesign** — every tile fills its 4:3 frame: real photo where it
-  exists, else the shared **museum "specimen-drawer" placeholder** (muted seeded tone +
-  subtle centred **"NO IMAGE AVAILABLE"** + engraved contours + hairline frame + family
-  eyebrow — defined in `imgPlaceholderCandidate`, so it lifts **Records and Browse**
-  together). Images full-bleed (`object-fit:cover`); the redundant ‹ › record-stepper
-  arrows removed; the density toggle **pinned** on scroll (sticky `.gal-bar`, `top:-14px`
-  to clear the scroll padding).
-- **Records view default + media auto-switch** — Records opens on the **simplified text
-  tiles** (`compact` density). Applying the **Has-Media** filter (`#fMedia`) auto-switches
-  to the **full photo grid**; clearing it switches back. A manual density-toggle click sets
-  `S._densityManual` and then wins (the auto-switch yields to the user's explicit choice).
-  Logic lives at the top of `renderGallery`; reset paths clear `S._densityManual`. (The old
-  "serif genus monogram + Gallery-default, List opt-in" behaviour is superseded.)
-- **Map data integrity** — fixed a marker **undercount**: `bgLoadAllPages`/`pageTile` (and
-  the Records pager) offset-paged with no sort, so ALA's unstable default order silently
-  skipped ~8–16% of records. Both now use `sort=id&dir=asc` (matching `bgPolyScan`).
-  And **honest labelling** in `updateMapInfo`: the residual (records ALA counts but returns
-  no coordinate for) shows as "*N of M have no mapped coordinate*", replacing the old
-  unverified "sensitive taxa" claim.
+The project has two goals:
+1. Make Queensland Museum specimen records more complete, more accurate and easier to
+   find in QM Explorer.
+2. Help Queensland Museum and ALA correct the records people meet through ALA itself.
+   ALA remains the primary public source. An upstream issue stays open until the
+   correction is verified in ALA.
 
-**Next session:** **8c-b** (curated feature-tile grid) → **8c-d** (redesigned group focus
-"drawer") → **8c-e** (a11y / responsive / reduced-motion pass) — see `docs/BROWSE-8C-PLAN.md`;
-then **#9** (motion layer) and **#10** (virtualise large ranks). Build on the live
-placeholders, all-tile vernaculars, and `deriveHoldingsStats` — don't rebuild them.
+**How work proceeds:** look and report first; nothing on the site changes until Lily has
+agreed to what a report proposes. Work on a branch; Lily reviews before `main`. Say
+"databased records", and give the query and the retrieval date (with the year) for every
+count. Where ALA, the AFD and the museum's register disagree, show each with its source.
+The Explorer never calls the museum's register; anything from it arrives as a reviewed file.
 
-Also pending (non-code): send `docs/ALA-API-bug-report.md` to the ALA team.
+**Stages:**
+1. Health check — done 14 November 2026. No code changed.
+2. Repairs — waiting on Lily agreeing the list. Known faults, all still in the live code:
+   - Enriched CSV column `elevationDEM_m` is filled from ALA layer `el887` (a radiation
+     layer). The elevation layer is `el674`.
+   - NNTT layers are mixed up: 0 = Registered Native Title Bodies Corporate,
+     5 = Determination Outcomes, 8 = Schedule of Applications. The code treats 8 as
+     determinations and 0 as applications.
+   - `geospatial_kosher:true` (910,248) overstates what has a coordinate (latitude
+     present: 784,857 of 914,614, retrieved 14 November 2026). It feeds the "mappable"
+     filter and the Analytics "Georeferenced" tile.
+   - Standard CSV: locality and twelve other columns are always empty.
+   - Opening the site sends about 320 requests; iNaturalist refuses some, so common
+     names go missing.
+   - ALA layer ids `cl1048`, `cl1049`, `cl10923` are older editions; newer are `cl11015`,
+     `cl11016` (IBRA 7.1), `cl11014` (LGA 2025), `cl11019` (CAPAD 2024).
+3. Supplied names — measured 14 November 2026; build not started. Decisions:
+   - Lead with the Queensland Museum supplied name when ALA's match is broader, and show
+     both sources when they differ.
+   - Filters and counts are driven by the museum's data (the `raw_` fields below), with
+     ALA's match as the second source.
+   - Working names are shown exactly as supplied ("Pheidole QM2" says "Pheidole QM2").
+   - Names marked as manuscript or unpublished are held for review and not shown.
+   - Primary types are holotype, neotype, type, lectotype and syntype.
+   - First build step: confirm in a real browser that ALA returns the `raw_` fields with
+     the CORS header.
+4. Shared registration numbers and duplicate records — next investigation (read-only).
+5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
+6. Redesign in the Queensland Museum Design System — review, mock-up for Lily, then code.
+   The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion
+   #9 and virtualising large ranks #10) is folded into this stage.
 
-## Recent state (June 2026)
+Also pending: the report to ALA. `docs/ALA-API-bug-report.md` has not been sent, and the
+supplied-names audit adds wrong-group matches and the leading-X family fault to it.
 
-All ALA breaking-change fixes are live (`pageSize` cap, 5000-window + map quadtree,
-app-wide CORS `fq` fix, service-worker hardening). **Phases 0–2 complete** (`?selftest`
-harness; stabilisation fixes; museum-first image cascade; `deriveHoldingsStats` #7).
-**Phase 3 is live and well advanced:** Browse 8a/8b/8c-a + all-tile vernaculars + the
-Acanthocephala/Ciliophora/Nucleocytoviricota homonym fixes; the **Records gallery
-redesign** ("no image available" specimen-drawer placeholders shared with Browse, full-bleed
-images, simplified-tiles default + Has-Media auto-switch to the photo grid, pinned toggle,
-sticky-bar fix); and the **Map integrity pass** (stable-sort
-paging fixes the marker undercount; honest "no mapped coordinate" labelling). Records, the
-specimen modal, Taxa, Browse (names **and** images), and the Map count are all correct.
-Remaining Browse work: **8c-b** (feature tiles), **8c-d** (focus drawer), **8c-e** (a11y
-pass); then **#9** (motion) and **#10** (virtualise large ranks).
+## Supplied names: what ALA carries (measured 14 November 2026)
+
+- `raw_scientificName` is the name the museum supplied; `scientificName` is ALA's match.
+  `matchType` says how they relate: exactMatch 769,587; higherMatch 132,762;
+  canonicalMatch 6,289; fuzzyMatch 5,976 (of 914,614 `in15` records).
+- The museum's own classification is there too, and can be filtered and faceted:
+  `raw_kingdom`, `raw_phylum`, `raw_class`, `raw_order`, `raw_family`, `raw_genus`,
+  `raw_taxonRank`. In a search they come back only when asked for with `fl=`, inside
+  `otherProperties`. Tested with curl only.
+- **`raw_catalogNumber` is not returned when a search uses `fl=`.** Fetch it without `fl`.
+- Supplied values are not uniform (bird families arrive in capitals; some informal names
+  are lower case), so normalise before grouping.
+- ALA's match can be in the wrong group altogether: 446 records sit in a different
+  class, phylum or kingdom from the supplied name (*Patella* limpets under a fungus
+  genus, *Acmaea* under *Maratus*). Never present ALA's match as the museum's name.
+- ALA drops a leading X from family names: Xanthidae is filed as "Anthidae",
+  Xeniidae as "Eniidae", Xenophoridae as "Enophoridae". `family:Xanthidae` returns 0;
+  `raw_family:Xanthidae` finds them.
+- ALA name matching (`api.ala.org.au/namematching/api/search`) can be called keyless
+  from a page, and returns the same match as biocache; it does not repair wrong matches.
+- ALA can hold an older copy of a record the museum has since corrected, sometimes
+  under another collection. Do not assume one registration number is one ALA record.
+
+## State of the live site
+
+The live site is unchanged since June 2026 (`main` at 6c859d0). All five views, the
+searches, both CSV exports and every outside service work, with the faults listed under
+stage 2. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
+map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;
+the museum-first image cascade; `deriveHoldingsStats`; Browse 8a/8b/8c-a with common
+names for all tiles and the Acanthocephala/Ciliophora/Nucleocytoviricota homonym fixes;
+the Records gallery redesign (specimen-drawer placeholders shared with Browse,
+simplified tiles by default, Has-Media switch to the photo grid, pinned density toggle);
+and the Map integrity pass (stable-sort paging, honest "no mapped coordinate" label).
+Build on these; do not rebuild them.
+
+`README.md`, `docs/ROADMAP.md` and `docs/KICKOFF.md` date from June 2026 and describe the
+Phase 3 plan as it stood then. Where they differ from this file, this file is current.
