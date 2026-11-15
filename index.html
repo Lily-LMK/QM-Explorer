@@ -734,6 +734,8 @@ async function alaFetch(f,off,lim){
   const fq=alaBaseFQ(f);
   const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
   u.set('pageSize',Math.max(1,lim));u.set('startIndex',off);
+  /* Stable sort: without it ALA's order shifts between pages and an export repeats some records and drops others (CLAUDE.md, ALA rule 3). */
+  u.set('sort','id');u.set('dir','asc');
   /* Essential facets only — analytics facets fetched lazily when charts tab opened */
   u.set('facets','kingdom,phylum,class,order,family,genus,species,collection_uid,state,type_status');u.set('flimit',FLIM);u.set('fsort','count');
   /* Request raw locality fields — ALA's processed 'locality' often loses specificity */
