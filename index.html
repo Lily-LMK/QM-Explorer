@@ -773,7 +773,6 @@ async function alaFetch(f,off,lim){
 /* Build base ALA filter queries (shared by alaFetch and quality count queries) */
 function alaBaseFQ(f){
   const fq=[`institution_uid:${S.alaInst}`];
-  if(f.q&&f.q!=='*:*')fq.push(...HELD_TEXT_FQ);
   if(f.kingdom)fq.push(`kingdom:"${f.kingdom}"`);if(f.phylum)fq.push(`phylum:"${f.phylum}"`);
   if(f.class_)fq.push(`class:"${f.class_}"`);if(f.order)fq.push(`order:"${f.order}"`);
   if(f.family)fq.push(`family:"${f.family}"`);if(f.genus)fq.push(`genus:"${f.genus}"`);
@@ -1112,12 +1111,15 @@ function buildNamePair(qm,qmAuth,ala,alaAuth,alaRank){
   qm=String(qm||'').trim();ala=String(ala||'').trim();qmAuth=String(qmAuth||'').trim();alaAuth=String(alaAuth||'').trim();alaRank=String(alaRank||'').trim().toLowerCase();
   const held=isHeldName(qm);
   if(held){
-    const alaTok=new Set(_nameTokens(ala));
-    const heldTok=_nameTokens(qm).filter(t=>!alaTok.has(t)&&!['name','names','nov','sp'].includes(t));
-    let alaShow=ala,aAuth=alaAuth,aRank=alaRank;
-    const qmEpi=new Set(_nameTokens(qm).slice(1));
-    if(isHeldName(ala)||_nameTokens(ala).slice(1).some(t=>qmEpi.has(t))){alaShow=ala.split(/\s+/)[0]||'';aAuth='';aRank='genus'}
-    return{qm:'',qmAuth:'',ala:alaShow,alaAuth:aAuth,alaRank:aRank,differ:false,held:true,heldTok,lead:alaShow,leadAuth:aAuth};
+    const MARK=['name','names','nov','sp','ms','ns'];
+    /* The held name's own words after the genus; kept in memory only, never shown */
+    const heldEpi=_nameTokens(qm).slice(1).filter(t=>!MARK.includes(t));
+    let alaShow=ala,aAuth=alaAuth,aRank=alaRank,alaCut=false;
+    if(isHeldName(ala)||_nameTokens(ala).slice(1).some(t=>heldEpi.includes(t))){alaShow=ala.split(/\s+/)[0]||'';aAuth='';aRank='genus';alaCut=true}
+    /* Search guard: any word of the held name that is not in the name shown */
+    const shown=new Set(_nameTokens(alaShow));
+    const heldTok=_nameTokens(qm).filter(t=>!shown.has(t)&&!MARK.includes(t));
+    return{qm:'',qmAuth:'',ala:alaShow,alaAuth:aAuth,alaRank:aRank,differ:false,held:true,heldTok,heldEpi,alaCut,lead:alaShow,leadAuth:aAuth};
   }
   const qmCanon=_stripAuth(qm);
   if(!qmAuth&&qmCanon!==qm)qmAuth=qm.slice(qmCanon.length).trim();
@@ -1196,11 +1198,23 @@ function _notHeldHit(r){
   if(!r||!r._nm||!r._nm.held||!S._heldQTok||!S._heldQTok.size)return true;
   return !r._nm.heldTok.some(t=>S._heldQTok.has(t));
 }
-/* Phrases ALA can exclude on its side during a text search (rule-based; 22 of the held databased records,
-   15 November 2026). The page guard above covers the rest. */
-const HELD_TEXT_FQ=['-text:"ms name"','-text:"ns name"','-text:"n sp"'];
+/* A held record's other name fields can repeat the held epithet when ALA's match does (ALA's species,
+   its taxon concept, a common name for that species). Clear them, so the specimen window, Copy Sources,
+   keywords, links, the Map and both CSVs cannot show it. Applied when a record is built and again after
+   the full record loads. */
+function scrubHeld(r){
+  const nm=r&&r._nm;if(!nm||!nm.held)return r;
+  const bad=new Set(nm.heldEpi||[]);
+  const has=v=>!!v&&_nameTokens(v).some(t=>bad.has(t));
+  if(has(r.sci)||isHeldName(r.sci))r.sci=String(r.sci).split(/\s+/)[0]||'';
+  for(const k of ['species','subfamily','tribe'])if(has(r[k])||isHeldName(r[k]))r[k]='';
+  if(has(r.authorship))r.authorship='';
+  if(nm.alaCut){r.taxonConceptID='';r.vern='';r.vernRank=null;if(r.authorship&&!nm.leadAuth)r.authorship=''}
+  return r;
+}
 
-function normRec_A(r){
+function normRec_A(r){return scrubHeld(_normRec_A(r))}
+function _normRec_A(r){
   const _op=r&&r.otherProperties&&typeof r.otherProperties==='object'?r.otherProperties:null;
   if(_op){r={...r};for(const k of _OP_LIFT){if(r[k]==null&&_op[k]!=null)r[k]=_op[k]}}
   const cat = r.catalogNumber || r.raw_catalogNumber || r.catalogue_number || r.catalogueNumber || '';
@@ -4266,6 +4280,7 @@ function enrichRecord(r,fields){
     r._nm=buildNamePair(fields.qmName,fields.qmAuth,fields.alaName,fields.alaAuth,fields.alaRank);
     if(r._nm.lead)r.sci=r._nm.lead;
     if(r._nm.leadAuth)r.authorship=r._nm.leadAuth;
+    else if(r._nm.held&&r._nm.alaCut)r.authorship='';
   }
   /* Only overwrite if we got a non-empty value and the existing one is empty */
   const fill=(key)=>{if(fields[key]&&!r[key])r[key]=fields[key]};
@@ -4284,6 +4299,7 @@ function enrichRecord(r,fields){
   if(fields.elevMin!=null&&r.elevMin==null)r.elevMin=toNum(fields.elevMin);
   if(fields.elevMax!=null&&r.elevMax==null)r.elevMax=toNum(fields.elevMax);
   if(fields.depth!=null&&r.depth==null)r.depth=toNum(fields.depth);
+  scrubHeld(r);
   r._enriched=true;
 }
 
@@ -7438,7 +7454,12 @@ if(_SELFTEST){
       const npH2=buildNamePair('Xus yus MS name','','Xus yus','','species');
       eq('held name: an ALA match repeating the held epithet is cut to the genus', npH2.lead, 'Xus');
       assert('name search: two words look like a name; a registration number does not', looksLikeName('Cosmophasis tavurvur')&&!looksLikeName('T2455')&&!looksLikeName('family:Salticidae'));
-      assert('held phrases excluded during a text search, each its own fq', alaBaseFQ({q:'bignews'}).filter(c=>c.startsWith('-text:')).length===3&&alaBaseFQ({q:''}).every(c=>!c.startsWith('-text:')));
+      assert('a text search adds no exclusion: a published record with "n. sp." in its remarks is still found', alaBaseFQ({q:'n. sp.'}).every(c=>!c.startsWith('-')));
+      const npR=buildNamePair('Argoctenus bignews ns name','','Argoctenus bignews','Smith, 2020','species');
+      const recR=scrubHeld({_nm:npR,sci:npR.lead,species:'Argoctenus bignews',taxonConceptID:'https://example/afd/x',vern:'Big News Spider',authorship:npR.leadAuth,occurrenceRemarks:'n. sp. on label'});
+      assert('held: ALA name and species repeating the epithet are both cleared', recR.sci==='Argoctenus'&&recR.species===''&&recR.taxonConceptID===''&&recR.vern===''&&recR.authorship===''&&!JSON.stringify({a:recR.sci,b:recR.species,c:recR._nm.ala,d:recR._nm.lead}).includes('bignews'), JSON.stringify(recR));
+      assert('held: a search for the epithet still drops it when ALA repeats it', npR.heldTok.includes('bignews'), JSON.stringify(npR.heldTok));
+      assert('published record with "n. sp." only in its remarks is not held', !(buildNamePair('Transkalliapseudes banana','','Transkalliapseudes banana','','species').held));
 
       /* ── ONE TYPE STATUS ── */
       const fqTs=alaBaseFQ({hasType:'ts:holotype'});
