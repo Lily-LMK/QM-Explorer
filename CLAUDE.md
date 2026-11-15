@@ -244,8 +244,11 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` is at 2e06fc8 (register additions v6, live on GitHub Pages 15 November 2026: 2,068
-records; plus this file's update, pushed 16 November 2026). The live site still has the former
+`main` carries register additions v6 (live on GitHub Pages 15 November 2026: 2,068 records) and
+the counting corrections of 16 November 2026: register additions are counted only where they
+match the filters and are included in the headline counts; ALA's collection codes OtherInverts,
+Herpetology, Crustacea and Protozoa show under the collection's name (`COLL_ALIAS` in
+`shortColl`); the collection chip shows the collection's name. The live site still has the former
 design; the redesign is on its own branch. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
 searches, both CSV exports and every outside service work, with the faults listed under stage 2
 batch 3. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the

@@ -669,7 +669,10 @@ function markerColor(r){
   return colorFromKey('f:'+(r.family||r.order||'Family'));
 }
 /* Shorten collection names: "Queensland Museum Fishes" → "Fishes" */
-function shortColl(s){return(s||'').replace(/^Queensland Museum\s*/i,'').replace(/^QM\s*/i,'').trim()||s||'Unknown'}
+/* ALA files four collections under a short code that differs from the collection's name (checked 16 November 2026:
+   OtherInverts, Herpetology, Crustacea, Protozoa). Show one name for each, so a collection is never listed twice. */
+const COLL_ALIAS={otherinverts:'Other Invertebrates',herpetology:'Amphibians and Reptiles',crustacea:'Crustaceans',protozoa:'Protozoans'};
+function shortColl(s){const t=(s||'').replace(/^Queensland Museum\s*/i,'').replace(/^QM\s*/i,'').trim()||s||'Unknown';return COLL_ALIAS[String(t).toLowerCase()]||t}
 
 /* ICZN italic rules: genus and below are italicized; family and above are not.
    Returns true if name should be italicized (genus or species level) */
@@ -826,7 +829,9 @@ async function fetchAnalyticsFacets(f){
     const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
     if(!r.ok)return;const d=await r.json();
     const af=extractFacets_A(d);
-    Object.entries(af).forEach(([k,v])=>{if(!S.facets[k]||!S.facets[k].length)S.facets[k]=v});
+    /* Add the matching register additions to the year, month and collector counts as they arrive */
+    const loc=(S._suppMatch&&S._suppMatch.length)?computeLocalAnalyticsFacets(S._suppMatch):null;
+    Object.entries(af).forEach(([k,v])=>{if(!S.facets[k]||!S.facets[k].length)S.facets[k]=(loc&&loc[k]&&loc[k].length&&k!=='basis_of_record')?mergeFacets({[k]:v},{[k]:loc[k]})[k]:v});
   }catch(e){console.warn('[Analytics facets]',e)}
 }
 /* Fetch TRUE unique counts for family/genus/species — flimit=-1 gets ALL values.
@@ -1026,6 +1031,8 @@ async function fetchQualityCounts(f){
     if(rMedia)qc.media=rMedia.totalRecords||0;
     if(rTyped)qc.typed=rTyped.totalRecords||0;
   }catch(e){console.warn('[QC]',e)}
+  /* Register additions that match the filters belong in every total; ALA's counts cover ALA's records only. */
+  try{const sm=S._suppMatch||[];if(sm.length){const sq=computeLocalQC(sm);for(const k of ['georef','media','typed'])if(qc[k]!=null)qc[k]+=sq[k]}}catch(e){}
   return qc;
 }
 
@@ -1635,7 +1642,8 @@ async function doSearch(){
         showLoad(false);
         if(!S.total)showEmpty();
         facP.then(fd=>{if(!fd||S._searchId!==searchId)return;S.facets=extractFacets_A(fd);
-          if(nS)S.facets=mergeFacets(S.facets,computePolyDropdownFacets(suppAll||[],f));
+          /* Count only the register additions that match the current filters (supp), so a filtered view does not pick up additions from other collections, orders, families or states. */
+          if(nS)S.facets=mergeFacets(S.facets,computePolyDropdownFacets(supp,f));
           try{updateStats()}catch(e){}try{updateDropdowns()}catch(e){}
           if(S.view==='guide'&&!S.guideFocus)try{renderGuide()}catch(e){}});
       }
@@ -6751,7 +6759,7 @@ function renderModalDetails(r){
 
     <div class="det-sec"><div class="ds" style="background:var(--green)"></div> Specimen</div>
     <div class="det-flow">
-      ${df('Basis',basisL(r.basis))}${df('Collection',esc(r.coll))}${df('Preparations',esc(r.preparations))}${df('Sex',esc(r.sex))}${df('Life Stage',esc(r.lifeStage))}${df('Count',esc(r.individualCount))}${df('Field #',esc(r.fieldNumber))}
+      ${df('Basis',basisL(r.basis))}${df('Collection',esc(shortColl(r.coll)))}${df('Preparations',esc(r.preparations))}${df('Sex',esc(r.sex))}${df('Life Stage',esc(r.lifeStage))}${df('Count',esc(r.individualCount))}${df('Field #',esc(r.fieldNumber))}
     </div>
 
     <div class="det-sec"><div class="ds" style="background:var(--blue)"></div> Collection Event</div>
@@ -6962,7 +6970,8 @@ function updateFilterChips(){
     const el=$('#'+id);if(!el||!el.value)continue;
     /* Skip default "any" values */
     if(el.tagName==='SELECT'&&el.selectedIndex===0)continue;
-    const display=el.tagName==='SELECT'?(el.options[el.selectedIndex]?.text||el.value):el.value;
+    let display=el.tagName==='SELECT'?(el.options[el.selectedIndex]?.text||el.value):el.value;
+    if(id==='fColl'){const uidName=Object.keys(SUPP_COLL_UID).find(n=>SUPP_COLL_UID[n]===el.value);display=uidName||shortColl(S._collUidMap.get(el.value)||'')||display;if(display==='Unknown')display=el.value}
     chips.push({label,value:display,clear:()=>{el.value=el.tagName==='SELECT'?(el.options[0]?.value||''):'';S.off=0;doSearch()}});
   }
   /* Search query */
