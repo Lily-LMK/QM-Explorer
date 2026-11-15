@@ -488,10 +488,19 @@ button,select,input{font-family:var(--font)}
 .sec.tx .fr{display:block}
 .sec.tx .fg{position:relative;padding-left:18px;margin-bottom:10px}
 .sec.tx .fg::before{content:"";position:absolute;left:3px;top:-10px;bottom:0;width:2px;background:var(--ink)}
-.sec.tx > .fg::before{top:36px}
+#taxBody > .fg::before{top:26px}
 .sec.tx .fg::after{content:"";position:absolute;left:3px;bottom:19px;width:11px;height:2px;background:var(--ink)}
 .sec.tx .fr:last-child .fg:last-child::before{bottom:19px}
 .sec.tx .fg label{margin-bottom:3px}
+.tx-h{margin:0 0 4px}
+.tx-tog{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0;margin:0;border:0;background:none;font:inherit;color:inherit;letter-spacing:inherit;text-align:left;cursor:pointer}
+.tx-tog .tx-chev{margin-left:auto;transition:transform .16s ease}
+.tx-tog[aria-expanded="true"] .tx-chev{transform:rotate(180deg)}
+.tx-tog:hover span:first-child{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.tx-n{font-size:12px;font-weight:700;padding:1px 9px;border-radius:var(--pill);background:var(--chart);color:var(--ink)}
+.tx-n:empty{display:none}
+#taxBody{padding-top:8px}
+@media(prefers-reduced-motion:reduce){.tx-tog .tx-chev{transition:none}}
 /* taxonomy tree: names lead, counts line up on the right */
 .tn-h{gap:10px}
 .tn-nm{order:1}.tn-com{order:2}.tn-rk{order:3}.tn-btns{order:4}.tn-ct{order:5;min-width:84px;text-align:right;color:var(--ink);font-weight:600}
@@ -594,11 +603,12 @@ button,select,input{font-family:var(--font)}
 <div class="lay" id="lay">
   <aside class="side" id="side" role="complementary" aria-label="Filters">
     <div class="side-h"><h2>Filters</h2><button class="btn-rst" id="resetBtn">Reset all</button></div>
-    <div class="sec tx"><div class="sec-t">Taxonomy</div>
+    <div class="sec tx" id="taxSec"><h3 class="sec-t tx-h"><button type="button" class="tx-tog" id="taxTog" aria-expanded="false" aria-controls="taxBody"><span>Taxonomy</span><span class="tx-n" id="taxN"></span><svg class="tx-chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></button></h3>
+      <div id="taxBody" hidden>
       <div class="fg"><label for="fK">Kingdom</label><select id="fK"><option value="">All Kingdoms</option></select></div>
       <div class="fr"><div class="fg"><label for="fP">Phylum</label><select id="fP"><option value="">All Phyla</option></select></div><div class="fg"><label for="fC">Class</label><select id="fC"><option value="">All Classes</option></select></div></div>
       <div class="fr"><div class="fg"><label for="fO">Order</label><select id="fO"><option value="">All Orders</option></select></div><div class="fg"><label for="fF">Family</label><select id="fF"><option value="">All Families</option></select></div></div>
-      <div class="fr"><div class="fg"><label for="fG">Genus</label><select id="fG"><option value="">All Genera</option></select></div><div class="fg"><label for="fSp">Species</label><select id="fSp"><option value="">All Species</option></select></div></div></div>
+      <div class="fr"><div class="fg"><label for="fG">Genus</label><select id="fG"><option value="">All Genera</option></select></div><div class="fg"><label for="fSp">Species</label><select id="fSp"><option value="">All Species</option></select></div></div></div></div>
     <hr class="hr"/>
     <div class="sec"><div class="sec-t"><span class="d" style="background:var(--orange)" aria-hidden="true"></span> Record filters</div>
       <div class="fg"><label for="fCat">Registration number</label><div class="cat-row"><input type="text" id="fCat" placeholder="e.g. T11670 or T1167*" aria-label="Registration number"/><button id="catGo" aria-label="Search registration number">Go</button></div></div>
@@ -842,6 +852,10 @@ function shouldItalic(name){
   if(/^[A-Z]+$/.test(n))return false;
   /* Binomial/trinomial: "Genus species" or "Genus species subsp" → italic */
   if(n.includes(' ')){
+    /* A bracketed subgenus is part of the name and stays italic:
+       "Euphranta (Euphranta) marina", "Bactrocera (Bulladacus)". */
+    const sg=n.match(/^([A-Z][a-z-]+)\s+\([A-Z][a-z-]+\)(\s+(.*))?$/);
+    if(sg){if(!sg[3])return true;return /^[a-z]/.test(sg[3])}
     const parts=n.split(/\s+/);
     if(parts.length>=2&&/^[A-Z]/.test(parts[0])&&/^[a-z]/.test(parts[1]))return true;
     return false;
@@ -1542,6 +1556,7 @@ function mergeFacets(a,b){
    ═════════════════════════════════════════════════ */
 async function doSearch(){
   S._searchStale=false;
+  try{syncTaxFold()}catch(e){}
   try{await Promise.all([resolveNameQuery(S.q),loadVerifiedNames()])}catch(e){console.warn('[name search]',e)}
   const hasPoly=!!(S.mapPoly&&S.mapPoly.rings);
   /* Reset polygon pagination on fresh searches (not triggered by polygon prev/next) */
@@ -2320,7 +2335,7 @@ function renderGallery(){
     const sciDisplay=displaySci(r.sci);
     const plate=hasImg?'':`<div class="plate" style="background-image:url(&quot;${platePattern(r.family||r.order||r.sci||'?',collC)}&quot;)"><span class="pl-ord">${esc(r.order||collName||'')}</span><span class="pl-fam">${esc(r.family||r.genus||displaySci(r.sci)||'')}</span><span class="pl-note">${r._imagedReg?'Imaged in the museum’s register':'Not yet imaged'}</span></div>`;
     return`<div class="card${hasImg?'':' no-media'}" data-i="${i}" style="--cc:${collC}">
-      <div class="card-kb" style="background:${markerColor(r)}"></div>
+      <div class="card-kb" style="background:${collC}"></div>
       <div class="card-coll"><span>${esc(collName)}</span></div>
       <div class="card-th">${hasImg?th:plate}${hasType?`<span class="card-type" style="background:${tc}">${esc(r.typeStatus)}</span>`:''}</div>
       <div class="card-body">
@@ -3049,7 +3064,7 @@ function renderGuide(){
     const rst=document.createElement('button');
     rst.textContent='Reset filters';
     rst.className='rp-reset';
-    rst.onclick=()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._densityManual=false;S.galDensity=null;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';doSearch()};
+    rst.onclick=()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._densityManual=false;S.galDensity=null;S._taxWasSet=false;try{setTaxFold(false)}catch(e){};$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';doSearch()};
     pills.appendChild(rst);
   }
   root.appendChild(pills);
@@ -7132,6 +7147,21 @@ function searchResolving(on){
   const icon=$('#searchIcon');
   if(icon)icon.classList.toggle('resolving',on);
 }
+/* Taxonomy in the filter panel folds away: many people filter by collection only.
+   It opens when a taxonomy filter is first set, and closes on Reset. A person's own
+   open or close is kept in between. */
+function taxSetCount(){return FIDS.filter(id=>{const e=$('#'+id);return e&&e.value}).length}
+function setTaxFold(open){
+  const b=$('#taxTog'),body=$('#taxBody');if(!b||!body)return;
+  b.setAttribute('aria-expanded',open?'true':'false');body.hidden=!open;
+  const n=taxSetCount();const pill=$('#taxN');if(pill)pill.textContent=n?n+' set':'';
+}
+function syncTaxFold(){
+  const n=taxSetCount(),b=$('#taxTog');if(!b)return;
+  const isOpen=b.getAttribute('aria-expanded')==='true';
+  setTaxFold((n>0&&!S._taxWasSet)?true:isOpen);
+  S._taxWasSet=n>0;
+}
 function updateSearchRst(){
   const q=$('#q').value.trim();
   const hasFilters=FIDS.some(id=>{const el=$('#'+id);return el&&el.value})||$('#fType')?.value||$('#fColl')?.value||$('#fSrc')?.value||$('#fCo')?.value||$('#fSt')?.value||$('#fCat')?.value||S.mapBox||S.mapPoly;
@@ -7347,7 +7377,7 @@ async function smartSearch(){
    ═════════════════════════════════════════════════ */
 let qT;$('#q').addEventListener('input',()=>{clearTimeout(qT);updateSearchRst();qT=setTimeout(()=>{smartSearch()},500)});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qT);smartSearch()}});
-$('#searchRst').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';updateSearchRst();doSearch()});
+$('#searchRst').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;S._taxWasSet=false;try{setTaxFold(false)}catch(e){};_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';updateSearchRst();doSearch()});
 // Taxonomy cascade — auto-populate parent filters via GBIF classification
 const FID2RANK={fK:'kingdom',fP:'phylum',fC:'class',fO:'order',fF:'family',fG:'genus',fSp:'species'};
 const RANK2GBIF={kingdom:'KINGDOM',phylum:'PHYLUM','class':'CLASS',order:'ORDER',family:'FAMILY',genus:'GENUS',species:'SPECIES'};
@@ -7372,12 +7402,13 @@ async function autoFillParents(fid){
     }
   }catch(e){}
 }
+$('#taxTog')?.addEventListener('click',()=>{setTaxFold($('#taxTog').getAttribute('aria-expanded')!=='true')});
 FIDS.forEach((id,idx)=>{$('#'+id).addEventListener('change',()=>{for(let i=idx+1;i<FIDS.length;i++)$('#'+FIDS[i]).value='';S.off=0;updateSearchRst();autoFillParents(id);doSearch()})});
 ['fType','fCoord','fMedia','fColl','fSrc','fCo','fSt'].forEach(id=>$('#'+id)?.addEventListener('change',()=>{S.off=0;updateSearchRst();doSearch()}));
 $('#catGo')?.addEventListener('click',()=>{S.off=0;doSearch()});
 $('#fCat')?.addEventListener('keydown',e=>{if(e.key==='Enter'){S.off=0;doSearch()}});
 $('#fSort')?.addEventListener('change',()=>{updateDropdowns()});
-$('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
+$('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;S._taxWasSet=false;try{setTaxFold(false)}catch(e){};_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
   const catEl=$('#fCat');if(catEl)catEl.value='';
   updateSearchRst();doSearch()});
 $$('.tab[data-v]').forEach(t=>t.addEventListener('click',()=>switchView(t.dataset.v)));
@@ -7676,6 +7707,11 @@ if(_SELFTEST){
       eq('register additions: imaged in the register counts for Has Media', clientFilterRecs([_s1,_s2],{media:'StillImage'}).length, 1);
       eq('register additions: imaged in the register counts in the Imaged total', computeLocalQC([_s1,_s2,{media:['x']},{media:[]}]).media, 2);
       eq('register additions: binomial search finds a subgenus name', clientFilterRecs([normRec_S({registerId:'X',scientificName:'Bactrocera (Zeugodacus) nigra',genus:'Bactrocera',specificEpithet:'nigra'})],{q:'Bactrocera nigra'}).length, 1);
+      eq('italics: subgenus in brackets, with species', shouldItalic('Euphranta (Euphranta) marina'), true);
+      eq('italics: subgenus in brackets, with subspecies', shouldItalic('Bactrocera (Bulladacus) cinnabaria'), true);
+      eq('italics: genus and subgenus alone', shouldItalic('Bactrocera (Zeugodacus)'), true);
+      eq('italics: plain binomial unchanged', shouldItalic('Hydrobiosella letti'), true);
+      eq('italics: family stays upright', shouldItalic('Tephritidae'), false);
       eq("fmtLongDate('2026-11-15') === '15 November 2026'", fmtLongDate('2026-11-15'), '15 November 2026');
       eq('paging: ALA 1 + register 4 on page 1', JSON.stringify(suppSliceFor(0,1,1,4)), '[0,4]');
       eq('paging: full ALA page, no additions yet', JSON.stringify(suppSliceFor(0,250,100,30)), '[0,0]');
