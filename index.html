@@ -999,7 +999,8 @@ function computeLocalQC(recs){
   let georef=0,media=0,typed=0;
   for(const r of recs){
     if(r.lat!=null&&r.lng!=null)georef++;
-    if(r.media&&r.media.length)media++;
+    /* Imaged = an image shown here, or a register addition the museum's register records as imaged. */
+    if((r.media&&r.media.length)||r._imagedReg)media++;
     if(isType(r.typeStatus))typed++;
   }
   return{georef,media,typed};
@@ -2317,7 +2318,7 @@ function renderGallery(){
     const collName=shortColl(r.coll);const collC=collColor(r.coll||'Unknown');
     const vernShow=isVernWorthShowing(r)?singularize(r.vern):'';
     const sciDisplay=displaySci(r.sci);
-    const plate=hasImg?'':`<div class="plate" style="background-image:url(&quot;${platePattern(r.family||r.order||r.sci||'?',collC)}&quot;)"><span class="pl-ord">${esc(r.order||collName||'')}</span><span class="pl-fam">${esc(r.family||r.genus||displaySci(r.sci)||'')}</span><span class="pl-note">Not yet imaged</span></div>`;
+    const plate=hasImg?'':`<div class="plate" style="background-image:url(&quot;${platePattern(r.family||r.order||r.sci||'?',collC)}&quot;)"><span class="pl-ord">${esc(r.order||collName||'')}</span><span class="pl-fam">${esc(r.family||r.genus||displaySci(r.sci)||'')}</span><span class="pl-note">${r._imagedReg?'Imaged in the museum’s register':'Not yet imaged'}</span></div>`;
     return`<div class="card${hasImg?'':' no-media'}" data-i="${i}" style="--cc:${collC}">
       <div class="card-kb" style="background:${markerColor(r)}"></div>
       <div class="card-coll"><span>${esc(collName)}</span></div>
@@ -4798,7 +4799,7 @@ function renderCharts(){
       sections.push('<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#2f7d3b"></span>At a glance <span class="ch-n">'+fmt(T)+' records</span></div>'
         +'<div class="st-grid">'
         +mkRing(hasCoord,T,'#2f7d3b','Georeferenced','With a coordinate','Without')
-        +mkRing(hasMedia,T,'#0f7bab','Imaged','With media','No media')
+        +mkRing(hasMedia,T,'#0f7bab','Imaged','Imaged','Not imaged')
         +mkRing(hasTyped,T,'#a86a00','Type specimens','Type material','Not types')
         +richnessHtml
         +'</div></div>');
@@ -7673,6 +7674,7 @@ if(_SELFTEST){
       eq('register additions: collection maps to the ALA collection uid', _s1.collUid, 'co50');
       eq('register additions: curator review pending is carried', _s1._suppReview && !_s2._suppReview, true);
       eq('register additions: imaged in the register counts for Has Media', clientFilterRecs([_s1,_s2],{media:'StillImage'}).length, 1);
+      eq('register additions: imaged in the register counts in the Imaged total', computeLocalQC([_s1,_s2,{media:['x']},{media:[]}]).media, 2);
       eq('register additions: binomial search finds a subgenus name', clientFilterRecs([normRec_S({registerId:'X',scientificName:'Bactrocera (Zeugodacus) nigra',genus:'Bactrocera',specificEpithet:'nigra'})],{q:'Bactrocera nigra'}).length, 1);
       eq("fmtLongDate('2026-11-15') === '15 November 2026'", fmtLongDate('2026-11-15'), '15 November 2026');
       eq('paging: ALA 1 + register 4 on page 1', JSON.stringify(suppSliceFor(0,1,1,4)), '[0,4]');
