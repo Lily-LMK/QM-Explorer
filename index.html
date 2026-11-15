@@ -1794,7 +1794,8 @@ async function doSearch(){
         showLoad(false);
         if(!S.total)showEmpty();
         facP.then(fd=>{if(!fd||S._searchId!==searchId)return;S.facets=extractFacets_A(fd);
-          if(nS)S.facets=mergeFacets(S.facets,computePolyDropdownFacets(suppAll||[],f));
+          /* Count only the register additions that match the current filters (supp), so a filtered view does not pick up additions from other collections, orders, families or states. */
+          if(nS)S.facets=mergeFacets(S.facets,computePolyDropdownFacets(supp,f));
           try{updateStats()}catch(e){}try{updateDropdowns()}catch(e){}
           if(S.view==='guide'&&!S.guideFocus)try{renderGuide()}catch(e){}});
       }
@@ -4755,7 +4756,10 @@ function renderCharts(){
 
   var T=S.total||0;
   var f=S.facets||{};
-  var sections=[];
+  var sections=[];var P={};
+  /* Where a filter is set on a dimension, show only that value: the area and register-only searches keep every option in S.facets for the dropdowns. */
+  var F={};try{F=getFilters()||{}}catch(e){}
+  function only(arr,sel){arr=Array.isArray(arr)?arr:[];if(!sel)return arr;var k=String(sel).toLowerCase();var hit=arr.filter(function(x){return String(x.value).toLowerCase()===k||String(x.name).toLowerCase()===k});return hit.length?hit:arr}
   var cols=['#2f7d3b','#0f7bab','#c93f1a','#d98e00','#9b4fc4','#c8358f','#4b6fd6','#17897f','#7a1f3d','#a9793a','#5b3a24','#7f9a12','#3e4a8c','#b0566b','#6b675f'];
 
   function safeArr(a){return Array.isArray(a)?a:[]}
@@ -4808,7 +4812,7 @@ function renderCharts(){
       for(var yy=y0;yy<=y1;yy++){var c=byY[yy]||0;colsH+='<i style="height:'+(c?Math.max(1,Math.round(c/yMax*160)):0)+'px" title="'+yy+': '+fmt(c)+' records"></i>'}
       var step=span>160?50:span>70?25:span>30?10:5,ax='';
       for(var t=Math.ceil(y0/step)*step;t<=y1;t+=step){ax+='<span style="left:'+((t-y0+.5)/span*100).toFixed(2)+'%">'+t+'</span>'}
-      sections.push('<div class="ch-p w"><div class="ch-t">Collecting through time <span class="ch-n">'+fmt(ySum)+' records with a collecting year</span></div>'
+      P.years=('<div class="ch-p w"><div class="ch-t">Collecting through time <span class="ch-n">'+fmt(ySum)+' records with a collecting year</span></div>'
         +'<div class="yc-key"><span><b>'+y0+'</b>earliest</span><span><b>'+topDec+'s</b>busiest decade, '+fmt(dec[topDec])+' records</span><span><b>'+y1+'</b>latest</span></div>'
         +'<div class="yc" role="img" aria-label="Records by collecting year, '+y0+' to '+y1+'. The busiest decade is the '+topDec+'s with '+fmt(dec[topDec])+' records.">'+colsH+'</div>'
         +'<div class="yc-ax" aria-hidden="true">'+ax+'</div></div>');
@@ -4817,10 +4821,10 @@ function renderCharts(){
 
   /* ── 2. Collections ── */
   try{
-    var collItems=safeArr(f.collection_uid).map(function(c){return{name:shortColl(c.name||''),count:Number(c.count)||0}});
+    var collItems=only(f.collection_uid,F.collCode).map(function(c){return{name:shortColl(c.name||''),count:Number(c.count)||0}});
     collItems.sort(function(a,b){return b.count-a.count});
     var collTotal=0;for(var i=0;i<collItems.length;i++)collTotal+=collItems[i].count;
-    if(collItems.length&&collTotal>0){
+    if(collItems.length>1&&collTotal>0){
       /* Build conic-gradient stops using collection-specific colors */
       var stops=[];var cumDeg=0;
       var pieColors=[];
@@ -4838,9 +4842,9 @@ function renderCharts(){
           +'<span class="sh-ct">'+fmt(collItems[i].count)+'</span><span class="sh-pct">'+esc(pctLabel(collItems[i].count,collTotal))+'</span></div>';
       }
       s+='</div></div>';
-      sections.push(s);
+      P.coll=s;
     }
-  }catch(e){console.error('[Charts] Collections pie:',e)}
+  }catch(e){console.error('[Charts] Collections:',e)}
 
   /* ── 3. Type Specimens (pie) ── */
   try{
@@ -4872,7 +4876,7 @@ function renderCharts(){
           +'<span class="sh-bar"><i style="width:'+(ct/tMax*100).toFixed(1)+'%;background:'+tColors[i]+'"></i></span>'
           +'<span class="sh-ct">'+fmt(ct)+'</span><span class="sh-pct">'+esc(pctLabel(ct,totalTypes))+'</span></div>';
       }
-      s+='</div></div>';sections.push(s);
+      s+='</div></div>';P.types=s;
     }
   }catch(e){console.error('[Charts] Types:',e)}
 
@@ -4890,9 +4894,9 @@ function renderCharts(){
       }
       return s+'</div></div>';
     }
-    var nOrd=safeArr(f.order).length,nFamL=safeArr(f.family).length;
-    sections.push(mkRank(f.order,'Orders',nOrd>10?'ten largest':'',10,false));
-    sections.push(mkRank(f.family,'Families',nFamL>10?'ten largest':'',10,false));
+    var ordA=only(f.order,F.order),famA=only(f.family,F.family),stA=only(f.state,F.state);
+    P.orders=mkRank(ordA,'Orders',ordA.length>10?'ten largest':'',10,false);
+    P.fams=mkRank(famA,'Families',famA.length>10?'ten largest':'',10,false);
 
     /* Month of collection: twelve columns, January to December */
     var mo=[0,0,0,0,0,0,0,0,0,0,0,0],moMax=0,moSum=0;
@@ -4911,12 +4915,16 @@ function renderCharts(){
       monthHtml='<div class="ch-p"><div class="ch-t">Month collected <span class="ch-n">'+fmt(moSum)+' records with a month</span></div>'
         +'<div class="mc" role="img" aria-label="Records by month of collection. '+mFull.map(function(n,i){return n+' '+fmt(mo[i])}).join(', ')+'.">'+mh+'</div></div>';
     }
-    var nSt=safeArr(f.state).length;
-    sections.push(mkRank(f.state,'State or province',nSt>8?'eight largest':'',8,!monthHtml));
-    sections.push(monthHtml);
+    P.state=mkRank(stA,'State or province',stA.length>8?'eight largest':'',8,false);
+    P.month=monthHtml;
   }catch(e){console.error('[Charts] Ranked lists:',e)}
 
-  /* ── Assemble ── */
+  /* ── Assemble: types and orders lead, then families and collections, then time and place ── */
+  function pairUp(list){list=list.filter(Boolean);if(list.length%2)list[list.length-1]=list[list.length-1].replace('class="ch-p"','class="ch-p w"');return list}
+  var halves=[P.types,P.orders,P.fams,P.coll,P.state,P.month].filter(Boolean);
+  sections=sections.concat(pairUp(halves.slice(0,4)));
+  if(P.years)sections.push(P.years);
+  sections=sections.concat(pairUp(halves.slice(4)));
   var html=sections.filter(Boolean).join('');
   if(!html)html='<div class="empty" style="grid-column:1/-1"><div class="ico">📊</div><h3>No analytics data</h3><p>Run a search to see collection analytics.</p></div>';
   g.innerHTML=html;
