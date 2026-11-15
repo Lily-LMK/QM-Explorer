@@ -557,7 +557,7 @@ function cachedFetch(url,opts){
 function safe$(v){if(v==null)return'';if(typeof v==='string')return v;if(Array.isArray(v))return v.join('; ');if(typeof v==='object')return JSON.stringify(v);return String(v)}
 /* Fix swapped sex/lifeStage — some source records store "Adult" in sex and "Male" in lifeStage */
 function fixSexLifeStage(sex,lifeStage){
-  const sexTerms=/^(male|female|hermaphrodite|intersex|gynandromorph|undetermined|mixed)$/i;
+  const sexTerms=/^(males?|females?|hermaphrodite|intersex|gynandromorph|undetermined|mixed)$/i; /* the register also supplies plurals ("Males") */
   const lifeTerms=/^(adult|juvenile|subadult|sub-adult|immature|larva|larvae|larval|pupa|pupae|pupal|nymph|egg|eggs|embryo|neonate|hatchling|fledgling|nestling|tadpole|caterpillar|nauplius|zoea|megalopa|instar|veliger|sporophyte|gametophyte)$/i;
   const sV=(sex||'').trim(), lV=(lifeStage||'').trim();
   /* Both look swapped */
@@ -728,6 +728,8 @@ function getFilters(){
     bbox:bbox};
 }
 
+/* Fields asked for with fl=. With fl=, ALA returns most descriptive fields inside otherProperties (see normRec_A). */
+const ALA_FL='id,uuid,raw_scientificName,scientificName,vernacularName,commonName,taxonConceptID,taxonConceptLsid,kingdom,phylum,classs,order,superfamily,family,subfamily,tribe,genus,species,scientificNameAuthorship,raw_scientificNameAuthorship,basisOfRecord,raw_basisOfRecord,year,month,day,eventDate,raw_eventDate,verbatimEventDate,raw_verbatimEventDate,decimalLatitude,decimalLongitude,raw_decimalLatitude,raw_decimalLongitude,latLong,country,stateProvince,state,locality,raw_locality,verbatimLocality,raw_verbatimLocality,minimumElevationInMeters,maximumElevationInMeters,minimumDepthInMeters,catalogNumber,raw_catalogNumber,collectionCode,raw_collectionCode,collectionUid,institutionCode,raw_institutionCode,collector,recordedBy,raw_recordedBy,raw_collector,identifiedBy,raw_identifiedBy,typeStatus,raw_typeStatus,preparations,raw_preparations,sex,raw_sex,lifeStage,raw_lifeStage,habitat,raw_habitat,samplingProtocol,raw_samplingProtocol,samplingMethod,raw_samplingMethod,occurrenceRemarks,raw_occurrenceRemarks,fieldNumber,raw_fieldNumber,individualCount,raw_individualCount,datasetName,dataResourceName,multimedia,largeImageUrl,imageUrl,smallImageUrl,geospatial_kosher';
 async function alaFetch(f,off,lim){
   const fq=alaBaseFQ(f);
   const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
@@ -735,7 +737,7 @@ async function alaFetch(f,off,lim){
   /* Essential facets only — analytics facets fetched lazily when charts tab opened */
   u.set('facets','kingdom,phylum,class,order,family,genus,species,collection_uid,state,type_status');u.set('flimit',FLIM);u.set('fsort','count');
   /* Request raw locality fields — ALA's processed 'locality' often loses specificity */
-  u.set('fl','id,uuid,raw_scientificName,scientificName,vernacularName,commonName,taxonConceptID,taxonConceptLsid,kingdom,phylum,classs,order,superfamily,family,subfamily,tribe,genus,species,scientificNameAuthorship,raw_scientificNameAuthorship,basisOfRecord,raw_basisOfRecord,year,month,day,eventDate,raw_eventDate,verbatimEventDate,raw_verbatimEventDate,decimalLatitude,decimalLongitude,raw_decimalLatitude,raw_decimalLongitude,latLong,country,stateProvince,state,locality,raw_locality,verbatimLocality,raw_verbatimLocality,minimumElevationInMeters,maximumElevationInMeters,minimumDepthInMeters,catalogNumber,raw_catalogNumber,collectionCode,raw_collectionCode,collectionUid,institutionCode,raw_institutionCode,collector,recordedBy,raw_recordedBy,raw_collector,identifiedBy,raw_identifiedBy,typeStatus,raw_typeStatus,preparations,raw_preparations,sex,raw_sex,lifeStage,raw_lifeStage,habitat,raw_habitat,samplingProtocol,raw_samplingProtocol,samplingMethod,raw_samplingMethod,occurrenceRemarks,raw_occurrenceRemarks,fieldNumber,raw_fieldNumber,individualCount,raw_individualCount,datasetName,dataResourceName,multimedia,largeImageUrl,imageUrl,smallImageUrl,geospatial_kosher');
+  u.set('fl',ALA_FL);
   const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
   if(!r.ok)throw new Error('ALA '+r.status);return r.json();
 }
@@ -1038,7 +1040,15 @@ function classifyBackboneVern(name){
   return'species';
 }
 
+/* With fl=, ALA returns most descriptive fields inside otherProperties, not at the top level.
+   Lift only the fields below. Coordinates are deliberately NOT lifted (raw_decimalLatitude etc.):
+   a record whose coordinate ALA has withheld must not gain one here. */
+const _OP_LIFT=['raw_locality','locality','raw_verbatimLocality','verbatimLocality','scientificNameAuthorship','raw_scientificNameAuthorship','preparations','raw_preparations','sex','raw_sex','lifeStage','raw_lifeStage','identifiedBy','raw_identifiedBy','habitat','raw_habitat','samplingProtocol','raw_samplingProtocol','samplingMethod','raw_samplingMethod','occurrenceRemarks','raw_occurrenceRemarks','fieldNumber','raw_fieldNumber','individualCount','raw_individualCount','verbatimEventDate','raw_verbatimEventDate','raw_eventDate','day','minimumElevationInMeters','maximumElevationInMeters','minimumDepthInMeters'];
+/* ALA's processed lifeStage can be a JSON string such as {"concept":"Adult",...} */
+function _conceptText(v){if(typeof v==='string'&&v.charAt(0)==='{'){try{const o=JSON.parse(v);return o.concept||''}catch(e){return''}}return v}
 function normRec_A(r){
+  const _op=r&&r.otherProperties&&typeof r.otherProperties==='object'?r.otherProperties:null;
+  if(_op){r={...r};for(const k of _OP_LIFT){if(r[k]==null&&_op[k]!=null)r[k]=_op[k]}}
   const cat = r.catalogNumber || r.raw_catalogNumber || r.catalogue_number || r.catalogueNumber || '';
   const coll = r.collectionCode || r.raw_collectionCode || r.collectionUid || r.collection_uid || '';
   const collUid = r.collectionUid || r.collection_uid || '';
@@ -1069,9 +1079,9 @@ function normRec_A(r){
       speciesVal=nameParts[0]+' '+nameParts[1];
     }
   }
-  const _sl=fixSexLifeStage(safe$(r.sex||r.raw_sex),safe$(r.lifeStage||r.raw_lifeStage));
+  const _sl=fixSexLifeStage(safe$(r.raw_sex||r.sex),safe$(r.raw_lifeStage||_conceptText(r.lifeStage)));
   const _vn=r.vernacularName||r.commonName||'';
-  return{key:r.uuid,sci:bestSci,vern:_vn,vernRank:_vn?classifyBackboneVern(_vn):null,
+  return{_hasFl:!!_op,key:r.uuid,sci:bestSci,vern:_vn,vernRank:_vn?classifyBackboneVern(_vn):null,
     kingdom:r.kingdom||'',phylum:r.phylum||'',class_:r.classs||r['class']||'',order:r.order||'',superfamily:r.superfamily||'',family:r.family||'',subfamily:r.subfamily||'',tribe:r.tribe||'',genus:genusVal,species:speciesVal,
     basis:r.basisOfRecord||r.raw_basisOfRecord||'',year:r.year?parseInt(r.year):null,month:r.month?parseInt(r.month):null,day:r.day?parseInt(r.day):null,
     lat:toNum(r.decimalLatitude)??toNum(r.latitude)??toNum(r.raw_decimalLatitude)??parseLatLong(r.latLong)[0],lng:toNum(r.decimalLongitude)??toNum(r.longitude)??toNum(r.raw_decimalLongitude)??parseLatLong(r.latLong)[1],country:r.country||'',state:r.stateProvince||r.state||'',locality:r.raw_locality||r.locality||'',
@@ -1079,7 +1089,7 @@ function normRec_A(r){
     media:dedupImgs([r.largeImageUrl,r.imageUrl,r.smallImageUrl].filter(Boolean)),
     /* Darwin Core extras */
     typeStatus:safe$(r.typeStatus||r.raw_typeStatus),
-    authorship:extractAuth(bestSci,safe$(r.scientificNameAuthorship||r.raw_scientificNameAuthorship)),
+    authorship:extractAuth(bestSci,safe$((bestSci===rawSci&&rawSci!==procSci)?r.raw_scientificNameAuthorship:(r.scientificNameAuthorship||r.raw_scientificNameAuthorship))), /* when the museum's own name is shown, use the museum's author, not the author of ALA's different match */
     preparations:safe$(r.preparations||r.raw_preparations),
     sex:_sl.sex,
     eventDate:safe$(r.eventDate||r.raw_eventDate),
@@ -3969,6 +3979,44 @@ function enrichRecord(r,fields){
 
 /* TABLE */
 /* CSV EXPORT — two modes: fast (ALA data only) and enriched (full spatial context) */
+/* The Records, Map and area searches do not send fl= (with fl=, ALA leaves out its image URLs), so their
+   records arrive without locality, authorship, preparations, sex and the other descriptive fields.
+   Before a CSV is built, ask ALA for those fields for the same query (one request per 100 records,
+   stable sort) and copy them in by uuid. Coordinates are never copied. */
+const _CSV_FILL=['locality','identifiedBy','preparations','sex','lifeStage','habitat','samplingProtocol','occurrenceRemarks','individualCount','verbatimDate','fieldNumber'];
+async function fillDescriptiveFields(recs,f){
+  const need=new Map();
+  recs.forEach(r=>{if(r&&r.uuid&&!r._hasFl)need.set(r.uuid,r)});
+  if(!need.size)return 0;
+  const wanted=need.size;
+  const fq=alaBaseFQ(f);
+  let total=Infinity;
+  for(let off=0;off<Math.min(total,ALA_MAX_RESULTS)&&need.size;off+=ALA_MAX_PAGE){
+    let d;
+    try{
+      const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
+      u.set('pageSize',ALA_MAX_PAGE);u.set('startIndex',off);u.set('sort','id');u.set('dir','asc');
+      u.set('facets','');u.set('flimit','0');u.set('fl',ALA_FL);
+      const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+      if(!r.ok)break;
+      d=await r.json();
+    }catch(e){break}
+    total=d.totalRecords||0;
+    const occ=d.occurrences||[];
+    if(!occ.length)break;
+    for(const o of occ){
+      const rec=need.get(o.uuid);if(!rec)continue;
+      const src=normRec_A(o);
+      for(const k of _CSV_FILL){if(!rec[k]&&src[k])rec[k]=src[k]}
+      if(src.authorship)rec.authorship=src.authorship;
+      for(const k of ['elevMin','elevMax','depth']){if(rec[k]==null&&src[k]!=null)rec[k]=src[k]}
+      rec._hasFl=true;need.delete(o.uuid);
+    }
+    if(wanted>ALA_MAX_PAGE)toast(`Fetching record details… ${Math.round((wanted-need.size)/wanted*100)}%`);
+  }
+  return need.size;
+}
+
 async function exportCSV(enriched=false){
   /* ── Collect ALL records, not just the visible page ── */
   let recs;
@@ -4005,6 +4053,9 @@ async function exportCSV(enriched=false){
     if(visPts.length&&visPts.length<recs.length)recs=visPts;
   }
   if(!recs.length){toast('No records to export');return}
+
+  /* Locality, authorship and the other descriptive columns (see fillDescriptiveFields) */
+  await fillDescriptiveFields(recs,getFilters());
 
   if(enriched){
     /* ── Enriched: batch locality enrichment (raw_locality from full occurrence) ── */
@@ -4110,8 +4161,21 @@ async function exportCSV(enriched=false){
   /* ── Build CSV ── */
   const sp0=r=>r._spatial&&!r._spatial.loading?r._spatial:r._csvSpatial||{};
   const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid'];
+  const infoCols=['retrievalDate','query'];
   const spatialCols=['elevationDEM_m','ibraBioregion','ibraSubregion','lga','drainageBasin','protectedArea','estateType','capadName','capadType','regionalEcosystem','traditionalOwners','nnttType','marineZone','marinePark','fishHabitatArea'];
-  const cols=enriched?[...coreCols,...spatialCols]:coreCols;
+  const cols=enriched?[...coreCols,...spatialCols,...infoCols]:[...coreCols,...infoCols];
+  /* Query and retrieval date travel with every row so the file explains itself when it is separated from the site. */
+  const _now=new Date();
+  const retrievalDate=_now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0')+'-'+String(_now.getDate()).padStart(2,'0');
+  const queryText=(()=>{
+    try{
+      const f=getFilters();
+      const parts=['q='+(f.q||'*:*'),...alaBaseFQ(f).map(c=>'fq='+c)];
+      if(S.mapPoly)parts.push('area='+S.mapPoly.name+' ('+(S.mapPoly.source||'area')+')');
+      if(S.view==='map'&&S.mapYearRange)parts.push('years='+S.mapYearRange[0]+'-'+S.mapYearRange[1]);
+      return 'biocache-ws.ala.org.au/ws/occurrences/search: '+parts.join('; ');
+    }catch(e){return''}
+  })();
   const rows=[cols.join(',')];
   recs.forEach(r=>{
     const sp=enriched?sp0(r):{};
@@ -4132,7 +4196,7 @@ async function exportCSV(enriched=false){
       sp.traditionalOwners||'',sp.nnttType||'',
       sp.marineZone||'',sp.marinePark||'',sp.fha||sp.marineFHA?.name||''
     ]:[];
-    const v=[...coreVals,...spatialVals];
+    const v=[...coreVals,...spatialVals,retrievalDate,queryText];
     rows.push(v.map(x=>{const s=String(x??'');return/[,"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(','));
   });
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
