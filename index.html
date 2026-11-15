@@ -1721,7 +1721,16 @@ async function fetchChildFacets(ancestors,targetRank){
 /* ═════════════════════════════════════════════════
    UI
    ═════════════════════════════════════════════════ */
-function showLoad(on){const l=$('#galLoad');if(on){l.style.display='block';l.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-t">Searching QM ('+'ALA'+')…</div></div>'}else l.style.display='none'}
+/* Grey the result on screen while a new search is under way, so an old count or old tiles
+   are never read as the answer to the new search. Cleared when the new result is drawn. */
+function markStale(on){
+  try{
+    const sc=$('#scroll');if(sc){sc.classList.toggle('stale',on);sc.setAttribute('aria-busy',on?'true':'false')}
+    const st=$('.stats-g');if(st)st.classList.toggle('stale',on);
+    if(on){const rc=$('#rc');if(rc&&rc.textContent)rc.textContent='Searching…'}
+  }catch(e){}
+}
+function showLoad(on){markStale(on);const l=$('#galLoad');if(on){l.style.display='block';l.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-t">Searching QM ('+'ALA'+')…</div></div>'}else l.style.display='none'}
 function showEmpty(m){$('#gal').innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ico">—</div><h3>No records</h3><p>${esc(m||'Adjust filters.')}</p></div>`}
 function updateStats(){
   const scanning=S.mapPoly&&!S._polyScanDone;
@@ -6637,6 +6646,7 @@ async function smartSearch(){
      to populate the full taxonomy breadcrumb (kingdom → genus) */
   const resolveId=++_resolveId;
   searchResolving(true);
+  markStale(true); /* the GBIF look-up below can take seconds; do not leave the old result looking current */
   try{
     /* Try GBIF species suggest — returns ranked matches for common + scientific names */
     const sr=await cachedFetch(`https://api.gbif.org/v1/species/suggest?q=${encodeURIComponent(raw)}&limit=8`);
