@@ -4583,6 +4583,8 @@ async function fetchSpatialContext(r,idx){
     ntOutcome:nt&&nt.kind==='determination'?nt.outcomes.join('; '):null,
     rntbc:nt&&nt.kind==='determination'?nt.rntbc||null:null,
     ntDate:nt?nt.date:null,
+    /* A determination covers the point but its outcome is "does not exist" or "extinguished" */
+    ntNegative:(ntDet||[]).length>0&&!(nt&&nt.kind==='determination'),
     /* Curated fallback */
     curatedOwner:curatedResult?.people||null,
     curatedLanguage:curatedResult?.language||null,
@@ -4785,6 +4787,27 @@ function landzoneDesc(reCode){
   return null;
 }
 
+/* Built-in custodian lines are hidden where a native title determination covers the point with a negative outcome
+   (Lily, 15 November 2026). One exception, by Lily's decision: S3568 at Fig Tree Pocket keeps the Queensland Museum's
+   own Turrbal attribution. Keyed by uuid, because a registration number can be shared. */
+const _CUSTODIAN_KEEP_ON_NEGATIVE=new Set(['111f938f-9f93-48b6-a35c-8ab5f442903f']) /* S3568, Holoplatys lhotskyi, Fig Tree Pocket, Brisbane */;
+function _curatedAllowed(r){
+  const sp=r&&r._spatial;
+  if(!sp||!sp.curatedOwner)return false;
+  if(!sp.ntNegative)return true;
+  return _CUSTODIAN_KEEP_ON_NEGATIVE.has(r.uuid)&&/^Queensland Museum\b/.test(sp.curatedSource||'');
+}
+/* Does the built-in list name the same people as the determination? (Its rectangles are approximate and can belong to a neighbour.) */
+function _curatedSameGroup(sp){
+  if(!sp||!sp.curatedOwner||!sp.traditionalOwners)return false;
+  const w=s=>(s||'').toLowerCase().split(/[^a-z]+/).filter(x=>x.length>3&&!/^(people|peoples|nation)$/.test(x));
+  const det=w(sp.traditionalOwners);
+  return w(sp.curatedOwner).some(x=>det.includes(x));
+}
+/* "Jandai language (approximate location match, source: …)" */
+function _curatedNote(lang,src){
+  return ` <span style="font-size:11px;color:var(--muted)">${lang?esc(lang)+' language ':''}(approximate location match, source: ${src?esc(src):'published acknowledgement-of-country sources'})</span>`;
+}
 function renderSpatialSection(r){
   const el=$('#spatialCtx');if(!el)return;
   const sp=r._spatial;
@@ -4806,16 +4829,12 @@ function renderSpatialSection(r){
   if(peopleName){
     /* A native title determination names the group. The built-in list may add a place name and a language,
        but only where it names the same people (its rectangles are approximate and can belong to a neighbour). */
-    const _words=s=>(s||'').toLowerCase().split(/[^a-z]+/).filter(w=>w.length>3&&!/^(people|peoples|nation)$/.test(w));
-    const sameGroup=!!curatedPeople&&_words(curatedPeople).some(w=>_words(peopleName).includes(w));
+    const sameGroup=_curatedSameGroup(sp);
     let line=`Country of the <strong>${esc(peopleName)}</strong> people`;
     if(sameGroup&&ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
     line+='.';
     const showLang=sameGroup&&curatedLang&&curatedLang.toLowerCase()!==peopleName.toLowerCase();
-    if(showLang||(sameGroup&&ancestral)){
-      const what=[sameGroup&&ancestral?'place name':null,showLang?'language':null].filter(Boolean).join(' and ');
-      line+=` <span style="font-size:11px;color:var(--muted)">${showLang?esc(curatedLang)+' language ':''}(${what} approximate${sp.curatedSource?' — source: '+esc(sp.curatedSource):''})</span>`;
-    }
+    if(showLang||(sameGroup&&ancestral))line+=_curatedNote(showLang?curatedLang:null,sp.curatedSource);
     lines.push(line);
     /* The determination itself, with its outcome, date and registered body corporate */
     {
@@ -4825,13 +4844,12 @@ function renderSpatialSection(r){
       if(sp.tribunalId)bits.push('Tribunal ID '+esc(sp.tribunalId));
       lines.push(`Native title: <strong>determination</strong>${bits.length?' ('+bits.join(', ')+')':''}.${sp.rntbc?' Registered body corporate: '+esc(sp.rntbc)+'.':''} <span style="font-size:11px;color:var(--muted)">Source: National Native Title Tribunal.</span>`);
     }
-  }else if(curatedPeople){
+  }else if(curatedPeople&&_curatedAllowed(r)){
     /* No native title determination, but the built-in list matched. Approximate, and says where it comes from. */
     let line=`Country of the <strong>${esc(curatedPeople)}</strong> people`;
     if(ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
     line+='.';
-    if(curatedLang)line+=` <span style="font-size:11px;color:var(--muted)">${esc(curatedLang)} language</span>`;
-    line+=` <span style="font-size:11px;color:var(--muted)">Approximate${sp.curatedSource?' — source: '+esc(sp.curatedSource):' — from published acknowledgement-of-country sources'}.</span>`;
+    line+=_curatedNote(curatedLang,sp.curatedSource);
     lines.push(line);
   }else{
     lines.push(`<span style="color:var(--muted);font-style:italic">Traditional custodians not identified for this location. <a href="https://native-land.ca" target="_blank" rel="noopener" style="color:var(--blue)">native-land.ca ↗</a></span>`);
@@ -6261,9 +6279,9 @@ function specSources(r){
   const sp=r._spatial;
   if(sp&&!sp.loading){
     if(sp.traditionalOwners||sp.ntOutcome||sp.ntApplication)lines.push('Native Title: National Native Title Tribunal, NNTT Custodial AGOL FeatureServer (Layer 5, determination outcomes; Layer 8, applications under way).');
-    if(sp.traditionalOwners&&sp.ancestralName&&sp.curatedSource)lines.push('Ancestral place name: '+sp.curatedSource+'.');
-    if(!sp.traditionalOwners&&sp.curatedOwner&&sp.curatedSource)lines.push('Traditional custodians: '+sp.curatedSource+'. Boundaries approximate.');
-    else if(!sp.traditionalOwners&&sp.curatedOwner)lines.push('Traditional custodians: Curated from published acknowledgement-of-country sources. Boundaries approximate.');
+    if(sp.traditionalOwners&&_curatedSameGroup(sp)&&(sp.ancestralName||sp.curatedLanguage)&&sp.curatedSource)lines.push((sp.ancestralName&&sp.curatedLanguage?'Place name and language: ':sp.ancestralName?'Place name: ':'Language: ')+sp.curatedSource+'. Approximate location match.');
+    if(!sp.traditionalOwners&&_curatedAllowed(r)&&sp.curatedSource)lines.push('Traditional custodians: '+sp.curatedSource+'. Boundaries approximate.');
+    else if(!sp.traditionalOwners&&_curatedAllowed(r))lines.push('Traditional custodians: Curated from published acknowledgement-of-country sources. Boundaries approximate.');
     if(sp.bioregion)lines.push('Bioregion/Subregion: Queensland Government, AdminBoundariesFramework MapServer (Layers 2, 3).');
     if(sp.drainageBasin)lines.push('Drainage basin: Queensland Government, AdminBoundariesFramework MapServer (Layer 6).');
     if(sp.lga)lines.push('Local Government Area: Queensland Government, AdminBoundariesFramework MapServer (Layer 11).');
