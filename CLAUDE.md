@@ -119,9 +119,11 @@ not a real outage.
   every feature at a point; `nnttInterpret` decides what to show (Lily's rules, 14–15
   November 2026: "application under way"; nothing for "does not exist"/"extinguished"; the
   determination takes precedence over an application). The built-in custodians list
-  (`_qldTraditionalOwners`, 34 approximate rectangles) is shown with "approximate location
-  match, source: …", hidden where the outcome is negative (`_curatedAllowed`; one exception
-  by uuid, S3568).
+  (`_qldTraditionalOwners`, 34 approximate rectangles) is marked "(approximate)" and hidden
+  where the outcome is negative (`_curatedAllowed`; one exception by uuid, S3568). The record
+  window shows only a short group name (`_ntShortName`) and a brief outcome ("Recognised
+  (non-exclusive)", "Application under way"); full Tribunal names, IDs, dates, bodies corporate
+  and sources belong in Copy Sources (`specSources`), not in Country & Context.
 - **CSV:** both exports end with `retrievalDate` and `query`. Elevation is ALA `el674`.
 - **Service worker:** never caches `index.html` (network-only), so a deploy reaches visitors at
   once. Propagates real network/CORS failures (does NOT manufacture a
@@ -170,7 +172,8 @@ The Explorer never calls the museum's register; anything from it arrives as a re
 
 **Stages:**
 1. Health check — done 14 November 2026. No code changed.
-2. Repairs — batch 1 released 15 November 2026 (`main` eaead22): elevation (`el674`),
+2. Repairs — batch 1 released 15 November 2026 (`main` eaead22, then f1cd846 for the shorter
+   Native Title display): elevation (`el674`),
    Native Title layers, "has a coordinate", standard CSV columns, stable sort on export.
    Still to do (batch 2), all in the live code:
    - Exporting while on page 2 or later repeats that page and misses page 1 (read from the
@@ -233,8 +236,8 @@ of corrected records, the ~125,000 records counted as georeferenced with no coor
 
 ## State of the live site
 
-`main` is at eaead22 (stage 2 batch 1, released and checked on GitHub Pages 15 November
-2026). All five views, the searches, both CSV exports and every outside service work, with
+`main` is at f1cd846 (stage 2 batch 1 and the shorter Native Title display, released and
+checked on GitHub Pages 15 November 2026). All five views, the searches, both CSV exports and every outside service work, with
 the faults listed under stage 2. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
 map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;
 the museum-first image cascade; `deriveHoldingsStats`; Browse 8a/8b/8c-a with common
