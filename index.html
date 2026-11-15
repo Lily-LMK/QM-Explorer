@@ -241,7 +241,7 @@ button,select,input{font-family:var(--font)}
 .gu-tile .gt-img img{width:100%;height:100%;object-fit:cover;display:block}
 .gu-tile .gt-img .gt-cap{position:absolute;left:0;right:0;bottom:0;padding:14px 10px 6px;font-size:11px;line-height:1.25;font-weight:500;color:#fff;background:linear-gradient(to top,rgba(10,10,10,.78),rgba(10,10,10,0));display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;pointer-events:none}
 .gu-tile .gt-img .gt-no{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#77736a;font-size:24px;font-weight:300}
-.gu-tile .gt-img.gt-load{background:linear-gradient(100deg,#1a1a1a 25%,#2a2a2a 50%,#1a1a1a 75%);background-size:200% 100%;animation:gtShimmer 1.3s ease-in-out infinite}
+.gu-tile .gt-img.gt-load{background:linear-gradient(100deg,#ebe7dc 25%,#f3f0e8 50%,#ebe7dc 75%);background-size:200% 100%;animation:gtShimmer 1.3s ease-in-out infinite}
 @keyframes gtShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .gu-tile .gt-prov{font-size:11.5px;line-height:1.3;color:var(--muted2);font-weight:500;margin-top:8px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gu-tile .gt-prov.prov-qm{align-self:flex-start;color:var(--ink);background:var(--aqua);border:none;border-radius:var(--pill);padding:2px 10px;font-weight:700;letter-spacing:0}
@@ -423,6 +423,43 @@ button,select,input{font-family:var(--font)}
 .vp{display:none}.vp.on{display:block}
 @media(max-width:900px){.lay{grid-template-columns:1fr}.side{display:none}.ch-grid,.gu-focus{grid-template-columns:1fr}.gal,.gu-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}.hdr{gap:14px;padding:0 14px}.hdr-t{display:none}.qm-rule{display:none}.tabs{padding:0 10px}.scroll{padding:14px}.gal-bar{top:-14px;margin:-14px -14px 12px;padding:8px 14px}.gu-hdr h2{font-size:38px}.hero h2{font-size:44px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.card:hover,.gu-tile:hover,.gal.compact .card:hover{transform:none}}
+/* ── second pass (16 November 2026) ── */
+/* record window with no media: one column, the name on ink */
+.mod-dlg.no-media{width:min(780px,96vw)}
+.mod-dlg.no-media .mod-left{display:none}
+.mod-dlg.no-media .mod-right-hdr{background:var(--ink);color:#fff;padding:30px 32px 26px;align-items:flex-start}
+.mod-dlg.no-media .m-sci{font-size:40px;color:#fff}
+.mod-dlg.no-media .m-sci *{color:var(--chart)!important}
+.mod-dlg.no-media .m-com{color:#c9c6bf}
+.mod-dlg.no-media .m-com *{color:inherit!important}
+.mod-dlg.no-media .mod-x{background:transparent;border-color:#fff;color:#fff}
+.mod-dlg.no-media .mod-x:hover{background:var(--chart);border-color:var(--chart);color:var(--ink)}
+.mod-dlg.no-media .mod-right-body{padding:22px 32px 28px}
+@media(max-width:700px){.mod-dlg.no-media .m-sci{font-size:28px}.mod-dlg.no-media .mod-right-hdr{padding:22px 20px 18px}.mod-dlg.no-media .mod-right-body{padding:16px 20px 22px}}
+/* un-imaged record card: a typographic plate */
+.card-th .plate{position:absolute;inset:0;display:flex;flex-direction:column;padding:18px 16px 14px;background-color:var(--bone2);background-size:cover;background-position:center}
+.plate .pl-ord{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.plate .pl-fam{margin-top:auto;font-size:clamp(24px,2.3vw,34px);font-weight:900;letter-spacing:-.03em;line-height:.92;color:var(--ink);overflow-wrap:anywhere}
+.plate .pl-note{margin-top:8px;font-size:12px;font-weight:500;color:var(--muted2)}
+.card.no-media .card-type{bottom:auto;top:14px;right:12px}
+/* analytics bars */
+.hb-track{display:flex;align-items:center}
+.hb-val.out{color:var(--ink);margin-left:8px}
+/* Browse rank control with reset beside it */
+.rk-pills{border:none;border-radius:0;overflow:visible;background:none;align-items:center;gap:0}
+.rp{border:1.5px solid var(--ink);margin-left:-1.5px;background:#fff}
+.rp:first-child{margin-left:0;border-radius:var(--pill) 0 0 var(--pill);padding-left:22px}
+.rp.rp-last{border-radius:0 var(--pill) var(--pill) 0;padding-right:22px}
+.rp-reset{margin-left:14px;font-size:14px;font-weight:600;min-height:40px;padding:0 4px;border:none;background:none;color:var(--ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.rp-reset:hover{text-decoration-thickness:2px}
+/* record count gives way before the tabs do */
+.tab{flex-shrink:0}
+.rc{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-left:12px}
+@media(max-width:1280px){.rc-split{display:none}}
+/* Acknowledgement of Country */
+.ack{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:11px 24px 12px;background:var(--ink);color:#e9e6df;font-size:13.5px;line-height:1.45}
+.ack strong{font-weight:800;color:#fff;white-space:nowrap}
+@media(max-width:900px){.ack{padding:10px 14px;font-size:12.5px}}
 </style>
 </head>
 <body>
@@ -479,6 +516,8 @@ button,select,input{font-family:var(--font)}
     </div>
   </main>
 </div>
+
+<footer class="ack" role="contentinfo"><strong>Acknowledgement of Country</strong><span>Queensland Museum acknowledges the First Peoples – the Traditional Custodians of the lands, waters and sky where we live and work.</span></footer>
 
 <!-- Modal -->
 <div class="mod-bg" id="modal" role="dialog" aria-modal="true" aria-label="Specimen detail">
@@ -2148,7 +2187,7 @@ function renderGallery(){
     const phUrl=imgPlaceholderCandidate(r.sci||r.family||r.genus||r.order||'?','species',r.family||r.order||'').url;
     const th=hasImg
       ? `<img src="${esc(r.media[0])}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${phUrl}'"/>`
-      : `<img src="${phUrl}" alt="No image available" loading="lazy"/>`;
+      : null;
     const loc=r.locality?[r.locality,r.state,r.country].filter(Boolean).join(', '):'';
     const hasType=isType(r.typeStatus);
     /* Breadcrumb: order › family › genus, but exclude any that duplicates the sci name */
@@ -2159,10 +2198,11 @@ function renderGallery(){
     const collName=shortColl(r.coll);const collC=collColor(r.coll||'Unknown');
     const vernShow=isVernWorthShowing(r)?singularize(r.vern):'';
     const sciDisplay=displaySci(r.sci);
-    return`<div class="card" data-i="${i}" style="--cc:${collC}">
+    const plate=hasImg?'':`<div class="plate" style="background-image:url(&quot;${platePattern(r.family||r.order||r.sci||'?',collC)}&quot;)"><span class="pl-ord">${esc(r.order||collName||'')}</span><span class="pl-fam">${esc(r.family||r.genus||displaySci(r.sci)||'')}</span><span class="pl-note">Not yet imaged</span></div>`;
+    return`<div class="card${hasImg?'':' no-media'}" data-i="${i}" style="--cc:${collC}">
       <div class="card-kb" style="background:${markerColor(r)}"></div>
       <div class="card-coll"><span>${esc(collName)}</span></div>
-      <div class="card-th">${th}${hasType?`<span class="card-type" style="background:${tc}">${esc(r.typeStatus)}</span>`:''}</div>
+      <div class="card-th">${hasImg?th:plate}${hasType?`<span class="card-type" style="background:${tc}">${esc(r.typeStatus)}</span>`:''}</div>
       <div class="card-body">
         <div class="card-sci${shouldItalic(r.sci)?' it':''}">${esc(sciDisplay)}</div>
         <div class="card-names">${cardNamesHTML(r)}</div>
@@ -2659,28 +2699,44 @@ function imgPlaceholderCandidate(name,rank,labelOverride){
   const label=esc(((labelOverride!=null&&labelOverride!=='')?labelOverride:(RLABEL[field]||'')).toUpperCase());
   /* Restrained, desaturated "specimen-drawer" palette (sage/sepia/slate/oxblood/petrol/
      olive) — seeded by taxon, never saturated, so the real photos still read as jewels. */
-  const TONES=[['#3b4a40','#222c26'],['#46392f','#2a221c'],['#39394a','#23232d'],['#4a3338','#2c1f23'],['#324349','#1d2629'],['#45402f','#29261c'],['#2f4038','#1c2723'],['#42333a','#271d22']];
-  const t=TONES[seed%TONES.length];
+  /* A pale specimen plate: bone ground, quiet contour lines, one stronger line.
+     Flat colour only, seeded by taxon so the same group always gets the same plate. */
   /* Deterministic seeded RNG — NO Math.random (output must be stable for the cache and
      the ?selftest determinism probe). */
   let _s=seed>>>0; const rnd=()=>{_s=(_s*1664525+1013904223)>>>0;return _s/4294967296};
-  let contours='';
+  let contours='';const strong=seed%6;
   for(let i=0;i<6;i++){
     const baseY=30+i*46+rnd()*14, amp=10+rnd()*22, ph=rnd()*6.28, fr=1.3+rnd()*1.6;
     let d='M -20 '+baseY.toFixed(1);
     for(let x=0;x<=420;x+=20){const y=baseY+Math.sin((x/400)*fr*6.28+ph)*amp;d+=' L '+x+' '+y.toFixed(1)}
-    contours+=`<path d="${d}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1.5"/>`;
+    contours+=`<path d="${d}" fill="none" stroke="#0a0a0a" stroke-opacity="${i===strong?0.42:0.09}" stroke-width="${i===strong?2.5:1.5}" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">`
-    +`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">`
-    +`<stop offset="0" stop-color="${t[0]}"/><stop offset="1" stop-color="${t[1]}"/></linearGradient></defs>`
-    +`<rect width="400" height="300" fill="url(#g)"/>`
+    +`<rect width="400" height="300" fill="#ebe7dc"/>`
     +contours
-    +`<rect x="12" y="12" width="376" height="276" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>`
-    +`<text x="24" y="40" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,0.62)">${label}</text>`
-    +`<text x="200" y="162" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="600" letter-spacing="2.5" fill="rgba(255,255,255,0.34)" text-anchor="middle">NO IMAGE AVAILABLE</text>`
+    +`<text x="24" y="42" font-family="Barlow,Arial,Helvetica,sans-serif" font-size="14" font-weight="700" letter-spacing="2.6" fill="#0a0a0a" fill-opacity="0.72">${label}</text>`
+    +`<text x="24" y="276" font-family="Barlow,Arial,Helvetica,sans-serif" font-size="13" font-weight="500" fill="#0a0a0a" fill-opacity="0.5">Not yet imaged</text>`
     +`</svg>`;
   return{url:'data:image/svg+xml,'+encodeURIComponent(svg),source:'placeholder',sourceLabel:'',attribution:'',license:'',href:''};
+}
+
+/* Contour pattern behind the typographic plate on un-imaged record cards. 16 seeded
+   variants per accent colour; the one stronger line takes the collection colour. */
+const _platePatCache=new Map();
+function platePattern(seedStr,accent){
+  const v=_imgHash(String(seedStr||'').toLowerCase())%16, key=v+'|'+accent;
+  if(_platePatCache.has(key))return _platePatCache.get(key);
+  let _s=(v*2654435761+97)>>>0; const rnd=()=>{_s=(_s*1664525+1013904223)>>>0;return _s/4294967296};
+  let c='';const strong=v%2; /* kept in the upper half, clear of the family name */
+  for(let i=0;i<5;i++){
+    const baseY=(i===strong?92:24+i*52)+rnd()*16, amp=(i===strong?10:12)+rnd()*(i===strong?16:24), ph=rnd()*6.28, fr=1.2+rnd()*1.5;
+    let d='M -20 '+baseY.toFixed(1);
+    for(let x=0;x<=420;x+=20){const y=baseY+Math.sin((x/400)*fr*6.28+ph)*amp;d+=' L '+x+' '+y.toFixed(1)}
+    c+=i===strong?`<path d="${d}" fill="none" stroke="${accent}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`
+                 :`<path d="${d}" fill="none" stroke="#0a0a0a" stroke-opacity="0.09" stroke-width="1.5"/>`;
+  }
+  const url='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${c}</svg>`);
+  _platePatCache.set(key,url);return url;
 }
 
 /* ── The cascade (uncached core) ── */
@@ -2866,15 +2922,13 @@ function renderGuide(){
     {i:3,l:'Genus',k:'genus',fk:'genus'}
   ];
   const pills=document.createElement('div');pills.className='rk-pills';
-  rankOpts.forEach(ro=>{const b=document.createElement('button');b.className='rp'+(S.guideRank===ro.i?' on':'');b.textContent=ro.l;b.onclick=()=>{S.guideRank=ro.i;renderGuide()};pills.appendChild(b)});
+  rankOpts.forEach(ro=>{const b=document.createElement('button');b.className='rp'+(S.guideRank===ro.i?' on':'')+(ro.i===3?' rp-last':'');b.textContent=ro.l;b.onclick=()=>{S.guideRank=ro.i;renderGuide()};pills.appendChild(b)});
   /* Check if any filters are active */
   const hasFilters=FIDS.some(id=>{const el=$('#'+id);return el&&el.value})||$('#q')?.value||$('#fType')?.value||$('#fColl')?.value||$('#fSrc')?.value||$('#fCo')?.value||$('#fSt')?.value||$('#fCat')?.value;
   if(hasFilters){
     const rst=document.createElement('button');
-    rst.textContent='✕ Reset Filters';
-    rst.style.cssText='margin-left:8px;font-family:var(--font);font-size:12px;font-weight:500;padding:5px 12px;border:1.5px dashed var(--muted);border-radius:16px;background:none;color:var(--muted);cursor:pointer;transition:all .2s';
-    rst.onmouseenter=()=>{rst.style.borderColor='var(--red,#c93f1a)';rst.style.color='var(--red,#c93f1a)'};
-    rst.onmouseleave=()=>{rst.style.borderColor='var(--muted)';rst.style.color='var(--muted)'};
+    rst.textContent='Reset filters';
+    rst.className='rp-reset';
     rst.onclick=()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._densityManual=false;S.galDensity=null;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';doSearch()};
     pills.appendChild(rst);
   }
@@ -4721,7 +4775,7 @@ function renderCharts(){
         var nm=top15[i].name||'?';
         var ct=top15[i].count||0;
         var w=(ct/mx*100).toFixed(1);
-        s+='<div class="hb-item"><span class="hb-nm" style="width:220px;min-width:220px" title="'+esc(nm)+'">'+esc(nm)+'</span><div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:'+cols[i%cols.length]+'"><span class="hb-val">'+fmt(ct)+'</span></div></div></div>';
+        s+='<div class="hb-item"><span class="hb-nm" style="width:220px;min-width:220px" title="'+esc(nm)+'">'+esc(nm)+'</span><div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:#0a0a0a">'+(w>=12?'<span class="hb-val">'+fmt(ct)+'</span>':'')+'</div>'+(w<12?'<span class="hb-val out">'+fmt(ct)+'</span>':'')+'</div></div>';
       }
       s+='</div></div>';sections.push(s);
     }
@@ -4735,7 +4789,7 @@ function renderCharts(){
       var s='<div class="ch-p'+(wide?' w':'')+'"><div class="ch-t"><span class="al" style="background:'+color+'"></span>'+esc(label)+'</div><div class="hb">';
       for(var i=0;i<arr.length;i++){
         var it=arr[i];var nm=it.dn||it.name||'?';var ct=Number(it.count)||0;var w=(ct/mx*100).toFixed(1);
-        s+='<div class="hb-item"><span class="hb-nm">'+esc(nm)+'</span><div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:'+cols[i%cols.length]+'"><span class="hb-val">'+fmt(ct)+'</span></div></div></div>';
+        s+='<div class="hb-item"><span class="hb-nm">'+esc(nm)+'</span><div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:#0a0a0a">'+(w>=12?'<span class="hb-val">'+fmt(ct)+'</span>':'')+'</div>'+(w<12?'<span class="hb-val out">'+fmt(ct)+'</span>':'')+'</div></div>';
       }
       s+='</div></div>';return s;
     }
@@ -6872,7 +6926,8 @@ function updateGalleryCard(idx,r){
 function updateModalImg(){
   const wrap=$('#mImgWrap');
   const n=S.modalPhotos.length;
-  if(n===0){wrap.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:48px;text-align:center;padding:40px 0">—<br><span style="font-size:14px">No images</span></div>';return}
+  const dlg=wrap.closest('.mod-dlg');if(dlg)dlg.classList.toggle('no-media',n===0);
+  if(n===0){wrap.innerHTML='';return}
   /* Show all images in a vertical scrollable strip */
   let h=`<div class="m-img-strip${n>1?' multi':''}">`;
   S.modalPhotos.forEach((url,i)=>{
