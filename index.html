@@ -385,6 +385,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .det-sec .ds{width:4px;height:4px;border-radius:1px}
 .spatial-loading{font-size:10px;color:var(--muted);font-style:italic;padding:4px 0}
 .spatial-ack{font-size:12px;line-height:1.5;color:var(--ink);padding:4px 0;border-left:2px solid var(--ink);padding-left:8px;margin:4px 0}
+.supp-note{border-left:3px solid var(--orange);background:#fbf7f0;padding:7px 10px;margin:0 0 8px;font-size:12px;line-height:1.45;color:var(--ink)}
+.supp-note .sn-h{font-weight:700;font-size:12px}
+.supp-note .sn-review{display:inline-block;margin:4px 0 2px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--orange);padding:2px 7px;border-radius:1px}
+.supp-note .sn-b{color:var(--muted);margin-top:2px}
+.card-src{font-size:11px;line-height:1.35;color:var(--orange);font-weight:600;margin-top:4px}
+.card-review{display:block;color:var(--ink);font-weight:700}
+.rc-split{color:var(--muted);font-weight:400}
 .type-badge{display:inline-block;color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:1px;margin-bottom:4px}
 .auth-line{font-size:11px;color:var(--muted);margin-top:3px}
 .auth-line em{color:var(--ink);font-style:normal;font-weight:600}
@@ -438,6 +445,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
     <div class="sec"><div class="sec-t"><span class="d" style="background:var(--orange)" aria-hidden="true"></span> Record Filters</div>
       <div class="fg"><label for="fCat">Catalog #</label><div style="display:flex;gap:4px"><input type="text" id="fCat" placeholder="e.g. T11670 or T1167*" aria-label="Catalog number" style="flex:1;font-family:var(--font);font-size:13px;padding:6px 8px;border:1px solid var(--hair);border-radius:2px;background:#fff;color:var(--ink)"/><button id="catGo" aria-label="Search catalog number" style="font-family:var(--font);font-size:11px;font-weight:700;padding:4px 10px;border:1px solid var(--ink);border-radius:2px;background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px">Go</button></div></div>
       <div class="fg"><label for="fColl">Collection</label><select id="fColl"><option value="">All Collections</option></select></div>
+      <div class="fg"><label for="fSrc">Source</label><select id="fSrc" title="All sources: records returned by the Atlas of Living Australia together with specimens added from Queensland Museum's register. ALA Biocache: records returned by ALA. QM Register: specimens ALA does not show because they share a registration number with another specimen, added from the museum's register."><option value="">All sources</option><option value="ala">ALA Biocache</option><option value="reg">QM Register</option></select></div>
       <div class="fr"><div class="fg"><label for="fType">Type Specimen</label><select id="fType"><option value="">Any</option><option value="true">Yes — types only</option><option value="primary">Primary types</option><option value="false">No — exclude types</option></select></div><div class="fg"><label for="fMedia">Has Media</label><select id="fMedia"><option value="">Any</option><option value="StillImage">Yes</option></select></div></div>
       <div class="fg"><label for="fCoord">Georeferenced</label><select id="fCoord" title="Yes = ALA holds a latitude and longitude for the record, so it can be placed on the map. No = ALA holds no coordinate."><option value="">Any</option><option value="true">Yes — has a coordinate</option><option value="false">No</option></select></div>
       <div class="fr"><div class="fg"><label for="fCo">Country</label><select id="fCo"><option value="">All</option><option value="AU">Australia</option><option value="PG">PNG</option><option value="NZ">New Zealand</option><option value="FJ">Fiji</option><option value="SB">Solomon Islands</option></select></div><div class="fg"><label for="fSt">State/Province</label><select id="fSt"><option value="">All</option></select></div></div></div>
@@ -741,6 +749,7 @@ function getFilters(){
     country:$('#fCo').value,state:$('#fSt').value,
     catNum:($('#fCat')?.value||'').trim(),
     collCode:$('#fColl')?.value||'',
+    source:$('#fSrc')?.value||'',
     bbox:bbox};
 }
 
@@ -877,7 +886,7 @@ function clientFilterRecs(recs, f){
     if(f.hasType === 'false' && isType(r.typeStatus)) return false;
     if(f.coord === 'true' && (r.lat == null || r.lng == null)) return false;
     if(f.coord === 'false' && r.lat != null && r.lng != null) return false;
-    if(f.media && (!r.media || !r.media.length)) return false;
+    if(f.media && (!r.media || !r.media.length) && !r._imagedReg) return false; /* register additions: imaged in the register */
     if(f.country === 'AU' && r.country !== 'Australia') return false;
     if(f.country && f.country !== 'AU'){
       /* Map ISO codes to country names for client-side matching */
@@ -897,7 +906,7 @@ function clientFilterRecs(recs, f){
     }
     if(f.q && f.q !== '*:*'){
       const qLo = f.q.replace(/^"|"$/g, '').toLowerCase();
-      const haystack = [r.sci, r.vern, r.cat, r.family, r.genus, r.order, r.recBy, r.locality].join(' ').toLowerCase();
+      const haystack = [r.sci, r.species, r.vern, r.cat, r.family, r.genus, r.order, r.recBy, r.locality].join(' ').toLowerCase();
       if(!haystack.includes(qLo)) return false;
     }
     return true;
@@ -1171,6 +1180,75 @@ function extractFacets_A(data){
 
 
 /* ═════════════════════════════════════════════════
+   QUEENSLAND MUSEUM REGISTER SUPPLEMENT
+   Specimens the museum has databased that ALA does not show, because ALA keeps one record for
+   each registration number in a collection. Loaded once from a static public file in this site;
+   the Explorer never calls the museum's register. Every added specimen keeps its own key
+   (reg:<register identifier>), so specimens that share a registration number, name and type
+   status appear, and open, separately. In Records the ALA results come first and the additions
+   follow them, so the additions stay reachable however large the ALA result is.
+   ═════════════════════════════════════════════════ */
+const SUPP_URL='data/qm-register-supplement.json';
+const SUPP_COLL_UID={Entomology:'co50',Arachnids:'co148','Other Invertebrates':'co201','Amphibians and Reptiles':'co153',Molluscs:'co147',Corals:'co200',Fishes:'co51',Crustaceans:'co135',Protozoans:'co143',Birds:'co151',Mammals:'co150',Porifera:'co191',Plants:'co334'};
+const SRC_LABEL={'':'All sources',ala:'ALA Biocache',reg:'QM Register'};
+let _suppP=null;
+function loadSupplement(){
+  if(!_suppP)_suppP=fetch(SUPP_URL).then(r=>{if(!r.ok)throw new Error('register file '+r.status);return r.json()})
+    .then(d=>{S.suppMeta={addedDate:d.addedDate||'',alaCheckedDate:d.alaCheckedDate||'',count:(d.records||[]).length};return (d.records||[]).map(normRec_S)})
+    .catch(e=>{console.warn('[Supplement]',e);_suppP=null;throw e});
+  return _suppP;
+}
+/* "2026-11-15" → "15 November 2026" (always with the year) */
+function fmtLongDate(iso){
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');if(!m)return iso||'';
+  const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${parseInt(m[3])} ${MON[parseInt(m[2])-1]} ${m[1]}`;
+}
+function normRec_S(s){
+  const sp=s.genus&&s.specificEpithet?s.genus+' '+s.specificEpithet+(s.infraspecificEpithet?' '+s.infraspecificEpithet:''):'';
+  const ed=/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/.exec(s.eventDate||'');
+  const ex={};
+  for(const [k,l] of [['originalNameUsage','Original name'],['previousIdentifications','Previous identifications'],['identificationQualifier','Identification qualifier'],['dateIdentified','Date identified'],['otherCatalogNumbers','Other numbers'],['eventID','Event ID'],['verbatimLatitude','Verbatim latitude'],['verbatimLongitude','Verbatim longitude'],['geodeticDatum','Datum'],['coordinateUncertaintyInMeters','Coordinate uncertainty (m)'],['coordinatePrecision','Coordinate precision'],['municipality','Municipality'],['locationRemarks','Location remarks'],['fieldNotes','Field notes']])if(s[k])ex[l]=s[k];
+  return{_supp:true,_hasFl:true,key:'reg:'+s.registerId,regId:s.registerId,uuid:null,
+    sci:s.scientificName||'',vern:s.vernacularName||'',vernRank:s.vernacularName?classifyBackboneVern(s.vernacularName):null,
+    kingdom:s.kingdom||'',phylum:s.phylum||'',class_:s['class']||'',order:s.order||'',superfamily:'',family:s.family||'',subfamily:s.subfamily||'',tribe:'',genus:s.genus||'',species:sp,
+    basis:s.basisOfRecord||'',year:ed?parseInt(ed[1]):null,month:ed&&ed[2]?parseInt(ed[2]):null,day:ed&&ed[3]?parseInt(ed[3]):null,
+    lat:toNum(s.decimalLatitude),lng:toNum(s.decimalLongitude),country:s.country||'',state:s.stateProvince||'',locality:s.locality||'',
+    cat:s.catalogNumber||'',coll:s.collectionCode||'',collUid:SUPP_COLL_UID[s.collectionCode]||'',inst:s.institutionCode||'QM',recBy:(s.recordedBy||'').replace(/\s*\|\s*/g,' | '),
+    media:[],typeStatus:s.typeStatus||'',authorship:'',preparations:s.preparations||'',sex:'',lifeStage:'',
+    eventDate:s.eventDate||'',verbatimDate:s.verbatimEventDate||'',samplingProtocol:s.samplingProtocol||'',
+    elevMin:toNum(s.minimumElevationInMeters),elevMax:null,depth:null,identifiedBy:s.identifiedBy||'',taxonConceptID:'',
+    habitat:s.habitat||'',occurrenceRemarks:'',fieldNumber:'',individualCount:'',datasetName:"Queensland Museum register",
+    _suppAdded:s.addedDate||'',_suppReview:s.curatorReview==='pending',_suppSharesUuid:s.sharesNumberWithAlaRecord||'',
+    _imagedReg:s.imagedInRegister==='yes',_coordsWithheld:s.coordinatesWithheld==='yes',_suppExtra:ex};
+}
+/* The register additions that match the current filters (bbox included, which clientFilterRecs leaves to the caller) */
+function suppFilter(recs,f){
+  let out=clientFilterRecs(recs,f);
+  if(f.bbox){const b=f.bbox;out=out.filter(r=>r.lat!=null&&r.lng!=null&&r.lat>=b.s&&r.lat<=b.n&&r.lng>=b.w&&r.lng<=b.e)}
+  return out;
+}
+/* Which register additions fill the page at offset `off`, given ALA's total and how many ALA records are on this page.
+   The combined list is ALA's reachable records (at most ALA_MAX_RESULTS) followed by the additions. Returns [start,count]. */
+function suppSliceFor(off,alaTotal,alaOnPage,nS){
+  const reach=Math.min(alaTotal,ALA_MAX_RESULTS);
+  if(off+INIT_PAGE<=reach||!nS)return[0,0];
+  const start=Math.max(0,off-reach);
+  return[start,Math.max(0,Math.min(INIT_PAGE-alaOnPage,nS-start))];
+}
+/* Add local facet counts (register additions) to ALA's; values are matched without regard to case */
+function mergeFacets(a,b){
+  const out={...a};
+  for(const [k,arr] of Object.entries(b||{})){
+    const base=(out[k]||[]).map(x=>({...x}));
+    const idx=new Map(base.map(x=>[String(x.value).toLowerCase(),x]));
+    for(const x of arr){const key=String(x.value).toLowerCase();const hit=idx.get(key);if(hit)hit.count+=x.count;else{const n={...x};base.push(n);idx.set(key,n)}}
+    base.sort((p,q)=>q.count-p.count);out[k]=base;
+  }
+  return out;
+}
+
+/* ═════════════════════════════════════════════════
    MAIN SEARCH
    ═════════════════════════════════════════════════ */
 async function doSearch(){
@@ -1201,6 +1279,7 @@ async function doSearch(){
   S._polyScanDone=false;
   try{
     if(hasPoly){
+      S._alaTotal=null;S._suppN=0;S._suppSrc='ala';
       /* ══ POLYGON MODE ══
          Strategy: maintain a MASTER cache of ALL records in the polygon (no taxonomy/collection filters).
          When filters change, apply them client-side from the master cache.
@@ -1378,9 +1457,36 @@ async function doSearch(){
       /* ══ STANDARD MODE — no polygon ══ */
       S._polyAllRecs=null;
       S._polyMasterRecs=null;S._polyMasterDone=false;S._polyMasterBboxTotal=0;
+      /* Source: '' = all sources, 'ala' = ALA Biocache only, 'reg' = the register additions only */
+      const src=f.source||'';
+      let suppAll=null,supp=[];
+      if(src!=='ala'){
+        try{suppAll=await loadSupplement();supp=suppFilter(suppAll,f)}
+        catch(e){if(src==='reg')throw new Error("Queensland Museum's register file could not be loaded");toast("The additions from Queensland Museum's register could not be loaded; showing ALA records only")}
+        if(S._searchId!==searchId)return;
+      }
+      const nS=supp.length;S._suppN=nS;S._suppSrc=src;
+      if(src==='reg'){
+        S._alaTotal=0;
+        S.res=supp.slice(S.off,S.off+INIT_PAGE);S.total=nS;
+        S.allPts=supp.filter(r=>r.lat!=null&&r.lng!=null);
+        S.mapFetched=S.allPts.length;
+        try{$('#sRec').textContent=fmt(S.total)}catch(e){}
+        S.facets=computePolyDropdownFacets(suppAll||[],f);
+        Object.entries(computeLocalAnalyticsFacets(supp)).forEach(([k,v])=>{S.facets[k]=v});
+        S.qc=computeLocalQC(supp);
+        try{renderView()}catch(e){console.error('[renderView]',e)}
+        try{updatePag()}catch(e){}
+        try{updateStats()}catch(e){}
+        try{updateDropdowns()}catch(e){}
+        showLoad(false);
+        if(!S.total)showEmpty();
+      }else{
       const fq=alaBaseFQ(f);
+        /* ALA's records come first; past ALA's 5,000-record window only its total is needed */
+        const wantALA=S.off<ALA_MAX_RESULTS;
         const recU=new URLSearchParams();recU.set('q',f.q||'*:*');appendFQ(recU,fq);
-        recU.set('pageSize',INIT_PAGE);recU.set('startIndex',S.off);recU.set('sort','id');recU.set('dir','asc');recU.set('facets','');recU.set('flimit','0');
+        recU.set('pageSize',wantALA?Math.min(INIT_PAGE,ALA_MAX_RESULTS-S.off):0);recU.set('startIndex',wantALA?S.off:0);recU.set('sort','id');recU.set('dir','asc');recU.set('facets','');recU.set('flimit','0');
         const recP=fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+recU).then(r=>{if(!r.ok)throw new Error('ALA '+r.status);return r.json()});
         const facU=new URLSearchParams();facU.set('q',f.q||'*:*');appendFQ(facU,fq);
         facU.set('pageSize','0');facU.set('startIndex','0');
@@ -1388,7 +1494,11 @@ async function doSearch(){
         const facP=fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+facU).then(r=>r.ok?r.json():null).catch(e=>{console.warn('[facets]',e);return null});
         const d=await recP;
         if(S._searchId!==searchId)return;
-        S.res=(d.occurrences||[]).map(normRec_A);S.total=d.totalRecords||0;
+        const alaTotal=d.totalRecords||0;S._alaTotal=alaTotal;
+        let page=wantALA?(d.occurrences||[]).map(normRec_A):[];
+        const [ss,sc]=suppSliceFor(S.off,alaTotal,page.length,nS);
+        if(sc)page=page.concat(supp.slice(ss,ss+sc));
+        S.res=page;S.total=alaTotal+nS;
         S.allPts=S.res.filter(r=>r.lat!=null&&r.lng!=null);
         S.mapFetched=S.res.length;
         try{$('#sRec').textContent=fmt(S.total)}catch(e){}
@@ -1396,20 +1506,27 @@ async function doSearch(){
         try{updatePag()}catch(e){}
         showLoad(false);
         if(!S.total)showEmpty();
-        facP.then(fd=>{if(!fd||S._searchId!==searchId)return;S.facets=extractFacets_A(fd);try{updateStats()}catch(e){}try{updateDropdowns()}catch(e){}
+        facP.then(fd=>{if(!fd||S._searchId!==searchId)return;S.facets=extractFacets_A(fd);
+          if(nS)S.facets=mergeFacets(S.facets,computePolyDropdownFacets(suppAll||[],f));
+          try{updateStats()}catch(e){}try{updateDropdowns()}catch(e){}
           if(S.view==='guide'&&!S.guideFocus)try{renderGuide()}catch(e){}});
+      }
     }
     /* Mark quality counts as stale — only fetch when Analytics tab is opened */
     S._qcStale=true;
     /* Always fetch true richness counts in background for snapshot header.
        In polygon mode, local computation happens after bgPolyScan completes — skip the API call. */
     S.richness={families:0,genera:0,species:0};
-    if(!hasPoly){
+    if(!hasPoly&&(f.source||'')==='reg'){
+      S.richness=computeLocalRichness(suppFilter(await loadSupplement().catch(()=>[]),f));S._qcStale=false;
+      try{updateStats()}catch(e){}
+      if(S.view==='charts')try{renderCharts()}catch(e){}
+    }else if(!hasPoly){
       fetchRichnessCounts(f).then(()=>{try{updateStats()}catch(e){}}).catch(()=>{});
       if(S.view==='charts'){S._qcStale=false;Promise.all([fetchQualityCounts(f),fetchAnalyticsFacets(f)]).then(([qc])=>{S.qc=qc;try{renderCharts()}catch(e){}}).catch(()=>{})}
     }
     /* Background-load remaining pages only when map is active (skip if polygon — bgPolyScan handles) */
-    if(S.view==='map'&&!hasPoly)startMapLoad(f,loadId);
+    if(S.view==='map'&&!hasPoly&&(f.source||'')!=='reg')startMapLoad(f,loadId);
   }catch(e){console.error(e);toast('Search failed: '+e.message);showEmpty('Error: '+e.message);showLoad(false)}
 }
 
@@ -1842,17 +1959,18 @@ function updatePag(){
     $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> ${recWord(t)} in area${scanning?' <span style="color:#f7941d">⏳</span>':''}`:'';
   }else{
     /* ALA won't serve records past index ALA_MAX_RESULTS, so cap the reachable pages there. */
-    const t=S.total,reachable=Math.min(t,ALA_MAX_RESULTS),pg=Math.floor(S.off/INIT_PAGE)+1,tp=Math.max(1,Math.ceil(reachable/INIT_PAGE));
+    const t=S.total,sN=S._suppN||0,alaT=(S._alaTotal!=null)?S._alaTotal:t-sN;
+    const reachable=Math.min(alaT,ALA_MAX_RESULTS)+sN,pg=Math.floor(S.off/INIT_PAGE)+1,tp=Math.max(1,Math.ceil(reachable/INIT_PAGE));
     el.style.display=t>INIT_PAGE?'flex':'none';
-    const capped=t>ALA_MAX_RESULTS;
+    const capped=alaT>ALA_MAX_RESULTS;
     $('#prevP').disabled=pg<=1;$('#nextP').disabled=pg>=tp;
     $('#pgI').textContent=`Page ${pg} of ${fmt(tp)} · ${capped?`first ${fmt(reachable)} of ${fmt(t)}`:fmt(t)} ${recWord(t)} · ${S.res.length} shown`;
-    $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> ${recWord(t)}`:'';
+    $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> ${recWord(t)}`+((S._suppSrc==='')&&sN?` <span class="rc-split">(${fmt(alaT)} ALA Biocache · ${fmt(sN)} QM Register)</span>`:''):'';
     /* Say plainly why the pages stop at 5,000, and what to do about it. */
     const pn=$('#pgNote');
     if(pn){
       pn.hidden=!capped;
-      pn.textContent=capped?`The Atlas of Living Australia serves only the first ${fmt(ALA_MAX_RESULTS)} records of any one search. This search has ${fmt(t)}, so ${fmt(t-ALA_MAX_RESULTS)} of them cannot be reached from these pages. Narrowing the search (by collection, family or type status, for example) brings them within reach.`:'';
+      pn.textContent=capped?`The Atlas of Living Australia serves only the first ${fmt(ALA_MAX_RESULTS)} records of any one search. This search has ${fmt(alaT)} from ALA, so ${fmt(alaT-ALA_MAX_RESULTS)} of them cannot be reached from these pages${sN?` (the ${fmt(sN)} added from Queensland Museum's register follow the first ${fmt(ALA_MAX_RESULTS)})`:''}. Narrowing the search (by collection, family or type status, for example) brings them within reach.`:'';
     }
   }
 }
@@ -1912,6 +2030,7 @@ function renderGallery(){
         <div class="card-cat-line">${r.cat?`<span class="card-cat">${esc(r.cat)}</span>`:''} ${hasType?`<span class="card-type-inline" style="background:${tc}">${esc(r.typeStatus)}</span>`:''}</div>
         ${vernShow?`<div class="card-com">${esc(vernShow)}</div>`:''}
         ${r.family?`<div class="card-fam">${esc(r.family)}</div>`:''}
+        ${r._supp?`<div class="card-src">Added from Queensland Museum’s register${r._suppReview?'<span class="card-review">Curator review pending</span>':''}</div>`:''}
         <div class="card-det">
           ${taxCrumb?`<div class="card-tax">${taxCrumb}</div>`:''}
           ${loc?`<div class="loc">${esc(loc.length>50?loc.slice(0,47)+'…':loc)}</div>`:''}
@@ -2610,14 +2729,14 @@ function renderGuide(){
   const pills=document.createElement('div');pills.className='rk-pills';
   rankOpts.forEach(ro=>{const b=document.createElement('button');b.className='rp'+(S.guideRank===ro.i?' on':'');b.textContent=ro.l;b.onclick=()=>{S.guideRank=ro.i;renderGuide()};pills.appendChild(b)});
   /* Check if any filters are active */
-  const hasFilters=FIDS.some(id=>{const el=$('#'+id);return el&&el.value})||$('#q')?.value||$('#fType')?.value||$('#fColl')?.value||$('#fCo')?.value||$('#fSt')?.value||$('#fCat')?.value;
+  const hasFilters=FIDS.some(id=>{const el=$('#'+id);return el&&el.value})||$('#q')?.value||$('#fType')?.value||$('#fColl')?.value||$('#fSrc')?.value||$('#fCo')?.value||$('#fSt')?.value||$('#fCat')?.value;
   if(hasFilters){
     const rst=document.createElement('button');
     rst.textContent='✕ Reset Filters';
     rst.style.cssText='margin-left:8px;font-family:var(--font);font-size:12px;font-weight:500;padding:5px 12px;border:1.5px dashed var(--muted);border-radius:16px;background:none;color:var(--muted);cursor:pointer;transition:all .2s';
     rst.onmouseenter=()=>{rst.style.borderColor='var(--red,#ea3d41)';rst.style.color='var(--red,#ea3d41)'};
     rst.onmouseleave=()=>{rst.style.borderColor='var(--muted)';rst.style.color='var(--muted)'};
-    rst.onclick=()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._densityManual=false;S.galDensity=null;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';doSearch()};
+    rst.onclick=()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._densityManual=false;S.galDensity=null;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';doSearch()};
     pills.appendChild(rst);
   }
   root.appendChild(pills);
@@ -4083,13 +4202,17 @@ async function exportCSV(enriched=false){
     recs=[...S._polyAllRecs];
   }else if(S.total<=INIT_PAGE&&S.off===0){
     recs=[...S.res];
+  }else if((getFilters().source||'')==='reg'){
+    /* QM Register only: every matching addition, from the static file */
+    recs=suppFilter(await loadSupplement(),getFilters());
   }else{
     /* Need to fetch all pages from ALA. ALA serves at most ALA_MAX_RESULTS per
        query (no cursor bypasses this), so that is the hard export ceiling. */
     const max=ALA_MAX_RESULTS;
-    const target=Math.min(S.total,max);
-    if(S.total>max){
-      const ok=confirm(`This search has ${fmt(S.total)} records. The Atlas of Living Australia serves only the first ${fmt(max)} records of any one search, so this file would hold the first ${fmt(max)}.\n\nExport those ${fmt(max)}?\n\nTo export everything, narrow the search (by collection, family or type status, for example) until it has ${fmt(max)} records or fewer.`);
+    const alaT=(S._alaTotal!=null)?S._alaTotal:S.total;
+    const target=Math.min(alaT,max);
+    if(alaT>max){
+      const ok=confirm(`This search has ${fmt(alaT)} records from ALA. The Atlas of Living Australia serves only the first ${fmt(max)} records of any one search, so this file would hold the first ${fmt(max)}.\n\nExport those ${fmt(max)}?\n\nTo export everything, narrow the search (by collection, family or type status, for example) until it has ${fmt(max)} records or fewer.`);
       if(!ok)return;
     }
     toast(`Fetching all ${fmt(target)} records… 0%`);
@@ -4111,6 +4234,8 @@ async function exportCSV(enriched=false){
       }catch(e){toast('Fetch error — exporting what we have');break}
       toast(`Fetching all ${fmt(target)} records… ${Math.round(recs.length/target*100)}%`);
     }
+    /* All sources: the register additions follow ALA's records */
+    if((getFilters().source||'')===''&&S._suppN){try{recs=recs.concat(suppFilter(await loadSupplement(),getFilters()))}catch(e){toast("Register additions could not be loaded; exporting ALA records only")}}
   }
 
   if(S.view==='map'&&S.mapYearRange){
@@ -4225,7 +4350,7 @@ async function exportCSV(enriched=false){
 
   /* ── Build CSV ── */
   const sp0=r=>r._spatial&&!r._spatial.loading?r._spatial:r._csvSpatial||{};
-  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid'];
+  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid','source','registerId','curatorReview','addedFromRegister'];
   const infoCols=['retrievalDate','query'];
   const spatialCols=['elevationDEM_m','ibraBioregion','ibraSubregion','lga','drainageBasin','protectedArea','estateType','capadName','capadType','regionalEcosystem','traditionalOwners','nnttType','marineZone','marinePark','fishHabitatArea'];
   const cols=enriched?[...coreCols,...spatialCols,...infoCols]:[...coreCols,...infoCols];
@@ -4235,7 +4360,8 @@ async function exportCSV(enriched=false){
   const queryText=(()=>{
     try{
       const f=getFilters();
-      const parts=['q='+(f.q||'*:*'),...alaBaseFQ(f).map(c=>'fq='+c)];
+      const parts=['q='+(f.q||'*:*'),...alaBaseFQ(f).map(c=>'fq='+c),'source='+SRC_LABEL[f.source||'']];
+      if((f.source||'')!=='ala')parts.push('register additions: '+SUPP_URL+(S.suppMeta?.addedDate?' ('+S.suppMeta.addedDate+')':''));
       if(S.mapPoly)parts.push('area='+S.mapPoly.name+' ('+(S.mapPoly.source||'area')+')');
       if(S.view==='map'&&S.mapYearRange)parts.push('years='+S.mapYearRange[0]+'-'+S.mapYearRange[1]);
       return 'biocache-ws.ala.org.au/ws/occurrences/search: '+parts.join('; ');
@@ -4251,7 +4377,8 @@ async function exportCSV(enriched=false){
       r.locality||'',r.state,r.country,r.lat,r.lng,
       r.elevMin??'',r.elevMax??'',r.depth??'',
       r.habitat||'',r.sex||'',r.lifeStage||'',r.preparations||'',r.individualCount||'',r.samplingProtocol||'',r.occurrenceRemarks||'',
-      r.coll,r.uuid||''
+      r.coll,r.uuid||'',
+      r._supp?'QM Register':'ALA Biocache',r.regId||'',r._suppReview?'pending':'',r._supp?r._suppAdded:''
     ];
     const spatialVals=enriched?[
       sp.demElev!=null?Math.round(sp.demElev):'',
@@ -6350,7 +6477,8 @@ function specKeywords(r){
 
 function specSources(r){
   const lines=[];
-  lines.push(`Specimen data: Atlas of Living Australia (ALA).`);
+  if(r._supp)lines.push(`Specimen data: Queensland Museum register (register ID ${r.regId}), added to QM Explorer ${fmtLongDate(r._suppAdded)}. Not shown by the Atlas of Living Australia, which holds one record for registration number ${r.cat}.${r._suppReview?' Curator review pending.':''}`);
+  else lines.push(`Specimen data: Atlas of Living Australia (ALA).`);
   const sp=r._spatial;
   if(sp&&!sp.loading){
     if(sp.traditionalOwners){
@@ -6415,7 +6543,15 @@ function renderModalDetails(r){
     }
   }
 
+  const suppNote=r._supp?`<div class="supp-note" role="note">
+      <div class="sn-h">Added from Queensland Museum’s register</div>
+      ${r._suppReview?`<div class="sn-review">Curator review pending</div>`:''}
+      <div class="sn-b">Added ${esc(fmtLongDate(r._suppAdded))}. The Atlas of Living Australia does not show this specimen, because it shares registration number ${esc(r.cat)} with another specimen, the one ALA holds.${r._coordsWithheld?' Its location is withheld for now.':''}${r._imagedReg?' The register holds images of it; they are not shown here.':''}</div>
+    </div>`:'';
+  const suppExtra=r._supp&&r._suppExtra&&Object.keys(r._suppExtra).length?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> From the register</div>
+    <div class="det-flow">${df('Register ID',esc(r.regId))}${Object.entries(r._suppExtra).map(([k,v])=>df(esc(k),esc(v),String(v).length>40)).join('')}</div>`:(r._supp?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> From the register</div><div class="det-flow">${df('Register ID',esc(r.regId))}</div>`:'');
   $('#mDetails').innerHTML=`
+    ${suppNote}
     ${hasType?`<div class="type-badge" style="background:${typeColor(r.typeStatus)}">${esc(r.typeStatus)}</div>`:''}
     ${r.authorship?`<div class="auth-line"><em>${esc(r.authorship)}</em></div>`:''}
 
@@ -6438,11 +6574,12 @@ function renderModalDetails(r){
 
     ${r.lat!=null&&r.lng!=null?`<div class="det-sec"><div class="ds" style="background:var(--purple)"></div> Country & Context</div><div id="spatialCtx"></div>`:''}
 
+    ${suppExtra}
     ${r.occurrenceRemarks?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> Remarks</div><div style="font-size:11px;color:var(--ink);padding:2px 0;line-height:1.4">${esc(r.occurrenceRemarks)}</div>`:''}
 
     <div class="det-sec"><div class="ds" style="background:var(--red)"></div> Links & Metadata</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:3px 0">
-      <a href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;font-size:11px;text-decoration:none">View on ${src} ↗</a>
+      ${r._supp?(r._suppSharesUuid?`<a href="https://biocache.ala.org.au/occurrences/${encodeURIComponent(r._suppSharesUuid)}" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;font-size:11px;text-decoration:none">ALA’s record under ${esc(r.cat)} ↗</a>`:''):`<a href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;font-size:11px;text-decoration:none">View on ${src} ↗</a>`}
       ${afdLink}
       ${r.sci?`<a href="https://www.biodiversitylibrary.org/search?searchTerm=${encodeURIComponent(r.sci)}#/names" target="_blank" rel="noopener" style="color:#46c2d2;font-weight:600;font-size:11px;text-decoration:none">BHL Literature ↗</a>`:''}
       ${r.sci?`<a href="https://scholar.google.com/scholar?q=${encodeURIComponent('"'+r.sci+'"')}" target="_blank" rel="noopener" style="color:#f7941d;font-weight:600;font-size:11px;text-decoration:none">Google Scholar ↗</a>`:''}
@@ -6602,7 +6739,7 @@ function searchResolving(on){
 }
 function updateSearchRst(){
   const q=$('#q').value.trim();
-  const hasFilters=FIDS.some(id=>{const el=$('#'+id);return el&&el.value})||$('#fType')?.value||$('#fColl')?.value||$('#fCo')?.value||$('#fSt')?.value||$('#fCat')?.value||S.mapBox||S.mapPoly;
+  const hasFilters=FIDS.some(id=>{const el=$('#'+id);return el&&el.value})||$('#fType')?.value||$('#fColl')?.value||$('#fSrc')?.value||$('#fCo')?.value||$('#fSt')?.value||$('#fCat')?.value||S.mapBox||S.mapPoly;
   const btn=$('#searchRst');
   if(btn)btn.classList.toggle('vis',!!(q||hasFilters));
   updateFilterChips();
@@ -6620,7 +6757,7 @@ function updateFilterChips(){
   /* Other filters */
   const others=[
     ['fType','Type status'],['fColl','Collection'],['fCo','Country'],['fSt','State'],['fCat','Catalog #'],
-    ['fCoord','Georeferenced'],['fMedia','Media']
+    ['fCoord','Georeferenced'],['fMedia','Media'],['fSrc','Source']
   ];
   for(const [id,label] of others){
     const el=$('#'+id);if(!el||!el.value)continue;
@@ -6814,7 +6951,7 @@ async function smartSearch(){
    ═════════════════════════════════════════════════ */
 let qT;$('#q').addEventListener('input',()=>{clearTimeout(qT);updateSearchRst();qT=setTimeout(()=>{smartSearch()},500)});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qT);smartSearch()}});
-$('#searchRst').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';updateSearchRst();doSearch()});
+$('#searchRst').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});const catEl=$('#fCat');if(catEl)catEl.value='';updateSearchRst();doSearch()});
 // Taxonomy cascade — auto-populate parent filters via GBIF classification
 const FID2RANK={fK:'kingdom',fP:'phylum',fC:'class',fO:'order',fF:'family',fG:'genus',fSp:'species'};
 const RANK2GBIF={kingdom:'KINGDOM',phylum:'PHYLUM','class':'CLASS',order:'ORDER',family:'FAMILY',genus:'GENUS',species:'SPECIES'};
@@ -6840,11 +6977,11 @@ async function autoFillParents(fid){
   }catch(e){}
 }
 FIDS.forEach((id,idx)=>{$('#'+id).addEventListener('change',()=>{for(let i=idx+1;i<FIDS.length;i++)$('#'+FIDS[i]).value='';S.off=0;updateSearchRst();autoFillParents(id);doSearch()})});
-['fType','fCoord','fMedia','fColl','fCo','fSt'].forEach(id=>$('#'+id)?.addEventListener('change',()=>{S.off=0;updateSearchRst();doSearch()}));
+['fType','fCoord','fMedia','fColl','fSrc','fCo','fSt'].forEach(id=>$('#'+id)?.addEventListener('change',()=>{S.off=0;updateSearchRst();doSearch()}));
 $('#catGo')?.addEventListener('click',()=>{S.off=0;doSearch()});
 $('#fCat')?.addEventListener('keydown',e=>{if(e.key==='Enter'){S.off=0;doSearch()}});
 $('#fSort')?.addEventListener('change',()=>{updateDropdowns()});
-$('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
+$('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
   const catEl=$('#fCat');if(catEl)catEl.value='';
   updateSearchRst();doSearch()});
 $$('.tab[data-v]').forEach(t=>t.addEventListener('click',()=>switchView(t.dataset.v)));
@@ -6912,7 +7049,7 @@ document.addEventListener('keydown',e=>{
    URL STATE — shareable, bookmarkable filter state
    ═════════════════════════════════════════════════ */
 const _URL_KEYS={q:'q',kingdom:'fK',phylum:'fP',class_:'fC',order:'fO',family:'fF',genus:'fG',species:'fSp',
-  hasType:'fType',coord:'fCoord',media:'fMedia',country:'fCo',state:'fSt',catNum:'fCat',collCode:'fColl'};
+  hasType:'fType',coord:'fCoord',media:'fMedia',country:'fCo',state:'fSt',catNum:'fCat',collCode:'fColl',source:'fSrc'};
 
 let _urlSuppressPush=false; /* Prevent pushback during restoreFromURL */
 
@@ -7106,6 +7243,23 @@ if(_SELFTEST){
       assert('one type status: no AND inside any clause', fqTs.every(c=>!/ AND /.test(c)), JSON.stringify(fqTs));
       eq('one type status: nothing but letters reaches the query', alaBaseFQ({hasType:'ts:holo") OR *:* ("'}).filter(c=>c.includes('type_status')).join('|'), '(type_status:"holo or" OR type_status:"Holo or" OR type_status:"HOLO OR")');
       eq('polygon filter keeps the chosen type status', clientFilterRecs([{typeStatus:'HOLOTYPE'},{typeStatus:'Paratype'},{typeStatus:''}],{hasType:'ts:holotype'}).length, 1);
+
+      /* ── REGISTER ADDITIONS (shared registration numbers) ── */
+      const _s1=normRec_S({registerId:'IX5376',catalogNumber:'T6182',collectionCode:'Entomology',scientificName:'Hydrobiosella letti',genus:'Hydrobiosella',specificEpithet:'letti',typeStatus:'Holotype',curatorReview:'pending',addedDate:'2026-11-15'});
+      const _s2=normRec_S({registerId:'IX5377',catalogNumber:'T6182',collectionCode:'Entomology',scientificName:'Hydrobiosella letti',genus:'Hydrobiosella',specificEpithet:'letti',typeStatus:'Holotype',imagedInRegister:'yes',addedDate:'2026-11-15'});
+      assert('register additions: same number, name and type status keep separate keys', _s1.key!==_s2.key && _s1.key==='reg:IX5376', _s1.key+' / '+_s2.key);
+      eq('register additions: no ALA uuid (no ALA look-up on opening)', _s1.uuid, null);
+      eq('register additions: collection maps to the ALA collection uid', _s1.collUid, 'co50');
+      eq('register additions: curator review pending is carried', _s1._suppReview && !_s2._suppReview, true);
+      eq('register additions: imaged in the register counts for Has Media', clientFilterRecs([_s1,_s2],{media:'StillImage'}).length, 1);
+      eq('register additions: binomial search finds a subgenus name', clientFilterRecs([normRec_S({registerId:'X',scientificName:'Bactrocera (Zeugodacus) nigra',genus:'Bactrocera',specificEpithet:'nigra'})],{q:'Bactrocera nigra'}).length, 1);
+      eq("fmtLongDate('2026-11-15') === '15 November 2026'", fmtLongDate('2026-11-15'), '15 November 2026');
+      eq('paging: ALA 1 + register 4 on page 1', JSON.stringify(suppSliceFor(0,1,1,4)), '[0,4]');
+      eq('paging: full ALA page, no additions yet', JSON.stringify(suppSliceFor(0,250,100,30)), '[0,0]');
+      eq('paging: last ALA page tops up with additions', JSON.stringify(suppSliceFor(200,250,50,30)), '[0,30]');
+      eq('paging: additions continue on the next page', JSON.stringify(suppSliceFor(200,230,30,120)), '[0,70]');
+      eq('paging: the page after that starts where the last stopped', JSON.stringify(suppSliceFor(300,230,0,120)), '[70,50]');
+      eq('paging: past the 5,000 window the additions are still reached', JSON.stringify(suppSliceFor(5000,240765,0,1028)), '[0,100]');
 
       /* ── CORS-SAFE FQ INVARIANTS ── */
       const fqArr=alaBaseFQ({kingdom:'Animalia',family:'Chelidae',media:'image',coord:'true'});

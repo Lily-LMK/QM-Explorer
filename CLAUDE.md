@@ -197,9 +197,16 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    - Primary types are holotype, neotype, type, lectotype and syntype.
    - First build step: confirm in a real browser that ALA returns the `raw_` fields with
      the CORS header.
-4. Shared registration numbers and duplicate records — investigated 14–15 November 2026
-   (read-only). Specimens that ALA hides because they share a registration number are to be
-   added back from a reviewed supplement file, marked as such, with the date. Not built.
+4. Shared registration numbers and duplicate records — investigated 14–15 November 2026.
+   Released 15 November 2026: `data/qm-register-supplement.json` (1,028 specimens ALA hides
+   because they share a registration number: the 1,022-record release candidate plus six
+   T3136/T6182 records shown as "Curator review pending"). Records has a Source filter
+   (All sources / ALA Biocache / QM Register); ALA's results come first and the additions
+   follow, keyed `reg:<register identifier>`. Where coordinates are withheld, locality and
+   location remarks are withheld too. `imagedInRegister` is a yes/no flag (no image links).
+   The file is built in `project-notes/scripts/supplement-pilot/`; before rebuilding, re-run the
+   ALA check there so no specimen is shown twice. Map, Taxa, Browse and polygon searches
+   still show ALA records only.
 5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
 6. Redesign in the Queensland Museum Design System — review, mock-up for Lily, then code.
    The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion
