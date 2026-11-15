@@ -4055,7 +4055,7 @@ async function exportCSV(enriched=false){
           const ctx={};
           try{
             /* ALA spatial intersect — IBRA, sub-bioregion, LGA, DEM */
-            const alaP=cachedFetch(`https://spatial.ala.org.au/ws/intersect/cl1048,cl1049,cl10923,el887/${lat}/${lng}`).then(r=>r.ok?r.json():null).catch(()=>null);
+            const alaP=cachedFetch(`https://spatial.ala.org.au/ws/intersect/cl1048,cl1049,cl10923,el674/${lat}/${lng}`).then(r=>r.ok?r.json():null).catch(()=>null);
             /* QLD AdminBoundaries — bioregion, sub-bio, drainage, LGA, protected area */
             const qGrab=async(layer)=>{try{const r=await fetch(spatialURL(QLD_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
             /* VEG — regional ecosystem */
@@ -4078,7 +4078,7 @@ async function exportCSV(enriched=false){
               if(item.field==='cl1048')ctx.bioregion=item.value||'';
               else if(item.field==='cl1049')ctx.subregion=item.value||'';
               else if(item.field==='cl10923')ctx.lga=item.value||'';
-              else if(item.field==='el887')ctx.demElev=toNum(item.value);
+              else if(item.field==='el674')ctx.demElev=toNum(item.value); /* el674 = Elevation (m). el887 was a radiation layer. */
             }}
             /* QLD layers */
             ctx.drainageBasin=clean(drain?.basin_name);
