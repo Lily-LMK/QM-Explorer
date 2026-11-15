@@ -1304,7 +1304,8 @@ function extractFacets_A(data){
 /* ═════════════════════════════════════════════════
    QUEENSLAND MUSEUM REGISTER SUPPLEMENT
    Specimens the museum has databased that ALA does not show, because ALA keeps one record for
-   each registration number in a collection. Loaded once from a static public file in this site;
+   each registration number in a collection, and (from v3, 15 November 2026) a few that ALA does not
+   hold at all, marked addedBecause "not in ALA". Loaded once from a static public file in this site;
    the Explorer never calls the museum's register. Every added specimen keeps its own key
    (reg:<register identifier>), so specimens that share a registration number, name and type
    status appear, and open, separately. In Records the ALA results come first and the additions
@@ -1341,7 +1342,7 @@ function normRec_S(s){
     eventDate:s.eventDate||'',verbatimDate:s.verbatimEventDate||'',samplingProtocol:s.samplingProtocol||'',
     elevMin:toNum(s.minimumElevationInMeters),elevMax:null,depth:null,identifiedBy:s.identifiedBy||'',taxonConceptID:'',
     habitat:s.habitat||'',occurrenceRemarks:'',fieldNumber:'',individualCount:'',datasetName:"Queensland Museum register",
-    _suppAdded:s.addedDate||'',_suppReview:s.curatorReview==='pending',_suppSharesUuid:s.sharesNumberWithAlaRecord||'',
+    _suppAdded:s.addedDate||'',_suppReview:s.curatorReview==='pending',_suppSharesUuid:s.sharesNumberWithAlaRecord||'',_suppNotInAla:s.addedBecause==='not in ALA',
     _imagedReg:s.imagedInRegister==='yes',_coordsWithheld:s.coordinatesWithheld==='yes',_suppExtra:ex};
 }
 /* The register additions that match the current filters (bbox included, which clientFilterRecs leaves to the caller) */
@@ -6642,7 +6643,7 @@ function specKeywords(r){
 
 function specSources(r){
   const lines=[];
-  if(r._supp)lines.push(`Specimen data: Queensland Museum register (register ID ${r.regId}), added to QM Explorer ${fmtLongDate(r._suppAdded)}. Not shown by the Atlas of Living Australia, which holds one record for registration number ${r.cat}.${r._suppReview?' Curator review pending.':''}`);
+  if(r._supp)lines.push(`Specimen data: Queensland Museum register (register ID ${r.regId}), added to QM Explorer ${fmtLongDate(r._suppAdded)}. ${r._suppNotInAla?`Not held by the Atlas of Living Australia, which has no record for registration number ${r.cat}.`:`Not shown by the Atlas of Living Australia, which holds one record for registration number ${r.cat}.`}${r._suppReview?' Curator review pending.':''}`);
   else lines.push(`Specimen data: Atlas of Living Australia (ALA).`);
   const sp=r._spatial;
   if(sp&&!sp.loading){
@@ -6736,7 +6737,7 @@ function renderModalDetails(r){
   const suppNote=r._supp?`<div class="supp-note" role="note">
       <div class="sn-h">Added from Queensland Museum’s register</div>
       ${r._suppReview?`<div class="sn-review">Curator review pending</div>`:''}
-      <div class="sn-b">Added ${esc(fmtLongDate(r._suppAdded))}. The Atlas of Living Australia does not show this specimen, because it shares registration number ${esc(r.cat)} with another specimen, the one ALA holds.${r._coordsWithheld?' Its location is withheld for now.':''}${r._imagedReg?' The register holds images of it; they are not shown here.':''}</div>
+      <div class="sn-b">Added ${esc(fmtLongDate(r._suppAdded))}. ${r._suppNotInAla?`The Atlas of Living Australia has no record for registration number ${esc(r.cat)}, so the specimen is shown here from the museum’s register.`:`The Atlas of Living Australia does not show this specimen, because it shares registration number ${esc(r.cat)} with another specimen, the one ALA holds.`}${r._coordsWithheld?' Its location is withheld for now.':''}${r._imagedReg?' The register holds images of it; they are not shown here.':''}</div>
     </div>`:'';
   const suppExtra=r._supp&&r._suppExtra&&Object.keys(r._suppExtra).length?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> From the register</div>
     <div class="det-flow">${df('Register ID',esc(r.regId))}${Object.entries(r._suppExtra).map(([k,v])=>df(esc(k),esc(v),String(v).length>40)).join('')}</div>`:(r._supp?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> From the register</div><div class="det-flow">${df('Register ID',esc(r.regId))}</div>`:'');
@@ -7485,6 +7486,8 @@ if(_SELFTEST){
       eq('paging: the page after that starts where the last stopped', JSON.stringify(suppSliceFor(300,230,0,120)), '[70,50]');
       eq('paging: past the 5,000 window the additions are still reached', JSON.stringify(suppSliceFor(5000,240765,0,1028)), '[0,100]');
       eq('register additions: a withheld coordinate is never placed', normRec_S({registerId:'W',coordinatesWithheld:'yes'}).lat, null);
+      eq('register additions: a record ALA does not hold is marked so', normRec_S({registerId:'H',addedBecause:'not in ALA'})._suppNotInAla, true);
+      eq('register additions: a shared-number record is not marked as absent', normRec_S({registerId:'S',sharesNumberWithAlaRecord:'u'})._suppNotInAla, false);
 
       /* ── CORS-SAFE FQ INVARIANTS ── */
       const fqArr=alaBaseFQ({kingdom:'Animalia',family:'Chelidae',media:'image',coord:'true'});
