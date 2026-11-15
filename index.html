@@ -434,7 +434,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
       <div class="fg"><label for="fCat">Catalog #</label><div style="display:flex;gap:4px"><input type="text" id="fCat" placeholder="e.g. T11670 or T1167*" aria-label="Catalog number" style="flex:1;font-family:var(--font);font-size:13px;padding:6px 8px;border:1px solid var(--hair);border-radius:2px;background:#fff;color:var(--ink)"/><button id="catGo" aria-label="Search catalog number" style="font-family:var(--font);font-size:11px;font-weight:700;padding:4px 10px;border:1px solid var(--ink);border-radius:2px;background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px">Go</button></div></div>
       <div class="fg"><label for="fColl">Collection</label><select id="fColl"><option value="">All Collections</option></select></div>
       <div class="fr"><div class="fg"><label for="fType">Type Specimen</label><select id="fType"><option value="">Any</option><option value="true">Yes — types only</option><option value="primary">Primary types</option><option value="false">No — exclude types</option></select></div><div class="fg"><label for="fMedia">Has Media</label><select id="fMedia"><option value="">Any</option><option value="StillImage">Yes</option></select></div></div>
-      <div class="fg"><label for="fCoord">Georeferenced</label><select id="fCoord"><option value="">Any</option><option value="true">Yes — mappable</option><option value="false">No</option></select></div>
+      <div class="fg"><label for="fCoord">Georeferenced</label><select id="fCoord" title="Yes = ALA holds a latitude and longitude for the record, so it can be placed on the map. No = ALA holds no coordinate."><option value="">Any</option><option value="true">Yes — has a coordinate</option><option value="false">No</option></select></div>
       <div class="fr"><div class="fg"><label for="fCo">Country</label><select id="fCo"><option value="">All</option><option value="AU">Australia</option><option value="PG">PNG</option><option value="NZ">New Zealand</option><option value="FJ">Fiji</option><option value="SB">Solomon Islands</option></select></div><div class="fg"><label for="fSt">State/Province</label><select id="fSt"><option value="">All</option></select></div></div></div>
     <hr class="hr"/>
     <div class="sec"><div class="sec-t"><span class="d" style="background:var(--red)" aria-hidden="true"></span> Display</div>
@@ -756,7 +756,8 @@ function alaBaseFQ(f){
   }
   else if(f.hasType==='false')fq.push('(type_status:"notatype" OR (*:* AND -type_status:[* TO *]))');
   if(f.collCode)fq.push(`collection_uid:"${f.collCode}"`);
-  if(f.coord==='true')fq.push('geospatial_kosher:true');else if(f.coord==='false')fq.push('-geospatial_kosher:true');
+  /* Coordinate presence = ALA holds a latitude (and longitude). geospatial_kosher:true is NOT used: it counts ~125,000 databased records that have no coordinate (14 November 2026). */
+  if(f.coord==='true')fq.push('latitude:[* TO *]');else if(f.coord==='false')fq.push('-latitude:[* TO *]');
   if(f.media)fq.push('multimedia:"Image"');
   if(f.state)fq.push(`state:"${f.state}"`);
   if(f.country==='AU')fq.push('country:"Australia"');else if(f.country)fq.push(`country_code:"${f.country}"`);
@@ -974,7 +975,7 @@ async function fetchQualityCounts(f){
       u.set('pageSize','0');u.set('facets','');return base+'?'+u;
     }
     const [rGeo,rMedia,rTyped]=await Promise.all([
-      fetch(countURL(['geospatial_kosher:true'])).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch(countURL(['latitude:[* TO *]'])).then(r=>r.ok?r.json():null).catch(()=>null),
       fetch(countURL(['multimedia:"Image"'])).then(r=>r.ok?r.json():null).catch(()=>null),
       fetch(countURL(['-type_status:"notatype"','type_status:[* TO *]'])).then(r=>r.ok?r.json():null).catch(()=>null)
     ]);
@@ -3131,7 +3132,7 @@ function updateMapInfo(){
   let txt=`<b>Markers:</b> ${fmt(visCount)}`;
   if(filtered&&visCount!==allCount)txt+=` <span style="color:#007a47">${S.mapPoly?'in '+esc(S.mapPoly.source==='drawn'?'drawn area':S.mapPoly.source||'area'):'in box'}</span> / ${fmt(allCount)} loaded`;
   if(loading)txt+=` <span style="color:#f7941d">(loading… ${Math.round(fetched/cap*100)}%)</span>`;
-  else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records are counted by ALA as georeferenced but return no usable coordinate, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
+  else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records hold no coordinate in ALA, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
   else txt+=` of ${fmt(S.total)} total`;
   if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
   else if(S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--orange);font-weight:600">(uncapped)</span>`;
