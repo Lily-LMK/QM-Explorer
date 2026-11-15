@@ -340,6 +340,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .pg-btn{font-family:var(--font);font-size:12px;font-weight:600;padding:10px 16px;border:1px solid var(--hair);border-radius:2px;background:#fff;color:var(--ink);cursor:pointer;transition:var(--tr);min-height:44px;text-transform:uppercase;letter-spacing:.3px}
 .pg-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink)}.pg-btn:disabled{opacity:.25;cursor:default}
 .pg-info{font-size:12px;color:var(--muted);padding:0 8px}
+.pg-note{max-width:640px;margin:-6px auto 14px;padding:0 14px;font-size:12px;line-height:1.5;color:var(--muted);text-align:center}
+/* A new search has started: the previous result stays in place, greyed, until the new one arrives. */
+.scroll.stale .vp:not(#v-map),.stats-g.stale{opacity:.45}
+.map-info button{font:inherit;font-weight:600;margin-left:6px;padding:4px 9px;border:1px solid var(--hair);border-radius:2px;background:#fff;color:var(--ink);cursor:pointer}
+.map-info button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 
 /* ── MODAL ── */
 .mod-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(2px);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px}
@@ -449,7 +454,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
         <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Grid view" aria-pressed="false">⊞</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">☰</button></div></div>
         <div id="gal" class="gal" role="list" aria-label="Specimen records"></div><div id="galLoad"></div>
-        <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div></div>
+        <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div><p class="pg-note" id="pgNote" hidden></p></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
       <div class="vp" id="v-guide" role="tabpanel" aria-labelledby="tab-guide"><div id="guideRoot"></div></div>
       <div class="vp" id="v-map" role="tabpanel" aria-labelledby="tab-map" style="height:100%"><div class="map-c" id="mapC"><div id="map" role="application" aria-label="Specimen map"></div></div></div>
@@ -523,6 +528,17 @@ const toNum=v=>v!=null&&v!==""&&!isNaN(Number(v))?Number(v):null;
 function parseLatLong(s){if(!s||typeof s!=='string')return[null,null];const p=s.split(',');return p.length===2?[toNum(p[0].trim()),toNum(p[1].trim())]:[null,null]}
 const toStr=v=>Array.isArray(v)?v.join(' | '):typeof v==='object'&&v!==null?JSON.stringify(v):(v==null?'':String(v));
 const fmt=n=>n==null?'—':Number(n).toLocaleString();
+/* "1 record", "2 records". */
+const recWord=n=>Number(n)===1?'record':'records';
+/* A share as a whole percentage. A share above zero and below 1% reads "<1%" (never 0% or 1%);
+   a share just short of the whole reads 99%, never 100%. */
+function pctLabel(a,b){
+  a=Number(a)||0;b=Number(b)||0;
+  if(b<=0||a<=0)return '0%';
+  if(a>=b)return '100%';
+  if(a/b<0.01)return '<1%';
+  return Math.min(99,Math.round(a/b*100))+'%';
+}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500)}
 
 /* ── In-memory fetch cache ──
@@ -1582,7 +1598,7 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
         S.allPts=filtered.filter(r=>r.lat!=null&&r.lng!=null);
         const pct=Math.round(getScanned()/bboxTotal*100);
         try{$('#sRec').textContent=fmt(S.total)+' ⏳ '+pct+'%'}catch(e){}
-        try{$('#rc').innerHTML=`<b>${fmt(S.total)}</b> records in area <span style="color:#f7941d">(scanning… ${pct}%)</span>`}catch(e){}
+        try{$('#rc').innerHTML=`<b>${fmt(S.total)}</b> ${recWord(S.total)} in area <span style="color:#f7941d">(scanning… ${pct}%)</span>`}catch(e){}
         if(S.view==='map'){try{updateMapInfo();addMarkers()}catch(e){}}
       }
     }catch(e){
@@ -1627,7 +1643,7 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
 
     const partial=failures>5;
     try{$('#sRec').textContent=fmt(S.total)+(partial?' ⚠':'')}catch(e){}
-    try{$('#rc').innerHTML=`<b>${fmt(S.total)}</b> records in area${partial?' <span style="color:#c44" title="Scan incomplete due to network errors">⚠ partial</span>':''}`}catch(e){}
+    try{$('#rc').innerHTML=`<b>${fmt(S.total)}</b> ${recWord(S.total)} in area${partial?' <span style="color:#c44" title="Scan incomplete due to network errors">⚠ partial</span>':''}`}catch(e){}
     try{updatePag()}catch(e){}
     try{const gc=$('#galCount');if(gc){
       let ct=S.res.length+' shown of '+fmt(S.total);
@@ -1791,17 +1807,25 @@ function updatePag(){
     const scanning=!S._polyScanDone;
     el.style.display=(t>INIT_PAGE||scanning)?'flex':'none';
     $('#prevP').disabled=pg<=1;$('#nextP').disabled=atEnd;
-    let info=`Page ${pg}${scanning?'':'/'+ fmt(tp)} · ${fmt(t)}${scanning?' ⏳':''} records · ${S.res.length} shown`;
+    let info=`Page ${pg}${scanning?'':' of '+ fmt(tp)} · ${fmt(t)}${scanning?' ⏳':''} ${recWord(t)} · ${S.res.length} shown`;
+    const pn=$('#pgNote');if(pn)pn.hidden=true;
     info+=` · ${S.mapPoly.name}`;
     $('#pgI').textContent=info;
-    $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> records in area${scanning?' <span style="color:#f7941d">⏳</span>':''}`:'';
+    $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> ${recWord(t)} in area${scanning?' <span style="color:#f7941d">⏳</span>':''}`:'';
   }else{
     /* ALA won't serve records past index ALA_MAX_RESULTS, so cap the reachable pages there. */
     const t=S.total,reachable=Math.min(t,ALA_MAX_RESULTS),pg=Math.floor(S.off/INIT_PAGE)+1,tp=Math.max(1,Math.ceil(reachable/INIT_PAGE));
     el.style.display=t>INIT_PAGE?'flex':'none';
-    const capped=t>ALA_MAX_RESULTS?` (of ${fmt(t)})`:'';
-    $('#prevP').disabled=pg<=1;$('#nextP').disabled=pg>=tp;$('#pgI').textContent=`Page ${pg}/${fmt(tp)} · ${fmt(reachable)}${capped} records · ${S.res.length} shown`;
-    $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> records`:'';
+    const capped=t>ALA_MAX_RESULTS;
+    $('#prevP').disabled=pg<=1;$('#nextP').disabled=pg>=tp;
+    $('#pgI').textContent=`Page ${pg} of ${fmt(tp)} · ${capped?`first ${fmt(reachable)} of ${fmt(t)}`:fmt(t)} ${recWord(t)} · ${S.res.length} shown`;
+    $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> ${recWord(t)}`:'';
+    /* Say plainly why the pages stop at 5,000, and what to do about it. */
+    const pn=$('#pgNote');
+    if(pn){
+      pn.hidden=!capped;
+      pn.textContent=capped?`The Atlas of Living Australia serves only the first ${fmt(ALA_MAX_RESULTS)} records of any one search. This search has ${fmt(t)}, so ${fmt(t-ALA_MAX_RESULTS)} of them cannot be reached from these pages. Narrowing the search (by collection, family or type status, for example) brings them within reach.`:'';
+    }
   }
 }
 
@@ -2548,7 +2572,7 @@ function renderGuide(){
   if(S.guideFocus){renderGuideFocus(root);return}
   const polyName=S.mapPoly?.name;
   const contextLabel=polyName?`in ${polyName}`:'matching current filters';
-  root.innerHTML=`<div class="gu-hdr"><h2>Browse</h2><div class="crumb">${fmt(S.total)} records ${esc(contextLabel)}. Select a group to explore.</div></div>`;
+  root.innerHTML=`<div class="gu-hdr"><h2>Browse</h2><div class="crumb">${fmt(S.total)} ${recWord(S.total)} ${esc(contextLabel)}. Select a group to explore.</div></div>`;
   const rankOpts=[
     {i:0,l:'Phylum',k:'phylum',fk:'phylum'},
     {i:1,l:'Order',k:'order',fk:'order'},
@@ -4213,7 +4237,7 @@ async function exportCSV(enriched=false){
   const suffix=enriched?'-enriched':'';
   a.download='qm-export'+tag+suffix+'-'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();URL.revokeObjectURL(a.href);
-  toast(`Exported ${recs.length} records`+(enriched?' (enriched)':''));
+  toast(`Exported ${fmt(recs.length)} ${recWord(recs.length)}`+(enriched?' (enriched)':''));
 }
 
 /* CHARTS */
@@ -4244,7 +4268,7 @@ function renderCharts(){
       var p=pc(yes,total);var no=total-yes;var deg=Math.round(p*3.6);
       return '<div style="display:flex;align-items:center;gap:16px;margin:10px 0">'
         +'<div style="position:relative;width:80px;height:80px;flex-shrink:0;border-radius:50%;background:conic-gradient('+yesC+' 0deg '+deg+'deg, #e0e0e0 '+deg+'deg 360deg)">'
-        +'<div style="position:absolute;top:10px;left:10px;right:10px;bottom:10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">'+p+'%</div>'
+        +'<div style="position:absolute;top:10px;left:10px;right:10px;bottom:10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">'+esc(pctLabel(yes,total))+'</div>'
         +'</div><div>'
         +'<div style="font-size:14px;font-weight:700;margin-bottom:4px">'+esc(label)+'</div>'
         +'<div style="font-size:12px;color:#4a4a4a"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+yesC+';vertical-align:middle;margin-right:4px"></span>'+esc(yesL)+': <b>'+fmt(yes)+'</b></div>'
@@ -4297,11 +4321,11 @@ function renderCharts(){
         +'<div style="position:relative;width:140px;height:140px;flex-shrink:0;border-radius:50%;background:conic-gradient('+stops.join(',')+')"></div>'
         +'<div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:3px">';
       for(var i=0;i<collItems.length;i++){
-        var pctVal=pc(collItems[i].count,collTotal);
+        var pctVal=esc(pctLabel(collItems[i].count,collTotal));
         s+='<div style="display:flex;align-items:center;gap:8px;font-size:12px">'
           +'<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+pieColors[i]+';flex-shrink:0"></span>'
           +'<span style="flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(collItems[i].name)+'">'+esc(collItems[i].name)+'</span>'
-          +'<span style="font-weight:700;white-space:nowrap">'+fmt(collItems[i].count)+' <span style="color:#4a4a4a;font-weight:400">('+pctVal+'%)</span></span>'
+          +'<span style="font-weight:700;white-space:nowrap">'+fmt(collItems[i].count)+' <span style="color:#4a4a4a;font-weight:400">('+pctVal+')</span></span>'
           +'</div>';
       }
       s+='</div></div></div>';
@@ -4337,11 +4361,11 @@ function renderCharts(){
         var tn=(typeFacet[i].name||'').toUpperCase();
         var ct=typeFacet[i].count||0;
         var label=tn.charAt(0)+tn.slice(1).toLowerCase();
-        var pctVal=pc(ct,totalTypes);
+        var pctVal=esc(pctLabel(ct,totalTypes));
         s+='<div style="display:flex;align-items:center;gap:8px;font-size:12px">'
           +'<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+tColors[i]+';flex-shrink:0"></span>'
           +'<span style="flex:1;font-weight:500">'+esc(label)+'</span>'
-          +'<span style="font-weight:700;white-space:nowrap">'+fmt(ct)+' <span style="color:#4a4a4a;font-weight:400">('+pctVal+'%)</span></span>'
+          +'<span style="font-weight:700;white-space:nowrap">'+fmt(ct)+' <span style="color:#4a4a4a;font-weight:400">('+pctVal+')</span></span>'
           +'</div>';
       }
       s+='</div></div></div>';sections.push(s);
@@ -4358,7 +4382,7 @@ function renderCharts(){
       collFacet.sort(function(a,b){return(b.count||0)-(a.count||0)});
       var top15=collFacet.slice(0,15);
       var mx=top15[0].count||1;
-      var s='<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#46c2d2"></span>Top Collectors (across '+fmt(T)+' records)</div><div class="hb">';
+      var s='<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#46c2d2"></span>Top Collectors (across '+fmt(T)+' '+recWord(T)+')</div><div class="hb">';
       for(var i=0;i<top15.length;i++){
         var nm=top15[i].name||'?';
         var ct=top15[i].count||0;
