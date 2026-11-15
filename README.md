@@ -7,12 +7,12 @@ Live data from the [Atlas of Living Australia](https://www.ala.org.au/) (ALA) vi
 ## What it does
 
 - **Search** 900,000+ specimen records by common name, scientific name, catalog number, or free text
-- **Filter** by taxonomy (kingdom → species), collection, type status, media, georeferencing, country, state
+- **Filter** by taxonomy (kingdom → species), collection, type status, media, whether ALA holds a coordinate, country, state
 - **Browse** visual taxonomy cards at any rank, each resolved to a representative image through a museum-first cascade (QM specimen → another institution's specimen → iNaturalist/Wikipedia → generated placeholder) with source provenance shown, plus a rank-appropriate common name
-- **Map** georeferenced specimens with marker clustering, colour-coded by collection, with polygon spatial filtering via NNTT Indigenous estate boundaries
+- **Map** georeferenced specimens with marker clustering, colour-coded by collection, with area filtering by bioregion, council, protected area, marine park, drainage basin or Native Title area (determinations, applications under way, and registered bodies corporate, each labelled for what it is)
 - **Analyse** collection composition through interactive charts (taxonomic breakdown, quality metrics, temporal distribution)
 - **View** full specimen detail with multi-image gallery, spatial context (bioregion, LGA, vegetation, marine zones, bathymetry, traditional owner groups), and Wikipedia descriptions
-- **Export** filtered results as CSV, or as an enriched CSV that includes spatial context for each record
+- **Export** filtered results as CSV, or as an enriched CSV that adds spatial context for each record. Every row of both files ends with the retrieval date and the ALA query, so a file explains itself away from the site
 
 The five views in the interface are labelled **Records, Taxa, Browse, Map, Analytics**.
 
@@ -20,7 +20,7 @@ The five views in the interface are labelled **Records, Taxa, Browse, Map, Analy
 
 ### Single-file design
 
-`index.html` is a self-contained ~340 KB file, around 6,200 lines. All CSS, JavaScript, and HTML live in one document. External dependencies are loaded via CDN:
+`index.html` is a self-contained ~400 KB file, around 7,100 lines. All CSS, JavaScript, and HTML live in one document. External dependencies are loaded via CDN:
 
 - [Leaflet](https://leafletjs.com/) 1.9.4 — mapping
 - [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster) 1.5.3 — marker clustering
@@ -34,7 +34,7 @@ No framework, no build tools, no package manager. The file can be deployed to Gi
 |---|---|---|
 | ALA Biocache | Specimen records, facets, occurrence detail | `biocache-ws.ala.org.au/ws/occurrences/search` |
 | ALA BIE | Species profiles, taxonomy matching | `bie-ws.ala.org.au/ws/search` |
-| ALA Spatial Intersect | IBRA bioregion, IMCRA marine region, state, elevation | `spatial.ala.org.au/ws/intersect` (layers `cl1048,cl1049,cl10923,el887`) |
+| ALA Spatial Intersect | IBRA bioregion and subregion, local government area, elevation | `spatial.ala.org.au/ws/intersect` (layers `cl1048,cl1049,cl10923,el674`) |
 | GBIF Species API | Common name resolution, taxonomic matching, parent hierarchy | `api.gbif.org/v1/species` |
 | iNaturalist Taxa API | Common name fallback, taxon detail | `api.inaturalist.org/v1/taxa` |
 | Wikipedia REST + MediaWiki API | Species descriptions and images | `en.wikipedia.org/api/rest_v1`, `en.wikipedia.org/w/api.php` |
@@ -42,7 +42,7 @@ No framework, no build tools, no package manager. The file can be deployed to Gi
 | QLD VegetationManagement MapServer | Broad vegetation groups | `spatial-gis.information.qld.gov.au/.../VegetationManagement` |
 | QLD ParksMarineProtectedAreas MapServer | Marine park zones, fish habitat areas, benthic habitat | `spatial-gis.information.qld.gov.au/.../ParksMarineProtectedAreas` |
 | GA Bathymetry MapServer | Ocean depth at specimen coordinates | `services.ga.gov.au/.../Bathymetry_Topography` |
-| NNTT Custodial FeatureServer | Native title determination boundaries | `services2.arcgis.com/.../NNTT_Custodial_AGOL` |
+| NNTT Custodial FeatureServer | Native title determinations (layer 5), applications (layer 8) and registered bodies corporate (layer 0) | `services2.arcgis.com/.../NNTT_Custodial_AGOL` |
 | Nominatim (OSM) | Reverse geocoding for locality context | `nominatim.openstreetmap.org` |
 
 ### Institution scope

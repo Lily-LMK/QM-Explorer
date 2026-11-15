@@ -1,5 +1,7 @@
 # Kickoff — starting a fresh session on QM Collections Explorer
 
+> **Historical (June 2026).** These kickoff prompts describe the June plan and should not be used to start a session now. Start from `CLAUDE.md` ("Current chapter") and, in Lily's working copy, `project-notes/HANDOVER.md`.
+
 How to (re)start work on the project, plus two ready-to-paste kickoff prompts:
 a **default** one for picking up where the roadmap left off, and a **full review**
 one for a periodic deep health-check.

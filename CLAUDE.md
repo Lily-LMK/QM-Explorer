@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 14 November 2026.
+profile). Read both. Last updated 15 November 2026.
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -17,7 +17,7 @@ natural-history collections via the Atlas of Living Australia (ALA), enriched wi
 GBIF, iNaturalist, Wikipedia, and Queensland Government / Geoscience Australia spatial
 services. Deployed on GitHub Pages: <https://lily-lmk.github.io/QM-Explorer>.
 
-- `index.html` — the entire app (~6,300 lines: HTML + CSS + JS inline). No framework,
+- `index.html` — the entire app (~7,100 lines, ~400 KB: HTML + CSS + JS inline). No framework,
   no build step. External deps (Leaflet, fonts) load via CDN.
 - `sw.js` — optional service worker: caches CDN assets + API responses. App runs
   without it.
@@ -61,8 +61,14 @@ that often surfaces as a misleading **"ALA 503"**.
    **Offset paging MUST send a stable sort** (`sort=id&dir=asc`). ALA's default order is
    unstable across `startIndex`, so paging silently skips/duplicates ~8–16% of rows; the
    map quadtree (`pageTile`), the Records pager, and `bgPolyScan` all sort by id, and any
-   new paging loop must too. (Also: `geospatial_kosher:true` ≠ plottable — about 14% return no
-   coordinate; the map labels those honestly, never as "sensitive" without evidence.)
+   new paging loop must too, including the CSV export. (Also: `geospatial_kosher:true` ≠ plottable —
+   about 14% have no coordinate. "Has a coordinate" is `latitude:[* TO *]`; the map labels the
+   rest honestly, never as "sensitive" without evidence.)
+7. **`fl=` changes the shape of the answer.** With `fl=`, most descriptive fields (locality,
+   preparations, sex, lifeStage, identifiedBy, habitat, authorship…) come back inside
+   `otherProperties`, and the image addresses (`imageUrl`, `largeImageUrl`…) are dropped.
+   So the Records search sends no `fl=` (the photo grid needs the images), and the CSV export
+   fetches the descriptive fields separately (`fillDescriptiveFields`, `ALA_FL`).
 4. **CORS — the big one. NEVER AND-join filters into one `fq`.** ALA drops the
    `Access-Control-Allow-Origin` header when a single `fq` contains
    `A AND B AND …`; the browser then blocks the response (looks like "ALA 503").
@@ -108,7 +114,17 @@ not a real outage.
   `renderGuide` fills QM images via the existing batch pass, then for QM-empty tiles
   calls `resolveGroupImage(...,{skipQM:true})` **lazily** through `_queueGuideImg`
   (mirrors the Taxa tree's throttle). Every image carries provenance + attribution.
-- **Service worker:** propagates real network/CORS failures (does NOT manufacture a
+- **Native Title (NNTT_Custodial_AGOL):** layer 0 = registered bodies corporate
+  (`Corporation_Name`), 5 = determination outcomes, 8 = applications. `nnttPointAll` reads
+  every feature at a point; `nnttInterpret` decides what to show (Lily's rules, 14–15
+  November 2026: "application under way"; nothing for "does not exist"/"extinguished"; the
+  determination takes precedence over an application). The built-in custodians list
+  (`_qldTraditionalOwners`, 34 approximate rectangles) is shown with "approximate location
+  match, source: …", hidden where the outcome is negative (`_curatedAllowed`; one exception
+  by uuid, S3568).
+- **CSV:** both exports end with `retrievalDate` and `query`. Elevation is ALA `el674`.
+- **Service worker:** never caches `index.html` (network-only), so a deploy reaches visitors at
+  once. Propagates real network/CORS failures (does NOT manufacture a
   synthetic 503); passes real upstream HTTP errors through with their true status.
 
 ## Conventions / house rules
@@ -154,20 +170,20 @@ The Explorer never calls the museum's register; anything from it arrives as a re
 
 **Stages:**
 1. Health check — done 14 November 2026. No code changed.
-2. Repairs — waiting on Lily agreeing the list. Known faults, all still in the live code:
-   - Enriched CSV column `elevationDEM_m` is filled from ALA layer `el887` (a radiation
-     layer). The elevation layer is `el674`.
-   - NNTT layers are mixed up: 0 = Registered Native Title Bodies Corporate,
-     5 = Determination Outcomes, 8 = Schedule of Applications. The code treats 8 as
-     determinations and 0 as applications.
-   - `geospatial_kosher:true` (910,248) overstates what has a coordinate (latitude
-     present: 784,857 of 914,614, retrieved 14 November 2026). It feeds the "mappable"
-     filter and the Analytics "Georeferenced" tile.
-   - Standard CSV: locality and twelve other columns are always empty.
-   - Opening the site sends about 320 requests; iNaturalist refuses some, so common
-     names go missing.
+2. Repairs — batch 1 released 15 November 2026 (`main` eaead22): elevation (`el674`),
+   Native Title layers, "has a coordinate", standard CSV columns, stable sort on export.
+   Still to do (batch 2), all in the live code:
+   - Exporting while on page 2 or later repeats that page and misses page 1 (read from the
+     code, not yet tested).
+   - Opening the site sends about 320 requests; iNaturalist refuses some, so common names go
+     missing, and tile and window can disagree. Remove the rule that strips a final "s".
+   - A new search leaves the old result on screen while GBIF answers.
+   - The map's background loader keeps running after leaving the Map.
+   - No "holotypes only" choice: offer each type status, built from the facet.
    - ALA layer ids `cl1048`, `cl1049`, `cl10923` are older editions; newer are `cl11015`,
-     `cl11016` (IBRA 7.1), `cl11014` (LGA 2025), `cl11019` (CAPAD 2024).
+     `cl11016` (IBRA 7.1), `cl11014` (LGA 2025), `cl11019` (CAPAD 2024). Check against the
+     plug-in's set first.
+   - Wording: "1 records", "<1%", the 5,000-record message.
 3. Supplied names — measured 14 November 2026; build not started. Decisions:
    - Lead with the Queensland Museum supplied name when ALA's match is broader, and show
      both sources when they differ.
@@ -178,14 +194,18 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    - Primary types are holotype, neotype, type, lectotype and syntype.
    - First build step: confirm in a real browser that ALA returns the `raw_` fields with
      the CORS header.
-4. Shared registration numbers and duplicate records — next investigation (read-only).
+4. Shared registration numbers and duplicate records — investigated 14–15 November 2026
+   (read-only). Specimens that ALA hides because they share a registration number are to be
+   added back from a reviewed supplement file, marked as such, with the date. Not built.
 5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
 6. Redesign in the Queensland Museum Design System — review, mock-up for Lily, then code.
    The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion
    #9 and virtualising large ranks #10) is folded into this stage.
 
-Also pending: the report to ALA. `docs/ALA-API-bug-report.md` has not been sent, and the
-supplied-names audit adds wrong-group matches and the leading-X family fault to it.
+Also pending: the report to ALA. `docs/ALA-API-bug-report.md` (the CORS fault) has not been
+sent. To add before sending: wrong-group name matches, the leading-X family fault, older copies
+of corrected records, the ~125,000 records counted as georeferenced with no coordinate, and the
+3 QM records not tied to the institution.
 
 ## Supplied names: what ALA carries (measured 14 November 2026)
 
@@ -196,7 +216,8 @@ supplied-names audit adds wrong-group matches and the leading-X family fault to 
   `raw_kingdom`, `raw_phylum`, `raw_class`, `raw_order`, `raw_family`, `raw_genus`,
   `raw_taxonRank`. In a search they come back only when asked for with `fl=`, inside
   `otherProperties`. Tested with curl only.
-- **`raw_catalogNumber` is not returned when a search uses `fl=`.** Fetch it without `fl`.
+- `raw_catalogNumber` with `fl=`: missing in a curl test on 14 November 2026, present in a
+  browser test on 15 November 2026. Check before relying on it.
 - Supplied values are not uniform (bird families arrive in capitals; some informal names
   are lower case), so normalise before grouping.
 - ALA's match can be in the wrong group altogether: 446 records sit in a different
@@ -212,9 +233,9 @@ supplied-names audit adds wrong-group matches and the leading-X family fault to 
 
 ## State of the live site
 
-The live site is unchanged since June 2026 (`main` at 6c859d0). All five views, the
-searches, both CSV exports and every outside service work, with the faults listed under
-stage 2. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
+`main` is at eaead22 (stage 2 batch 1, released and checked on GitHub Pages 15 November
+2026). All five views, the searches, both CSV exports and every outside service work, with
+the faults listed under stage 2. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
 map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;
 the museum-first image cascade; `deriveHoldingsStats`; Browse 8a/8b/8c-a with common
 names for all tiles and the Acanthocephala/Ciliophora/Nucleocytoviricota homonym fixes;
@@ -223,5 +244,6 @@ simplified tiles by default, Has-Media switch to the photo grid, pinned density 
 and the Map integrity pass (stable-sort paging, honest "no mapped coordinate" label).
 Build on these; do not rebuild them.
 
-`README.md`, `docs/ROADMAP.md` and `docs/KICKOFF.md` date from June 2026 and describe the
-Phase 3 plan as it stood then. Where they differ from this file, this file is current.
+`docs/ROADMAP.md` and `docs/KICKOFF.md` date from June 2026 and describe the Phase 3 plan as
+it stood then; the Browse briefs are kept for stage 6. Where they differ from this file, this
+file is current.

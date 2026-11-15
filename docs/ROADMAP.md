@@ -1,5 +1,7 @@
 # QM Collections Explorer — Stabilisation & Redesign Roadmap
 
+> **Historical (June 2026).** This roadmap is kept for reference. The current plan is "Current chapter" in `CLAUDE.md`.
+
 Durable plan for the current chapter, so any session (Sonnet implementing, Opus
 planning, or a future you) can re-enter without rebuilding context. Written
 June 2026, after a no-code integrity audit and the addition of the `?selftest`
