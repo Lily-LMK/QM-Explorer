@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 15 November 2026.
+profile). Read both. Last updated 15 November 2026 (evening).
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -172,50 +172,37 @@ The Explorer never calls the museum's register; anything from it arrives as a re
 
 **Stages:**
 1. Health check — done 14 November 2026. No code changed.
-2. Repairs — batch 1 released 15 November 2026 (`main` eaead22, then f1cd846 for the shorter
-   Native Title display): elevation (`el674`),
-   Native Title layers, "has a coordinate", standard CSV columns, stable sort on export.
-   Still to do (batch 2), all in the live code:
-   - Exporting while on page 2 or later repeats that page and misses page 1 (read from the
-     code, not yet tested).
+2. Repairs — batch 1 released 15 November 2026 (elevation `el674`, Native Title layers, "has a
+   coordinate", standard CSV columns, stable sort on export). Batch 2 released 15 November 2026
+   (`main` 301eb46: export from a later page, map loader stops when leaving the Map, old results
+   greyed on a new search, one type status at a time, wording). Batch 3 still to do:
    - Opening the site sends about 320 requests; iNaturalist refuses some, so common names go
      missing, and tile and window can disagree. Remove the rule that strips a final "s".
-   - A new search leaves the old result on screen while GBIF answers.
-   - The map's background loader keeps running after leaving the Map.
-   - No "holotypes only" choice: offer each type status, built from the facet.
    - ALA layer ids `cl1048`, `cl1049`, `cl10923` are older editions; newer are `cl11015`,
      `cl11016` (IBRA 7.1), `cl11014` (LGA 2025), `cl11019` (CAPAD 2024). Check against the
      plug-in's set first.
-   - Wording: "1 records", "<1%", the 5,000-record message.
-3. Supplied names — measured 14 November 2026; build not started. Decisions:
-   - Lead with the Queensland Museum supplied name when ALA's match is broader, and show
-     both sources when they differ.
-   - Filters and counts are driven by the museum's data (the `raw_` fields below), with
-     ALA's match as the second source.
-   - Working names are shown exactly as supplied ("Pheidole QM2" says "Pheidole QM2").
-   - Names marked as manuscript or unpublished are held for review and not shown.
-   - Primary types are holotype, neotype, type, lectotype and syntype.
-   - First build step: confirm in a real browser that ALA returns the `raw_` fields with
-     the CORS header.
-4. Shared registration numbers and duplicate records — investigated 14–15 November 2026.
-   Released 15 November 2026: `data/qm-register-supplement.json` (1,028 specimens ALA hides
-   because they share a registration number: the 1,022-record release candidate plus six
-   T3136/T6182 records shown as "Curator review pending"). v3 (15 November 2026) brings it to
-   1,094: 60 Molluscs specimens hidden by shared numbers, and six Molluscs holotypes ALA holds
-   under no QM collection, marked `addedBecause: "not in ALA"` (worded so in the record window
-   and Copy Sources). v4 (15 November 2026)
-   adds 11 Arachnids records: nine hidden by shared numbers (four marked "Curator review
-   pending") and both records at S107148, which ALA does not hold; 1,105 in all. v5 (15 November
-   2026) adds the 74 Arachnids holotypes ALA does not hold, marked "not in ALA"; 1,179 in all. Entomology,
-   Molluscs and Arachnids are fully inventoried. Records has a Source filter
-   (All sources / ALA Biocache / QM Register); ALA's results come first and the additions
-   follow, keyed `reg:<register identifier>`. Where coordinates are withheld, locality and
-   location remarks are withheld too. `imagedInRegister` is a yes/no flag (no image links).
-   The file is built in `project-notes/scripts/supplement-pilot/`; before rebuilding, re-run the
-   ALA check there so no specimen is shown twice. The Map places additions that have a
-   coordinate (withheld ones have none in the file). Taxa, Browse and polygon searches still
-   show ALA records only. CSV: ALA rows' `query` is a working ALA address; register rows'
-   `query` is plain text with no web address; both are captured when the export starts.
+3. Supplied names — build step 1 released 15 November 2026 (`main` ddfe402): the museum's
+   supplied name leads ("Supplied as (Queensland Museum)" and "ALA match"), name search finds
+   supplied names, `data/verified-names.json`, and held names (MS, n. sp., sp. nov., nov.) are kept
+   out of display, copied metadata, search and both CSVs (`isHeldName`, `scrubHeld`). Decisions:
+   working names shown exactly as supplied; primary types are holotype, neotype, type, lectotype
+   and syntype. Next: filters and counts driven by the museum's `raw_` fields, with ALA's match
+   second; a report on whether held names have since been published.
+4. Shared registration numbers and records ALA lacks — Entomology, Molluscs and Arachnids
+   fully inventoried (14–15 November 2026). `data/qm-register-supplement.json` (v5, live 15
+   November 2026) holds 1,179 specimens from the museum's register: 1,097 hidden in ALA because
+   they share a registration number, and 82 ALA holds under no QM collection, marked
+   `addedBecause: "not in ALA"` (6 Molluscs holotypes; 74 Arachnids holotypes, confirmed on the
+   museum's public collections catalogue; the two S107148 records). 14 are marked
+   `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
+   Register); ALA's results come first and the additions follow, keyed `reg:<register
+   identifier>`. Where coordinates are withheld, locality and location remarks are withheld too.
+   `imagedInRegister` is a yes/no flag (no image links). The file is built in
+   `project-notes/scripts/supplement-pilot/`; before rebuilding, re-run the ALA check there so no
+   specimen is shown twice, then rebuild the private tracking register (`tracking_register.py`).
+   The Map places additions that have a coordinate; Taxa, Browse and polygon searches still show
+   ALA records only. CSV: ALA rows' `query` is a working ALA address; register rows' `query` is
+   plain text with no web address.
 5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
 6. Redesign in the Queensland Museum Design System — review, mock-up for Lily, then code.
    The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion
@@ -223,8 +210,9 @@ The Explorer never calls the museum's register; anything from it arrives as a re
 
 Also pending: the report to ALA. `docs/ALA-API-bug-report.md` (the CORS fault) has not been
 sent. To add before sending: wrong-group name matches, the leading-X family fault, older copies
-of corrected records, the ~125,000 records counted as georeferenced with no coordinate, and the
-3 QM records not tied to the institution.
+of corrected records, the ~125,000 records counted as georeferenced with no coordinate, the
+3 QM records not tied to the institution, and the feed pattern found on 15 November 2026:
+numbers ending in 9 almost never go missing from ALA (see `project-notes/findings/`).
 
 ## Supplied names: what ALA carries (measured 14 November 2026)
 
@@ -252,9 +240,10 @@ of corrected records, the ~125,000 records counted as georeferenced with no coor
 
 ## State of the live site
 
-`main` is at f1cd846 (stage 2 batch 1 and the shorter Native Title display, released and
-checked on GitHub Pages 15 November 2026). All five views, the searches, both CSV exports and every outside service work, with
-the faults listed under stage 2. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
+`main` is at 439e236 (register additions v5, live and checked on GitHub Pages 15 November 2026:
+1,179 records). Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
+searches, both CSV exports and every outside service work, with the faults listed under stage 2
+batch 3. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
 map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;
 the museum-first image cascade; `deriveHoldingsStats`; Browse 8a/8b/8c-a with common
 names for all tiles and the Acanthocephala/Ciliophora/Nucleocytoviricota homonym fixes;
