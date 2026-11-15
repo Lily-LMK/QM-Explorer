@@ -4804,9 +4804,24 @@ function _curatedSameGroup(sp){
   const det=w(sp.traditionalOwners);
   return w(sp.curatedOwner).some(x=>det.includes(x));
 }
-/* "Jandai language (approximate location match, source: …)" */
-function _curatedNote(lang,src){
-  return ` <span style="font-size:11px;color:var(--muted)">${lang?esc(lang)+' language ':''}(approximate location match, source: ${src?esc(src):'published acknowledgement-of-country sources'})</span>`;
+/* Short group name for the record window, made only by trimming the Tribunal's own name
+   (the full name goes to Copy Sources). "Cape York United #1 (Eastern Kuku Yalanji determination)" -> "Eastern Kuku Yalanji";
+   "The Wangkangurru/Yarluyandi Native Title Claim" -> "Wangkangurru/Yarluyandi"; "Kaurareg People (Murulag #1)" -> "Kaurareg People". */
+function _ntShortName(names){
+  return(names||'').split(' / ').map(n=>{
+    let t=n.trim();
+    const m=t.match(/\(([^)]+?)\s+determination\)/i);
+    if(m)t=m[1];
+    t=t.replace(/\s*\([^)]*\)/g,'').replace(/\s*#\d+/g,'').replace(/^(the|combined)\s+/i,'')
+       .replace(/\s+(native title claim group|native title claim|claim group|claim|traditional owners)\s*$/i,'')
+       .replace(/\s+traditional owners\s*$/i,'').trim();
+    return t||n.trim();
+  }).filter((v,i,a)=>a.indexOf(v)===i).join(' / ');
+}
+/* "exists (non-exclusive)" -> "Recognised (non-exclusive)" */
+function _ntOutcomeShort(outcome){
+  const parts=(outcome||'').split(';').map(x=>x.trim().replace(/^exists\s*/i,'').replace(/^\(|\)$/g,'').trim()).filter(Boolean);
+  return 'Recognised'+(parts.length?' ('+parts.join('; ')+')':'');
 }
 function renderSpatialSection(r){
   const el=$('#spatialCtx');if(!el)return;
@@ -4829,34 +4844,31 @@ function renderSpatialSection(r){
   if(peopleName){
     /* A native title determination names the group. The built-in list may add a place name and a language,
        but only where it names the same people (its rectangles are approximate and can belong to a neighbour). */
+    /* Short form here; the full determination details and sources are in Copy Sources (specSources). */
     const sameGroup=_curatedSameGroup(sp);
-    let line=`Country of the <strong>${esc(peopleName)}</strong> people`;
-    if(sameGroup&&ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
+    const shortName=cleanPeople(_ntShortName(rawName))||peopleName;
+    let line=`Country of the <strong>${esc(shortName)}</strong> people`;
+    if(sameGroup&&ancestral)line+=` (${esc(ancestral)})`;
     line+='.';
-    const showLang=sameGroup&&curatedLang&&curatedLang.toLowerCase()!==peopleName.toLowerCase();
-    if(showLang||(sameGroup&&ancestral))line+=_curatedNote(showLang?curatedLang:null,sp.curatedSource);
+    const showLang=sameGroup&&curatedLang&&curatedLang.toLowerCase()!==shortName.toLowerCase();
+    if(showLang)line+=` ${esc(curatedLang)} language`;
+    if(showLang||(sameGroup&&ancestral))line+=` <span style="color:var(--muted)">(approximate)</span>.`;
     lines.push(line);
-    /* The determination itself, with its outcome, date and registered body corporate */
-    {
-      const bits=[];
-      if(sp.ntOutcome)bits.push('native title '+esc(sp.ntOutcome));
-      if(sp.ntDate)bits.push(esc(sp.ntDate));
-      if(sp.tribunalId)bits.push('Tribunal ID '+esc(sp.tribunalId));
-      lines.push(`Native title: <strong>determination</strong>${bits.length?' ('+bits.join(', ')+')':''}.${sp.rntbc?' Registered body corporate: '+esc(sp.rntbc)+'.':''} <span style="font-size:11px;color:var(--muted)">Source: National Native Title Tribunal.</span>`);
-    }
+    lines.push(`Native title: <strong>${esc(_ntOutcomeShort(sp.ntOutcome))}</strong>.`);
   }else if(curatedPeople&&_curatedAllowed(r)){
     /* No native title determination, but the built-in list matched. Approximate, and says where it comes from. */
     let line=`Country of the <strong>${esc(curatedPeople)}</strong> people`;
-    if(ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
+    if(ancestral)line+=` (${esc(ancestral)})`;
     line+='.';
-    line+=_curatedNote(curatedLang,sp.curatedSource);
+    if(curatedLang)line+=` ${esc(curatedLang)} language`;
+    line+=` <span style="color:var(--muted)">(approximate)</span>.`;
     lines.push(line);
   }else{
     lines.push(`<span style="color:var(--muted);font-style:italic">Traditional custodians not identified for this location. <a href="https://native-land.ca" target="_blank" rel="noopener" style="color:var(--blue)">native-land.ca ↗</a></span>`);
   }
   /* A native title application still before the Tribunal (NNTT Schedule of Applications). Not a determination. */
   if(sp.ntApplication){
-    lines.push(`Native title: <strong>${NNTT_APP_LABEL}</strong> (${esc(sp.ntApplication)}${sp.tribunalId?', Tribunal ID '+esc(sp.tribunalId):''}). <span style="font-size:11px;color:var(--muted)">Source: National Native Title Tribunal.</span>`);
+    lines.push(`Native title: <strong>Application under way</strong> (${esc(_ntShortName(sp.ntApplication))}).`);
   }
 
   // Bioregion + subregion
@@ -6278,10 +6290,14 @@ function specSources(r){
   lines.push(`Specimen data: Atlas of Living Australia (ALA).`);
   const sp=r._spatial;
   if(sp&&!sp.loading){
-    if(sp.traditionalOwners||sp.ntOutcome||sp.ntApplication)lines.push('Native Title: National Native Title Tribunal, NNTT Custodial AGOL FeatureServer (Layer 5, determination outcomes; Layer 8, applications under way).');
+    if(sp.traditionalOwners){
+      const d=[sp.tribunalId?'determination '+sp.tribunalId:'determination',sp.ntDate,sp.ntOutcome?'native title '+sp.ntOutcome:null].filter(Boolean).join(', ');
+      lines.push('Native title: '+sp.traditionalOwners+' ('+d+').'+(sp.rntbc?' Registered body corporate: '+sp.rntbc+'.':'')+' Source: National Native Title Tribunal, NNTT Custodial AGOL FeatureServer (Layer 5, determination outcomes).');
+    }
+    if(sp.ntApplication)lines.push('Native title: '+sp.ntApplication+' ('+(sp.tribunalId?'application '+sp.tribunalId+', ':'')+'still before the Tribunal). Source: National Native Title Tribunal, NNTT Custodial AGOL FeatureServer (Layer 8, applications).');
     if(sp.traditionalOwners&&_curatedSameGroup(sp)&&(sp.ancestralName||sp.curatedLanguage)&&sp.curatedSource)lines.push((sp.ancestralName&&sp.curatedLanguage?'Place name and language: ':sp.ancestralName?'Place name: ':'Language: ')+sp.curatedSource+'. Approximate location match.');
-    if(!sp.traditionalOwners&&_curatedAllowed(r)&&sp.curatedSource)lines.push('Traditional custodians: '+sp.curatedSource+'. Boundaries approximate.');
-    else if(!sp.traditionalOwners&&_curatedAllowed(r))lines.push('Traditional custodians: Curated from published acknowledgement-of-country sources. Boundaries approximate.');
+    if(!sp.traditionalOwners&&_curatedAllowed(r)&&sp.curatedSource)lines.push('Traditional custodians'+(sp.curatedLanguage?' and language':'')+': '+sp.curatedSource+'. Approximate location match.');
+    else if(!sp.traditionalOwners&&_curatedAllowed(r))lines.push('Traditional custodians: curated from published acknowledgement-of-country sources. Approximate location match.');
     if(sp.bioregion)lines.push('Bioregion/Subregion: Queensland Government, AdminBoundariesFramework MapServer (Layers 2, 3).');
     if(sp.drainageBasin)lines.push('Drainage basin: Queensland Government, AdminBoundariesFramework MapServer (Layer 6).');
     if(sp.lga)lines.push('Local Government Area: Queensland Government, AdminBoundariesFramework MapServer (Layer 11).');
