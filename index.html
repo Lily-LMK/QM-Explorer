@@ -774,6 +774,12 @@ function alaBaseFQ(f){
     const pts=['holotype','Holotype','HOLOTYPE','neotype','Neotype','NEOTYPE','type','Type','TYPE','lectotype','Lectotype','LECTOTYPE','syntype','Syntype','SYNTYPE'];
     fq.push('('+pts.map(t=>`type_status:"${t}"`).join(' OR ')+')');
   }
+  else if(typeof f.hasType==='string'&&f.hasType.startsWith('ts:')){
+    /* One type status, chosen from the list built from ALA's type_status facet.
+       The index is case-sensitive, so cover the three usual forms, as for primary types. */
+    const t=f.hasType.slice(3).toLowerCase().replace(/[^a-z ]/g,'').trim();
+    if(t)fq.push('('+[t,t.charAt(0).toUpperCase()+t.slice(1),t.toUpperCase()].map(x=>`type_status:"${x}"`).join(' OR ')+')');
+  }
   else if(f.hasType==='false')fq.push('(type_status:"notatype" OR (*:* AND -type_status:[* TO *]))');
   if(f.collCode)fq.push(`collection_uid:"${f.collCode}"`);
   /* Coordinate presence = ALA holds a latitude (and longitude). geospatial_kosher:true is NOT used: it counts ~125,000 databased records that have no coordinate (14 November 2026). */
@@ -867,6 +873,7 @@ function clientFilterRecs(recs, f){
       const ts = (r.typeStatus||'').toLowerCase();
       if(!ts || !/(^|\s)(holotype|neotype|type|lectotype|syntype)(\s|$)/i.test(r.typeStatus)) return false;
     }
+    if(typeof f.hasType === 'string' && f.hasType.startsWith('ts:') && (r.typeStatus||'').trim().toLowerCase() !== f.hasType.slice(3)) return false;
     if(f.hasType === 'false' && isType(r.typeStatus)) return false;
     if(f.coord === 'true' && (r.lat == null || r.lng == null)) return false;
     if(f.coord === 'false' && r.lat != null && r.lng != null) return false;
@@ -7022,7 +7029,37 @@ if(hadURLState&&S.view!=='gallery'){
 }
 /* Self-test mode (?selftest) skips the live search so no API calls fire. */
 const _SELFTEST = new URLSearchParams(location.search).has('selftest');
-if(!_SELFTEST) doSearch();
+/* Type Specimen filter: one choice for each type status the museum's records carry, read from
+   ALA's type_status facet. No counts are shown, because the list is for the whole museum and
+   a count would not follow the other filters. */
+function fillTypeStatusOptions(items){
+  const sel=$('#fType');if(!sel)return;
+  const cv=sel.value;
+  const names=[...new Set((items||[]).map(i=>String(i&&i.name||'').trim().toLowerCase()).filter(n=>n&&n!=='notatype'&&/^[a-z][a-z ]*$/.test(n)))];
+  /* A status that arrived in a shared link stays in the list even if ALA no longer returns it. */
+  if(cv.startsWith('ts:')&&cv.length>3&&!names.includes(cv.slice(3)))names.push(cv.slice(3));
+  names.sort();
+  sel.querySelectorAll('optgroup').forEach(g=>g.remove());
+  [...sel.options].forEach(o=>{if(o.value.startsWith('ts:'))o.remove()});
+  if(names.length){
+    const og=document.createElement('optgroup');og.label='One type status';
+    names.forEach(n=>{const o=document.createElement('option');o.value='ts:'+n;o.textContent=n.charAt(0).toUpperCase()+n.slice(1);og.appendChild(o)});
+    sel.insertBefore(og,sel.querySelector('option[value="false"]'));
+  }
+  sel.value=cv;
+  try{updateFilterChips()}catch(e){}
+}
+async function loadTypeStatusOptions(){
+  let items=[];
+  try{
+    const u=new URLSearchParams();u.set('q','*:*');appendFQ(u,[`institution_uid:${S.alaInst}`]);
+    u.set('pageSize','0');u.set('facets','type_status');u.set('flimit','100');
+    const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+    if(r.ok)items=extractFacets_A(await r.json()).type_status||[];
+  }catch(e){console.warn('[type status list]',e)}
+  fillTypeStatusOptions(items);
+}
+if(!_SELFTEST){doSearch();loadTypeStatusOptions()}
 
 /* ════════════════════════════════════════════════════════════════════════
    SELF-TEST HARNESS — opt-in via ?selftest. No build, no deps, no network.
