@@ -200,7 +200,10 @@ The Explorer never calls the museum's register; anything from it arrives as a re
 4. Shared registration numbers and duplicate records — investigated 14–15 November 2026.
    Released 15 November 2026: `data/qm-register-supplement.json` (1,028 specimens ALA hides
    because they share a registration number: the 1,022-record release candidate plus six
-   T3136/T6182 records shown as "Curator review pending"). Records has a Source filter
+   T3136/T6182 records shown as "Curator review pending"). v3 (15 November 2026) brings it to
+   1,094: 60 Molluscs specimens hidden by shared numbers, and six Molluscs holotypes ALA holds
+   under no QM collection, marked `addedBecause: "not in ALA"` (worded so in the record window
+   and Copy Sources). Entomology and Molluscs are fully inventoried. Records has a Source filter
    (All sources / ALA Biocache / QM Register); ALA's results come first and the additions
    follow, keyed `reg:<register identifier>`. Where coordinates are withheld, locality and
    location remarks are withheld too. `imagedInRegister` is a yes/no flag (no image links).
