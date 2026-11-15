@@ -205,8 +205,10 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    follow, keyed `reg:<register identifier>`. Where coordinates are withheld, locality and
    location remarks are withheld too. `imagedInRegister` is a yes/no flag (no image links).
    The file is built in `project-notes/scripts/supplement-pilot/`; before rebuilding, re-run the
-   ALA check there so no specimen is shown twice. Map, Taxa, Browse and polygon searches
-   still show ALA records only.
+   ALA check there so no specimen is shown twice. The Map places additions that have a
+   coordinate (withheld ones have none in the file). Taxa, Browse and polygon searches still
+   show ALA records only. CSV: ALA rows' `query` is a working ALA address; register rows'
+   `query` is plain text with no web address; both are captured when the export starts.
 5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
 6. Redesign in the Queensland Museum Design System — review, mock-up for Lily, then code.
    The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion

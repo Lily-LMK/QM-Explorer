@@ -1279,7 +1279,7 @@ async function doSearch(){
   S._polyScanDone=false;
   try{
     if(hasPoly){
-      S._alaTotal=null;S._suppN=0;S._suppSrc='ala';
+      S._alaTotal=null;S._suppN=0;S._suppSrc='ala';S._suppMatch=null;
       /* ══ POLYGON MODE ══
          Strategy: maintain a MASTER cache of ALL records in the polygon (no taxonomy/collection filters).
          When filters change, apply them client-side from the master cache.
@@ -1465,7 +1465,7 @@ async function doSearch(){
         catch(e){if(src==='reg')throw new Error("Queensland Museum's register file could not be loaded");toast("The additions from Queensland Museum's register could not be loaded; showing ALA records only")}
         if(S._searchId!==searchId)return;
       }
-      const nS=supp.length;S._suppN=nS;S._suppSrc=src;
+      const nS=supp.length;S._suppN=nS;S._suppSrc=src;S._suppMatch=supp;
       if(src==='reg'){
         S._alaTotal=0;
         S.res=supp.slice(S.off,S.off+INIT_PAGE);S.total=nS;
@@ -1546,7 +1546,9 @@ async function doSearch(){
 function mapLoadNeedsAsking(){return !S.mapUncapped&&!S.mapPoly&&S.total>MAP_POINT_CAP&&S._mapAskedId!==S.mapLoadId}
 function startMapLoad(f,loadId){
   if(S.view!=='map'||S.mapPoly||loadId!==S.mapLoadId)return;
-  if(S.total<=INIT_PAGE||S._mapDoneId===loadId)return;
+  if((f.source||'')==='reg')return; /* QM Register: every point is already in hand */
+  const alaT=(S._alaTotal!=null)?S._alaTotal:S.total;
+  if(alaT<=INIT_PAGE||S._mapDoneId===loadId)return;
   if(mapLoadNeedsAsking()){try{updateMapInfo()}catch(e){}return}
   bgLoadAllPages(f,loadId);
 }
@@ -1554,7 +1556,7 @@ async function bgLoadAllPages(f,loadId){
   /* Prevent concurrent loads with same loadId */
   if(S._bgRunning===loadId)return;
   S._bgRunning=loadId;
-  const total=S.total;
+  const total=(S._alaTotal!=null)?S._alaTotal:S.total; /* ALA's part only; the register additions are already in hand */
   if(total<=0){S._bgRunning=null;return}
   const cap=S.mapUncapped?Infinity:MAP_POINT_CAP;
   const API='https://biocache-ws.ala.org.au/ws/occurrences/search?';
@@ -3297,7 +3299,7 @@ async function doMapSearch(){
 
 function updateMapInfo(){
   if(!S.map)return;
-  const allCount=S.allPts.length;
+  const allCount=mapPts().length;
   const visPts=getVisiblePts();
   const visCount=visPts.length;
   const filtered=S.mapBox||S.mapPoly;
@@ -3317,7 +3319,7 @@ function updateMapInfo(){
   const asking=!loading&&mapLoadNeedsAsking()&&S._mapDoneId!==S.mapLoadId;
   if(loading)txt+=` <span style="color:#f7941d">(loading… ${Math.round(fetched/cap*100)}%)</span>`;
   else if(asking)txt+=` · only the first ${fmt(S.res.length)} of ${fmt(S.total)} records are loaded <button type="button" id="mapLoadBtn">Load up to ${fmt(MAP_POINT_CAP)} markers</button>`;
-  else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records hold no coordinate in ALA, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
+  else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records hold no released coordinate, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
   else txt+=` of ${fmt(S.total)} total`;
   if(asking){/* nothing more to add */}
   else if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
@@ -3355,8 +3357,20 @@ function fmtDate(r){
 }
 
 /* ── Shared filter: returns points visible in the current box/polygon and year range ── */
+/* Points for the map: ALA's loaded points plus, under All sources, every register addition that
+   matches the search and has a coordinate (once each). Withheld coordinates are absent from the
+   additions file, so those specimens are never placed. Polygon searches stay ALA-only. */
+function mapPts(){
+  let pts=S.allPts||[];
+  if(!S.mapPoly&&S._suppSrc===''&&S._suppMatch&&S._suppMatch.length){
+    const have=new Set(pts.map(r=>r.key));
+    const add=S._suppMatch.filter(r=>r.lat!=null&&r.lng!=null&&!have.has(r.key));
+    if(add.length)pts=pts.concat(add);
+  }
+  return pts;
+}
 function getVisiblePts(){
-  let pts=S.allPts;
+  let pts=mapPts();
   if(S.mapBox){
     const b=S.mapBox;
     pts=pts.filter(r=>r.lat>=b.s&&r.lat<=b.n&&r.lng>=b.w&&r.lng<=b.e);
@@ -3450,6 +3464,7 @@ function buildPopupHTML(r){
   if(r.cat)h+=` <span style="color:#007a47;font-weight:700">${esc(r.cat)}</span>`;
   if(isType(r.typeStatus))h+=` <span style="display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:1px 5px;border-radius:3px;color:#fff;background:${typeColor(r.typeStatus)};vertical-align:middle">${esc(r.typeStatus)}</span>`;
   if(r.vern&&isVernWorthShowing(r))h+=`<br><span style="color:#595959">${esc(singularize(r.vern))}</span>`;
+  if(r._supp)h+=`<br><span style="color:var(--orange);font-weight:600">Added from Queensland Museum’s register</span>${r._suppReview?' · <b>Curator review pending</b>':''}`;
   if(date)h+=`<br><b>Date:</b> ${esc(date)}`;
   if(place)h+=`<br><b>Place:</b> ${esc(place.length>90?place.slice(0,87)+'…':place)}`;
   h+=`<br><b>Coords:</b> ${coords}`;
@@ -4195,7 +4210,30 @@ async function fillDescriptiveFields(recs,f){
   return need.size;
 }
 
+/* Query text for the CSV. ALA rows: a working ALA web-service address for the same search
+   (separate fq parameters), with any map area or year range noted after it. Register rows:
+   plain words naming the additions file and the filters, with no web address, because the
+   additions are not served by ALA. */
+function exportQueryTexts(){
+  try{
+    const f=getFilters();
+    const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,alaBaseFQ(f));
+    const notes=[];
+    if(S.mapPoly)notes.push('area: '+S.mapPoly.name+' ('+(S.mapPoly.source||'area')+')');
+    if(S.view==='map'&&S.mapYearRange)notes.push('years: '+S.mapYearRange[0]+'-'+S.mapYearRange[1]);
+    const ala='https://biocache-ws.ala.org.au/ws/occurrences/search?'+u.toString()+(notes.length?' ('+notes.join('; ')+')':'');
+    const fl=[];
+    const L={q:'Search',kingdom:'Kingdom',phylum:'Phylum',class_:'Class',order:'Order',family:'Family',genus:'Genus',species:'Species',hasType:'Type status',coord:'Georeferenced',media:'Has media',country:'Country',state:'State',catNum:'Catalog number',collCode:'Collection'};
+    for(const [k,l] of Object.entries(L)){let v=f[k];if(!v||v==='*:*')continue;if(k==='collCode')v=S._collUidMap.get(v)||v;if(k==='media')v='yes';if(k==='hasType'&&v.startsWith('ts:'))v=v.slice(3);fl.push(l+' = '+String(v).replace(/^"|"$/g,''))}
+    if(f.bbox&&!S.mapPoly)fl.push('map box');
+    const reg="Queensland Museum register additions in QM Explorer (added "+fmtLongDate(S.suppMeta?.addedDate||'')+"); Source = "+SRC_LABEL[f.source||'']+(fl.length?'; '+fl.join('; '):'')+(notes.length?'; '+notes.join('; '):'');
+    return{ala,reg};
+  }catch(e){return{ala:'',reg:''}}
+}
 async function exportCSV(enriched=false){
+  /* The query columns describe the search as it stood when the export began
+     (an enriched export runs for a while; moving on meanwhile must not change them). */
+  const _expQ=exportQueryTexts();
   /* ── Collect ALL records, not just the visible page ── */
   let recs;
   if(S.mapPoly&&S._polyAllRecs?.length){
@@ -4350,23 +4388,14 @@ async function exportCSV(enriched=false){
 
   /* ── Build CSV ── */
   const sp0=r=>r._spatial&&!r._spatial.loading?r._spatial:r._csvSpatial||{};
-  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid','source','registerId','curatorReview','addedFromRegister'];
+  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid','source','registerId','curatorReview','addedFromRegister','imagedInRegister'];
   const infoCols=['retrievalDate','query'];
   const spatialCols=['elevationDEM_m','ibraBioregion','ibraSubregion','lga','drainageBasin','protectedArea','estateType','capadName','capadType','regionalEcosystem','traditionalOwners','nnttType','marineZone','marinePark','fishHabitatArea'];
   const cols=enriched?[...coreCols,...spatialCols,...infoCols]:[...coreCols,...infoCols];
   /* Query and retrieval date travel with every row so the file explains itself when it is separated from the site. */
   const _now=new Date();
   const retrievalDate=_now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0')+'-'+String(_now.getDate()).padStart(2,'0');
-  const queryText=(()=>{
-    try{
-      const f=getFilters();
-      const parts=['q='+(f.q||'*:*'),...alaBaseFQ(f).map(c=>'fq='+c),'source='+SRC_LABEL[f.source||'']];
-      if((f.source||'')!=='ala')parts.push('register additions: '+SUPP_URL+(S.suppMeta?.addedDate?' ('+S.suppMeta.addedDate+')':''));
-      if(S.mapPoly)parts.push('area='+S.mapPoly.name+' ('+(S.mapPoly.source||'area')+')');
-      if(S.view==='map'&&S.mapYearRange)parts.push('years='+S.mapYearRange[0]+'-'+S.mapYearRange[1]);
-      return 'biocache-ws.ala.org.au/ws/occurrences/search: '+parts.join('; ');
-    }catch(e){return''}
-  })();
+  const queryText=_expQ.ala,querySupp=_expQ.reg;
   const rows=[cols.join(',')];
   recs.forEach(r=>{
     const sp=enriched?sp0(r):{};
@@ -4378,7 +4407,7 @@ async function exportCSV(enriched=false){
       r.elevMin??'',r.elevMax??'',r.depth??'',
       r.habitat||'',r.sex||'',r.lifeStage||'',r.preparations||'',r.individualCount||'',r.samplingProtocol||'',r.occurrenceRemarks||'',
       r.coll,r.uuid||'',
-      r._supp?'QM Register':'ALA Biocache',r.regId||'',r._suppReview?'pending':'',r._supp?r._suppAdded:''
+      r._supp?'QM Register':'ALA Biocache',r.regId||'',r._suppReview?'pending':'',r._supp?r._suppAdded:'',r._imagedReg?'yes':''
     ];
     const spatialVals=enriched?[
       sp.demElev!=null?Math.round(sp.demElev):'',
@@ -4388,7 +4417,7 @@ async function exportCSV(enriched=false){
       sp.traditionalOwners||'',sp.nnttType||'',
       sp.marineZone||'',sp.marinePark||'',sp.fha||sp.marineFHA?.name||''
     ]:[];
-    const v=[...coreVals,...spatialVals,retrievalDate,queryText];
+    const v=[...coreVals,...spatialVals,retrievalDate,r._supp?querySupp:queryText];
     rows.push(v.map(x=>{const s=String(x??'');return/[,"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(','));
   });
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
@@ -7260,6 +7289,7 @@ if(_SELFTEST){
       eq('paging: additions continue on the next page', JSON.stringify(suppSliceFor(200,230,30,120)), '[0,70]');
       eq('paging: the page after that starts where the last stopped', JSON.stringify(suppSliceFor(300,230,0,120)), '[70,50]');
       eq('paging: past the 5,000 window the additions are still reached', JSON.stringify(suppSliceFor(5000,240765,0,1028)), '[0,100]');
+      eq('register additions: a withheld coordinate is never placed', normRec_S({registerId:'W',coordinatesWithheld:'yes'}).lat, null);
 
       /* ── CORS-SAFE FQ INVARIANTS ── */
       const fqArr=alaBaseFQ({kingdom:'Animalia',family:'Chelidae',media:'image',coord:'true'});
