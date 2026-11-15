@@ -7090,6 +7090,23 @@ if(_SELFTEST){
       eq('ALA_MAX_PAGE === 100', ALA_MAX_PAGE, 100);
       eq('ALA_MAX_RESULTS === 5000', ALA_MAX_RESULTS, 5000);
 
+      /* ── WORDING (stage 2 batch 2) ── */
+      eq("recWord(1) === 'record'", recWord(1), 'record');
+      eq("recWord(0) === 'records'", recWord(0), 'records');
+      eq("pctLabel(11, 63262) === '<1%'", pctLabel(11,63262), '<1%');
+      eq("pctLabel(6, 1000) === '<1%' (0.6% must not read 1%)", pctLabel(6,1000), '<1%');
+      eq("pctLabel(1, 100) === '1%'", pctLabel(1,100), '1%');
+      eq("pctLabel(0, 100) === '0%'", pctLabel(0,100), '0%');
+      eq("pctLabel(999, 1000) === '99%'", pctLabel(999,1000), '99%');
+      eq("pctLabel(5, 5) === '100%'", pctLabel(5,5), '100%');
+
+      /* ── ONE TYPE STATUS ── */
+      const fqTs=alaBaseFQ({hasType:'ts:holotype'});
+      assert('one type status: its own fq clause, upper-case form included', fqTs.some(c=>c.includes('type_status:"HOLOTYPE"')), JSON.stringify(fqTs));
+      assert('one type status: no AND inside any clause', fqTs.every(c=>!/ AND /.test(c)), JSON.stringify(fqTs));
+      eq('one type status: nothing but letters reaches the query', alaBaseFQ({hasType:'ts:holo") OR *:* ("'}).filter(c=>c.includes('type_status')).join('|'), '(type_status:"holo or" OR type_status:"Holo or" OR type_status:"HOLO OR")');
+      eq('polygon filter keeps the chosen type status', clientFilterRecs([{typeStatus:'HOLOTYPE'},{typeStatus:'Paratype'},{typeStatus:''}],{hasType:'ts:holotype'}).length, 1);
+
       /* ── CORS-SAFE FQ INVARIANTS ── */
       const fqArr=alaBaseFQ({kingdom:'Animalia',family:'Chelidae',media:'image',coord:'true'});
       assert('alaBaseFQ(...) returns an Array', Array.isArray(fqArr),
