@@ -500,7 +500,7 @@ const S = {
   modalIdx:-1, modalPhotos:[], modalPhotoIdx:0,
   qc:{georef:null,media:null,typed:null},
   richness:{families:0,genera:0,species:0},
-  mapLoadId:0, mapFetched:0, _searchStale:false, _qcStale:false, _searchId:0, _smartMatch:null,
+  mapLoadId:0, mapFetched:0, _mapDoneId:-1, _mapAskedId:-1, _searchStale:false, _qcStale:false, _searchId:0, _smartMatch:null,
   _collUidMap:new Map(),
   /* Polygon master cache: ALL records in polygon (no taxonomy/collection filters).
      When active, filter changes apply client-side from this set. */
@@ -1402,7 +1402,7 @@ async function doSearch(){
       if(S.view==='charts'){S._qcStale=false;Promise.all([fetchQualityCounts(f),fetchAnalyticsFacets(f)]).then(([qc])=>{S.qc=qc;try{renderCharts()}catch(e){}}).catch(()=>{})}
     }
     /* Background-load remaining pages only when map is active (skip if polygon — bgPolyScan handles) */
-    if(S.view==='map'&&!hasPoly)bgLoadAllPages(f,loadId);
+    if(S.view==='map'&&!hasPoly)startMapLoad(f,loadId);
   }catch(e){console.error(e);toast('Search failed: '+e.message);showEmpty('Error: '+e.message);showLoad(false)}
 }
 
@@ -1414,6 +1414,18 @@ async function doSearch(){
    in full. Records on a tile boundary can appear in two tiles, so we dedupe by
    uuid. Tiles only ever match georeferenced records (a lat/long range excludes
    null coordinates), which is exactly what the map needs. */
+/* The gate in front of the map's background loader.
+   - Only while the Map is on screen (switchView stops the loader when the visitor leaves).
+   - Not twice for the same search once it has finished.
+   - A search larger than the marker cap (the whole collection, for one) is never loaded
+     unasked: the map shows the first page and offers a button (see updateMapInfo). */
+function mapLoadNeedsAsking(){return !S.mapUncapped&&!S.mapPoly&&S.total>MAP_POINT_CAP&&S._mapAskedId!==S.mapLoadId}
+function startMapLoad(f,loadId){
+  if(S.view!=='map'||S.mapPoly||loadId!==S.mapLoadId)return;
+  if(S.total<=INIT_PAGE||S._mapDoneId===loadId)return;
+  if(mapLoadNeedsAsking()){try{updateMapInfo()}catch(e){}return}
+  bgLoadAllPages(f,loadId);
+}
 async function bgLoadAllPages(f,loadId){
   /* Prevent concurrent loads with same loadId */
   if(S._bgRunning===loadId)return;
@@ -1535,7 +1547,7 @@ async function bgLoadAllPages(f,loadId){
 
   if(!cancelled()){
     S.allPts=allGeo;S.mapFetched=allGeo.length;
-    S._bgRunning=null;
+    S._bgRunning=null;S._mapDoneId=loadId;
     if(S.view==='map'){try{addMarkers();updateMapInfo()}catch(e){}}
   }
 }
@@ -3070,6 +3082,8 @@ function renderMap(){
         S.mapPoly.leafletLayer=polyLayer;
         S.map.fitBounds(polyLayer.getBounds(),{padding:[30,30]});
       }
+      /* The info line (and the offer to load more markers) needs the map to exist first. */
+      try{updateMapInfo()}catch(e){}
     },120);
   }else{addMarkers();buildLegend();setTimeout(()=>S.map.invalidateSize(),120)}
 }
@@ -3107,9 +3121,7 @@ function addMapControls(){
     }
     S.mapUncapped=e.target.checked;
     S.mapLoadId++;S._bgRunning=null;S.allPts=[];S.mapFetched=0;
-    if(S.mapUncapped||S.allPts.length<Math.min(S.total,50000)){
-      bgLoadAllPages(getFilters(),S.mapLoadId);
-    }
+    startMapLoad(getFilters(),S.mapLoadId);
     updateMapInfo();
   });
   // Location search
@@ -3176,14 +3188,19 @@ function updateMapInfo(){
   const info=document.createElement('div');info.className='map-info';
   let txt=`<b>Markers:</b> ${fmt(visCount)}`;
   if(filtered&&visCount!==allCount)txt+=` <span style="color:#007a47">${S.mapPoly?'in '+esc(S.mapPoly.source==='drawn'?'drawn area':S.mapPoly.source||'area'):'in box'}</span> / ${fmt(allCount)} loaded`;
+  const asking=!loading&&mapLoadNeedsAsking()&&S._mapDoneId!==S.mapLoadId;
   if(loading)txt+=` <span style="color:#f7941d">(loading… ${Math.round(fetched/cap*100)}%)</span>`;
+  else if(asking)txt+=` · only the first ${fmt(S.res.length)} of ${fmt(S.total)} records are loaded <button type="button" id="mapLoadBtn">Load up to ${fmt(MAP_POINT_CAP)} markers</button>`;
   else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records hold no coordinate in ALA, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
   else txt+=` of ${fmt(S.total)} total`;
-  if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
+  if(asking){/* nothing more to add */}
+  else if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
   else if(S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--orange);font-weight:600">(uncapped)</span>`;
   if(S.mapYearRange)txt+=` · <span style="color:var(--ink);font-weight:600">${S.mapYearRange[0]}–${S.mapYearRange[1]}</span>`;
   info.innerHTML=txt;
   $('#mapC').appendChild(info);
+  const lb=info.querySelector('#mapLoadBtn');
+  if(lb)lb.addEventListener('click',()=>{S._mapAskedId=S.mapLoadId;startMapLoad(getFilters(),S.mapLoadId);updateMapInfo()});
 }
 
 function fmtDate(r){
@@ -6520,6 +6537,13 @@ function closeModal(){$('#modal').classList.remove('open');S.modalIdx=-1;S.modal
    VIEW SWITCH
    ═════════════════════════════════════════════════ */
 function switchView(v){
+  /* Leaving the Map stops its background loader, so the other views are not slowed by it.
+     (A polygon scan is left alone: every view reads its records.) Coming back starts it again. */
+  if(v!=='map'&&!S.mapPoly&&S._bgRunning!=null){
+    const asked=S._mapAskedId===S.mapLoadId;
+    S.mapLoadId++;S._bgRunning=null;
+    if(asked)S._mapAskedId=S.mapLoadId;
+  }
   S.view=v;if(v!=='guide')S.guideFocus=null;
   $$('.tab[role="tab"]').forEach(t=>{const on=t.dataset.v===v;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});
   $$('.vp').forEach(p=>p.classList.remove('on'));$('#v-'+v)?.classList.add('on');
@@ -6552,11 +6576,10 @@ function switchView(v){
     if(S.mapDirty||!S.map){renderMap();S.mapDirty=false}
     else{setTimeout(()=>S.map?.invalidateSize(),120)}
     /* Load all georeferenced records for map */
-    const cap=S.mapUncapped?S.total:Math.min(S.total,50000);
     if(S.mapPoly){
       /* Polygon mode — show accumulated points (bgPolyScan continues updating) */
       try{addMarkers();buildLegend();updateMapInfo()}catch(e){}
-    }else if(S.allPts.length<cap&&S.total>INIT_PAGE){bgLoadAllPages(getFilters(),S.mapLoadId)}
+    }else{startMapLoad(getFilters(),S.mapLoadId);try{updateMapInfo()}catch(e){}}
   }else if(S.res.length||S.total>0){
     renderView();
   }
