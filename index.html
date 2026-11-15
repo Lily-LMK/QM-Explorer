@@ -3657,7 +3657,8 @@ async function searchNNTT(term){
   /* Helper: query NNTT FeatureServer layer */
   const searchNNTTLayer=async(layer,nameField,label,cls)=>{
     try{
-      const where=`UPPER(${nameField}) LIKE '%${baseQ}%'`;
+      /* Determinations: only outcomes where native title exists (extinguished / does not exist are not offered) */
+      const where=`UPPER(${nameField}) LIKE '%${baseQ}%'`+(layer===NNTT_LAYER_DET?" AND Determined_Outcome LIKE 'Native title exists%'":'');
       const u=`${NNTT_SPATIAL}/${layer}/query?where=${encodeURIComponent(where)}&outFields=${nameField},OBJECTID&returnGeometry=false&resultRecordCount=6&f=json&geometry=${qldBbox}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects`;
       const r=await fetch(u);if(!r.ok)return[];
       const d=await r.json();
@@ -3698,9 +3699,9 @@ async function searchNNTT(term){
       searchCAPAD(0,'National Protected Area','capad'),
       searchCAPAD(1,'Commonwealth Marine Park','cmarine'),
       /* NNTT layers */
-      searchNNTTLayer(8,'Name','Native Title','nntt'),
-      searchNNTTLayer(0,'Name','NT Application','nntt'),
-      searchNNTTLayer(5,'RNTBC_Name','RNTBC','nntt'),
+      searchNNTTLayer(NNTT_LAYER_DET,'Name','Native title determination','det'),
+      searchNNTTLayer(NNTT_LAYER_APP,'Name','Application under way','app'),
+      searchNNTTLayer(NNTT_LAYER_BODY,'Corporation_Name','RNTBC','rntbc'),
     ]);
     if(_nnttSearchId.v!==id)return;
     const all=results.flat();
@@ -3708,7 +3709,7 @@ async function searchNNTT(term){
     const seen=new Set();
     const unique=all.filter(r=>{const k=r.name.toUpperCase()+'|'+r.cls;if(seen.has(k))return false;seen.add(k);return true});
     /* Sort: bioregions, sub-bioregions, LGA, protected areas, marine, drainage, NNTT */
-    const order={bio:0,subbio:1,lga:2,prot:3,capad:4,marine:5,cmarine:6,drain:7,veg:8,nntt:9};
+    const order={bio:0,subbio:1,lga:2,prot:3,capad:4,marine:5,cmarine:6,drain:7,veg:8,det:9,app:9,rntbc:9,nntt:9};
     unique.sort((a,b)=>(order[a.cls]??9)-(order[b.cls]??9));
     if(!unique.length){drop.innerHTML='<div style="padding:8px;color:var(--muted)">No areas found</div>';return}
     drop.innerHTML=unique.slice(0,18).map((r,i)=>
@@ -3765,25 +3766,19 @@ async function selectNNTTArea(r){
         if(f.geometry?.rings)allRings.push(...f.geometry.rings);
       }
     }else{
-      /* NNTT FeatureServer — query all 3 layers and merge for best coverage */
-      const layerDefs=[
-        {layer:8,nameField:'Name'},
-        {layer:0,nameField:'Name'},
-        {layer:5,nameField:'RNTBC_Name'},
-      ];
-      const geoQueries=layerDefs.map(async l=>{
-        try{
-          const where=`UPPER(${l.nameField}) LIKE '%${nameQ}%'`;
-          const u=`${NNTT_SPATIAL}/${l.layer}/query?where=${encodeURIComponent(where)}&outFields=${l.nameField}&returnGeometry=true&outSR=4326&f=json&resultRecordCount=5`;
-          const res=await fetch(u);if(!res.ok)return[];
-          const d=await res.json();
-          return(d.features||[]).filter(f=>f.geometry?.rings).map(f=>({rings:f.geometry.rings,layer:l.layer}));
-        }catch(e){return[]}
-      });
-      const results=(await Promise.all(geoQueries)).flat();
-      const layersUsed=new Set();
-      for(const g of results){allRings.push(...g.rings);layersUsed.add(g.layer)}
-      if(layersUsed.size>1)sourceLabel='merged ('+[...layersUsed].map(l=>l===8?'Det':l===0?'App':'RNTBC').join('+')+')';
+      /* NNTT FeatureServer — the one layer the chosen result came from (each layer means something different) */
+      const lyr=r.layer;
+      const nf=lyr===NNTT_LAYER_BODY?'Corporation_Name':'Name';
+      let where=`UPPER(${nf}) LIKE '%${nameQ}%'`;
+      if(lyr===NNTT_LAYER_DET)where+=" AND Determined_Outcome LIKE 'Native title exists%'";
+      const u=`${NNTT_SPATIAL}/${lyr}/query?where=${encodeURIComponent(where)}&outFields=${nf}&returnGeometry=true&outSR=4326&f=json&resultRecordCount=10`;
+      const res=await fetch(u);
+      if(!res.ok)throw new Error('NNTT '+res.status);
+      const d=await res.json();
+      for(const f of(d.features||[])){
+        if(f.geometry?.rings)allRings.push(...f.geometry.rings);
+      }
+      sourceLabel=lyr===NNTT_LAYER_DET?'Determination':lyr===NNTT_LAYER_APP?'Application under way':'RNTBC';
     }
 
     if(!allRings.length)throw new Error('No geometry found for "'+r.name+'"');
@@ -4060,15 +4055,14 @@ async function exportCSV(enriched=false){
             const qGrab=async(layer)=>{try{const r=await fetch(spatialURL(QLD_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
             /* VEG — regional ecosystem */
             const vGrab=async()=>{try{const r=await fetch(spatialURL(VEG_SPATIAL,134,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
-            /* NNTT */
-            const nGrab=async(layer)=>{try{const r=await fetch(spatialURL(NNTT_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
+            /* NNTT: determinations (layer 5) and applications (layer 8), all features at the point - see nnttInterpret */
             /* CAPAD */
             const cGrab=async(layer)=>{try{const r=await fetch(spatialURL(CAPAD_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
             /* Marine */
             const mGrab=async(layer)=>{try{const r=await fetch(spatialURL(MARINE_SPATIAL,layer,lng,lat));if(!r.ok)return null;const j=await r.json();return j.features?.length?j.features[0].attributes:null}catch(e){return null}};
 
-            const [ala,drain,prot,veg,nntt8,nntt5,nntt0,capadT,capadM,mp1,mp2,mp7,mp15]=await Promise.all([
-              alaP,qGrab(6),qGrab(97),vGrab(),nGrab(8),nGrab(5),nGrab(0),cGrab(0),cGrab(1),mGrab(1),mGrab(2),mGrab(7),mGrab(15)
+            const [ala,drain,prot,veg,ntDet,ntApp,capadT,capadM,mp1,mp2,mp7,mp15]=await Promise.all([
+              alaP,qGrab(6),qGrab(97),vGrab(),nnttPointAll(NNTT_LAYER_DET,lng,lat),nnttPointAll(NNTT_LAYER_APP,lng,lat),cGrab(0),cGrab(1),mGrab(1),mGrab(2),mGrab(7),mGrab(15)
             ]);
 
             const clean=v=>{if(!v)return'';const s=String(v).trim();return(/^n\/?a$/i.test(s)||s.toLowerCase()==='non-rem')?'':s};
@@ -4086,9 +4080,10 @@ async function exportCSV(enriched=false){
             ctx.estateType=clean(prot?.esttype);
             /* Vegetation */
             ctx.reCode=clean(veg?.re1)||clean(veg?.re);
-            /* NNTT — try Determination (8), then RNTBC (5), then Application (0) */
-            ctx.traditionalOwners=clean(nntt8?.Name)||clean(nntt5?.RNTBC_Name)||clean(nntt0?.Name)||'';
-            ctx.nnttType=nntt8?'Determination':nntt5?'RNTBC':nntt0?'Application':'';
+            /* NNTT: a determination where native title exists, else an application under way, else nothing */
+            const nt=nnttInterpret(ntDet,ntApp);
+            ctx.traditionalOwners=nt?nt.names.join('; '):'';
+            ctx.nnttType=nt?(nt.kind==='determination'?'Determination':'Application under way'):'';
             /* CAPAD */
             ctx.capadName=clean(capadT?.NAME)||clean(capadM?.NAME)||'';
             ctx.capadType=clean(capadT?.TYPE)||clean(capadM?.TYPE)||'';
@@ -4338,6 +4333,41 @@ const VEG_SPATIAL='https://spatial-gis.information.qld.gov.au/arcgis/rest/servic
 const MARINE_SPATIAL='https://spatial-gis.information.qld.gov.au/arcgis/rest/services/Environment/ParksMarineProtectedAreas/MapServer';
 const CAPAD_SPATIAL='https://gis.environment.gov.au/gispubmap/rest/services/ogc_services/CAPAD/FeatureServer';
 
+/* NNTT_Custodial_AGOL layers (checked against the live service, 14 November 2026):
+     0 = Registered Native Title Bodies Corporate (Corporation_Name)
+     5 = Native Title Determination Outcomes (Name, Determined_Outcome, RNTBC_Name) - several overlapping outcomes can cover one point
+     8 = Schedule of Native Title Determination Applications (Name, Status) - applications still before the Tribunal */
+const NNTT_LAYER_BODY=0, NNTT_LAYER_DET=5, NNTT_LAYER_APP=8;
+const NNTT_APP_LABEL='application under way';
+/* Every feature at a point (not just the first): layer 5 returns several outcomes for one place. */
+async function nnttPointAll(layer,lng,lat){
+  try{const r=await fetch(spatialURL(NNTT_SPATIAL,layer,lng,lat));if(!r.ok)return[];const j=await r.json();return(j.features||[]).map(f=>f.attributes)}catch(e){return[]}
+}
+/* Decide what to show for a point, from the layer 5 (determinations) and layer 8 (applications) features there.
+   Lily's decisions, 14 November 2026: an application still before the Tribunal is "application under way";
+   where the outcome is "native title does not exist" or "extinguished", show nothing - no group name and no status.
+   Returns null when there is nothing to show. */
+function nnttInterpret(detAttrs,appAttrs){
+  const nm=v=>{if(v==null)return'';const t=String(v).trim();return(/^n\/?a$/i.test(t))?'':t};
+  const tidy=v=>nm(v).replace(/\s*#\d+\s*$/,'').trim();   /* "Quandamooka People #1" -> "Quandamooka People" */
+  const uniq=a=>{const seen=new Set();return a.filter(x=>{const k=x.toLowerCase();if(!x||seen.has(k))return false;seen.add(k);return true})};
+  const pos=(detAttrs||[]).filter(a=>/^native title exists/i.test(nm(a.Determined_Outcome)));
+  if(pos.length){
+    const dt=pos.find(a=>a.Determination_Date)?.Determination_Date;
+    return{kind:'determination',names:uniq(pos.map(a=>tidy(a.Name))),
+      outcomes:uniq(pos.map(a=>nm(a.Determined_Outcome).replace(/^native title\s*/i,''))),
+      rntbc:uniq(pos.map(a=>nm(a.RNTBC_Name)))[0]||'',
+      tribunalId:uniq(pos.map(a=>nm(a.Tribunal_ID))).join('; '),
+      date:dt?new Date(dt).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}):null};
+  }
+  const apps=appAttrs||[];
+  if(apps.length){
+    return{kind:'application',names:uniq(apps.map(a=>tidy(a.Name))),outcomes:[],rntbc:'',
+      tribunalId:uniq(apps.map(a=>nm(a.Tribunal_ID))).join('; '),date:null};
+  }
+  return null;
+}
+
 /* Marine/coastal detection: triggers marine spatial enrichment when:
    1. Record has valid coordinates within QLD coastal/marine extent (lat -10 to -29, lng 138 to 160)
    2. Collection is one of the marine-associated QM collections */
@@ -4383,10 +4413,9 @@ async function fetchSpatialContext(r,idx){
   // Title-case ALL CAPS strings like LGA names
   const titleCase=s=>s?s.replace(/\b([A-Z]{2,})\b/g,w=>w.charAt(0)+w.slice(1).toLowerCase()):s;
 
-  const [nntt8,nntt5,nntt0,bio,sub,drain,lga,prot,veg,capadT,capadM]=await Promise.all([
-    grab(NNTT_SPATIAL,8),
-    grab(NNTT_SPATIAL,5),
-    grab(NNTT_SPATIAL,0),  /* Schedule of Applications — much broader coverage */
+  const [ntDet,ntApp,bio,sub,drain,lga,prot,veg,capadT,capadM]=await Promise.all([
+    nnttPointAll(NNTT_LAYER_DET,lng,lat),  /* Determination Outcomes (all overlapping outcomes) */
+    nnttPointAll(NNTT_LAYER_APP,lng,lat),  /* Schedule of Applications (applications under way) */
     grab(QLD_SPATIAL,2),
     grab(QLD_SPATIAL,3),
     grab(QLD_SPATIAL,6),
@@ -4472,21 +4501,21 @@ async function fetchSpatialContext(r,idx){
     }
   }
 
-  /* Resolve traditional owner name: layer 8 (determination) → layer 0 (application) → RNTBC → curated dictionary */
-  const nnttDetName=clean(nntt8?.Name);
-  const nnttAppName=clean(nntt0?.Name)||clean(nntt0?.Applicant_Name)||clean(nntt0?.Application_Name);
-  const rntbcName=clean(nntt5?.RNTBC_Name);
+  /* Native Title: determination where native title exists, else application under way, else nothing (see nnttInterpret) */
+  const nt=nnttInterpret(ntDet,ntApp);
   const curatedResult=_lookupTraditionalOwner(lat,lng);
 
   r._spatial={
     loading:false,
-    /* Traditional owner — cascading: determination → application → RNTBC → curated dictionary */
-    traditionalOwners:nnttDetName||nnttAppName||(rntbcName?rntbcName.replace(/\s*(Aboriginal|Torres Strait)?\s*(Corporation)?\s*R?N?T?B?C?\s*$/i,'').trim():null),
-    traditionalOwnerSource:nnttDetName?'determination':nnttAppName?'application':rntbcName?'rntbc':null,
-    tribunalId:clean(nntt8?.Tribunal_ID)||clean(nntt0?.Tribunal_ID),
-    ntOutcome:clean(nntt5?.Determined_Outcome),
-    rntbc:clean(nntt5?.RNTBC_Name),
-    ntDate:nntt5?.Determination_Date?new Date(nntt5.Determination_Date).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}):null,
+    /* Traditional owner from a native title determination only. An application under way is kept apart (ntApplication)
+       because it is not a determination of who holds native title. Negative outcomes give nothing. */
+    traditionalOwners:nt&&nt.kind==='determination'?nt.names.join(' / '):null,
+    traditionalOwnerSource:nt?nt.kind:null,
+    ntApplication:nt&&nt.kind==='application'?nt.names.join(' / '):null,
+    tribunalId:nt?nt.tribunalId||null:null,
+    ntOutcome:nt&&nt.kind==='determination'?nt.outcomes.join('; '):null,
+    rntbc:nt&&nt.kind==='determination'?nt.rntbc||null:null,
+    ntDate:nt?nt.date:null,
     /* Curated fallback */
     curatedOwner:curatedResult?.people||null,
     curatedLanguage:curatedResult?.language||null,
@@ -4708,22 +4737,41 @@ function renderSpatialSection(r){
   const curatedLang=sp.curatedLanguage;
   
   if(peopleName){
-    /* NNTT returned a result */
+    /* A native title determination names the group. The built-in list may add a place name and a language,
+       but only where it names the same people (its rectangles are approximate and can belong to a neighbour). */
+    const _words=s=>(s||'').toLowerCase().split(/[^a-z]+/).filter(w=>w.length>3&&!/^(people|peoples|nation)$/.test(w));
+    const sameGroup=!!curatedPeople&&_words(curatedPeople).some(w=>_words(peopleName).includes(w));
     let line=`Country of the <strong>${esc(peopleName)}</strong> people`;
-    if(ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
-    else if(curatedPeople&&curatedPeople!==peopleName&&ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
+    if(sameGroup&&ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
     line+='.';
-    if(curatedLang&&curatedLang.toLowerCase()!==peopleName.toLowerCase())line+=` <span style="font-size:11px;color:var(--muted)">${esc(curatedLang)} language</span>`;
+    const showLang=sameGroup&&curatedLang&&curatedLang.toLowerCase()!==peopleName.toLowerCase();
+    if(showLang||(sameGroup&&ancestral)){
+      const what=[sameGroup&&ancestral?'place name':null,showLang?'language':null].filter(Boolean).join(' and ');
+      line+=` <span style="font-size:11px;color:var(--muted)">${showLang?esc(curatedLang)+' language ':''}(${what} approximate${sp.curatedSource?' — source: '+esc(sp.curatedSource):''})</span>`;
+    }
     lines.push(line);
+    /* The determination itself, with its outcome, date and registered body corporate */
+    {
+      const bits=[];
+      if(sp.ntOutcome)bits.push('native title '+esc(sp.ntOutcome));
+      if(sp.ntDate)bits.push(esc(sp.ntDate));
+      if(sp.tribunalId)bits.push('Tribunal ID '+esc(sp.tribunalId));
+      lines.push(`Native title: <strong>determination</strong>${bits.length?' ('+bits.join(', ')+')':''}.${sp.rntbc?' Registered body corporate: '+esc(sp.rntbc)+'.':''} <span style="font-size:11px;color:var(--muted)">Source: National Native Title Tribunal.</span>`);
+    }
   }else if(curatedPeople){
-    /* No NNTT result, but curated dictionary matched */
+    /* No native title determination, but the built-in list matched. Approximate, and says where it comes from. */
     let line=`Country of the <strong>${esc(curatedPeople)}</strong> people`;
     if(ancestral)line+=` (<strong>${esc(ancestral)}</strong>)`;
     line+='.';
     if(curatedLang)line+=` <span style="font-size:11px;color:var(--muted)">${esc(curatedLang)} language</span>`;
+    line+=` <span style="font-size:11px;color:var(--muted)">Approximate${sp.curatedSource?' — source: '+esc(sp.curatedSource):' — from published acknowledgement-of-country sources'}.</span>`;
     lines.push(line);
   }else{
     lines.push(`<span style="color:var(--muted);font-style:italic">Traditional custodians not identified for this location. <a href="https://native-land.ca" target="_blank" rel="noopener" style="color:var(--blue)">native-land.ca ↗</a></span>`);
+  }
+  /* A native title application still before the Tribunal (NNTT Schedule of Applications). Not a determination. */
+  if(sp.ntApplication){
+    lines.push(`Native title: <strong>${NNTT_APP_LABEL}</strong> (${esc(sp.ntApplication)}${sp.tribunalId?', Tribunal ID '+esc(sp.tribunalId):''}). <span style="font-size:11px;color:var(--muted)">Source: National Native Title Tribunal.</span>`);
   }
 
   // Bioregion + subregion
@@ -6145,7 +6193,7 @@ function specSources(r){
   lines.push(`Specimen data: Atlas of Living Australia (ALA).`);
   const sp=r._spatial;
   if(sp&&!sp.loading){
-    if(sp.traditionalOwners||sp.ntOutcome)lines.push('Native Title: National Native Title Tribunal, NNTT Custodial AGOL FeatureServer (Layers 0, 5, 8).');
+    if(sp.traditionalOwners||sp.ntOutcome||sp.ntApplication)lines.push('Native Title: National Native Title Tribunal, NNTT Custodial AGOL FeatureServer (Layer 5, determination outcomes; Layer 8, applications under way).');
     if(sp.traditionalOwners&&sp.ancestralName&&sp.curatedSource)lines.push('Ancestral place name: '+sp.curatedSource+'.');
     if(!sp.traditionalOwners&&sp.curatedOwner&&sp.curatedSource)lines.push('Traditional custodians: '+sp.curatedSource+'. Boundaries approximate.');
     else if(!sp.traditionalOwners&&sp.curatedOwner)lines.push('Traditional custodians: Curated from published acknowledgement-of-country sources. Boundaries approximate.');
