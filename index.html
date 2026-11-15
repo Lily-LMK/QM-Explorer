@@ -525,6 +525,55 @@ button,select,input{font-family:var(--font)}
 .sh-bar i{display:block;height:100%;min-width:2px}
 .sh-ct{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .sh-pct{text-align:right;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+/* Pass 4 — Map: one toolbar above the map, one dock below it; nothing competes along the bottom edge */
+.map-shell{display:flex;flex-direction:column;height:100%;background:#fff}
+.map-c{flex:1 1 auto;min-height:0;height:auto;z-index:1}
+#map{isolation:isolate;z-index:0}
+.map-bar{flex:none;position:relative;z-index:5;background:#fff;border-bottom:1.5px solid var(--ink)}
+.map-top{position:static;display:flex;flex-wrap:wrap;align-items:stretch;gap:0;padding:0 16px 0 24px;min-height:56px}
+.map-pill{background:none;border:none;box-shadow:none;padding:8px 20px 8px 0;margin-right:20px;border-right:1px solid var(--hair);gap:10px;font-weight:500}
+.map-pill label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+.map-pill select,.map-pill input{min-height:38px;font-size:14px;padding:4px 10px}
+.map-pill select{min-width:150px}
+.map-pill button{min-height:38px;padding:2px 16px}
+.map-tools-wrap{margin-left:auto;display:flex;align-items:center}
+.map-tools-btn{box-shadow:none;min-height:38px;min-width:0;border-radius:var(--pill);padding:2px 16px;font-size:13.5px;gap:6px;white-space:nowrap}
+.map-tools-pop{left:auto;right:0;box-shadow:none}
+.leaflet-bar,.leaflet-control-layers{box-shadow:none!important}
+.map-legend{bottom:28px;box-shadow:none;max-height:min(360px,calc(100% - 96px))}
+.map-coords{bottom:32px}
+.map-dock{flex:none;display:flex;align-items:stretch;background:#fff;border-top:1.5px solid var(--ink);min-height:78px}
+.map-dock .map-info{position:static;order:-1;flex:1 1 40%;min-width:0;border:none;padding:10px 20px 10px 24px;display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;font-size:13.5px;line-height:1.4}
+.map-dock .map-info b{color:var(--ink)}
+.map-dock .map-temporal{position:static;transform:none;width:auto;flex:1 1 60%;max-width:760px;border:none;border-left:1px solid var(--hair);box-shadow:none;padding:12px 8px 10px 20px;display:none;grid-template-columns:auto auto 1fr 44px;grid-template-areas:"label reset hist tog" "range range slider tog";column-gap:14px;align-items:center;transition:none}
+.map-dock .map-temporal.vis{display:grid}
+.map-dock .mt-head{display:contents}
+.map-dock .mt-label{grid-area:label;align-self:end}
+.map-dock .mt-range{grid-area:range;align-self:start;white-space:nowrap}
+.map-dock .mt-hist{grid-area:hist;margin:0;align-self:end}
+.map-dock .mt-slider{grid-area:slider;margin:0}
+.map-dock .mt-tog{grid-area:tog;margin:0}
+.mt-reset{grid-area:reset;display:none;align-self:end;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;border:1.5px solid var(--ink);border-radius:var(--pill);background:#fff;color:var(--ink);cursor:pointer}
+.mt-reset:hover{background:var(--ink);color:#fff}
+.map-temporal.ranged .mt-reset{display:inline-block}
+.map-dock .map-temporal.collapsed{flex:0 0 auto;padding:8px 8px 8px 20px;grid-template-columns:auto auto 44px;grid-template-areas:"label reset tog" "range range tog"}
+.map-dock .map-temporal.collapsed .mt-label{display:block}
+@media(max-width:900px){.map-top{padding:0 14px}.map-pill{border-right:none;margin-right:12px;padding-right:0}.map-pill input{width:150px!important}.map-dock{flex-direction:column}.map-dock .map-info{padding:8px 14px}.map-dock .map-temporal{max-width:none;border-left:none;border-top:1px solid var(--hair);padding-left:14px}}
+/* Pass 4 — Analytics: collecting through time, month collected */
+.yc-key{display:flex;flex-wrap:wrap;gap:8px 40px;margin:-4px 0 20px;font-size:13.5px;color:var(--muted)}
+.yc-key b{font-size:26px;font-weight:900;letter-spacing:-.02em;color:var(--ink);margin-right:8px;font-variant-numeric:tabular-nums}
+.yc{display:flex;align-items:flex-end;gap:1px;height:160px;border-bottom:1.5px solid var(--ink)}
+.yc i{flex:1 1 0;min-width:0;background:var(--ink)}
+.yc i:hover{background:var(--muted)}
+.yc-ax{position:relative;height:24px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.yc-ax span{position:absolute;top:7px;transform:translateX(-50%)}
+.yc-ax span::before{content:"";position:absolute;left:50%;top:-7px;height:4px;border-left:1px solid var(--ink)}
+.mc{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:end}
+.mc-col{display:flex;flex-direction:column;justify-content:flex-end;min-width:0;text-align:center}
+.mc-col em{font-style:normal;font-size:11.5px;font-weight:700;padding-bottom:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mc-col i{display:block;background:var(--ink)}
+.mc-col span{font-size:12px;color:var(--muted);padding-top:6px;border-top:1.5px solid var(--ink)}
+
 </style>
 </head>
 <body>
@@ -574,7 +623,7 @@ button,select,input{font-family:var(--font)}
         <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div><p class="pg-note" id="pgNote" hidden></p></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
       <div class="vp" id="v-guide" role="tabpanel" aria-labelledby="tab-guide"><div id="guideRoot"></div></div>
-      <div class="vp" id="v-map" role="tabpanel" aria-labelledby="tab-map" style="height:100%"><div class="map-c" id="mapC"><div id="map" role="application" aria-label="Specimen map"></div></div></div>
+      <div class="vp" id="v-map" role="tabpanel" aria-labelledby="tab-map" style="height:100%"><div class="map-shell" id="mapShell"><div class="map-bar" id="mapBar"></div><div class="map-c" id="mapC"><div id="map" role="application" aria-label="Specimen map"></div></div><div class="map-dock" id="mapDock"></div></div></div>
       <div class="vp" id="v-charts" role="tabpanel" aria-labelledby="tab-charts"><div class="ch-grid" id="chGrid"></div></div>
     </div>
   </main>
@@ -931,8 +980,8 @@ async function fetchAnalyticsFacets(f){
     const fq=alaBaseFQ(f);
     const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
     u.set('pageSize','0');u.set('startIndex','0');
-    /* Collector needs higher limit for complete ranking — 2000 covers most collections */
-    u.set('facets','collector,basis_of_record,year,month');u.set('flimit','2000');u.set('fsort','count');
+    /* Year needs the higher limit so every collecting year comes back */
+    u.set('facets','basis_of_record,year,month');u.set('flimit','2000');u.set('fsort','count');
     const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
     if(!r.ok)return;const d=await r.json();
     const af=extractFacets_A(d);
@@ -3450,7 +3499,11 @@ function renderMap(){
       const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OSM'});
       const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:17,attribution:'© OpenTopoMap'});
       const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'© Esri'});
-      streets.addTo(S.map);L.control.layers({'Streets':streets,'Topo':topo,'Satellite':sat},{},{collapsed:true}).addTo(S.map);
+      const esriCanvas='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+      const light=L.layerGroup([L.tileLayer(esriCanvas+'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:16,attribution:'© Esri, HERE, Garmin, © OpenStreetMap contributors'}),L.tileLayer(esriCanvas+'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:16})]);
+      light.addTo(S.map);L.control.layers({'Light':light,'Streets':streets,'Topo':topo,'Satellite':sat},{},{collapsed:true}).addTo(S.map);
+      /* The toolbar and dock sit in the page flow, so the map's box can change size; keep Leaflet in step. */
+      try{if(window.ResizeObserver){let _rz;new ResizeObserver(()=>{clearTimeout(_rz);_rz=setTimeout(()=>{try{S.map.invalidateSize()}catch(e){}},80)}).observe($('#mapC'))}}catch(e){}
       S.markers=createMarkerLayer();S.markers.addTo(S.map);
       /* Scale bar */
       L.control.scale({imperial:false,position:'bottomleft',maxWidth:150}).addTo(S.map);
@@ -3473,10 +3526,10 @@ function renderMap(){
 function addMapControls(){
   const mc=$('#mapC');
   // Remove old controls
-  mc.querySelectorAll('.map-top,.map-legend,.map-info').forEach(e=>e.remove());
+  $('#mapShell').querySelectorAll('.map-top,.map-legend,.map-info').forEach(e=>e.remove());
   const top=document.createElement('div');top.className='map-top';
-  top.innerHTML=`<div class="map-pill"><label style="font-weight:600">Color by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-tools-wrap"><button class="map-tools-btn" id="mapToolsBtn" aria-label="Map tools" title="Drawing &amp; display tools">⚙</button><div class="map-tools-pop" id="mapToolsPop"><div class="mtp-section">Display</div><label><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''}/>Spiderfy clusters</label><label title="Remove the 50,000 marker cap. Warning: loading 200k+ records is slow."><input type="checkbox" id="uncapTog"${S.mapUncapped?' checked':''}/>Load all markers</label><div class="mtp-section">Spatial filter</div><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish polygon</button><button id="clearPolyBtn" style="display:none">Clear drawn area</button></div></div><div class="map-pill nntt-wrap"><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:180px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-pill"><input id="mapSrch" type="text" placeholder="Search location…" style="width:140px"/><button id="mapSrchBtn">Go</button></div>`;
-  mc.appendChild(top);
+  top.innerHTML=`<div class="map-pill"><label for="mapCB">Colour by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-pill"><label for="mapSrch">Go to</label><input id="mapSrch" type="text" placeholder="Town, park or island in Australia" style="width:230px"/><button id="mapSrchBtn">Go</button></div><div class="map-pill nntt-wrap"><label for="nnttSrch">Limit to area</label><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:230px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-tools-wrap"><button class="map-tools-btn" id="mapToolsBtn" aria-haspopup="true" aria-expanded="false" title="Marker display and drawing tools">Draw &amp; display <span aria-hidden="true">▾</span></button><div class="map-tools-pop" id="mapToolsPop"><div class="mtp-section">Display</div><label><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''}/>Spread out overlapping markers</label><label title="Remove the 50,000 marker cap. Warning: loading 200k+ records is slow."><input type="checkbox" id="uncapTog"${S.mapUncapped?' checked':''}/>Load all markers</label><div class="mtp-section">Limit records to a drawn area</div><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish polygon</button><button id="clearPolyBtn" style="display:none">Clear drawn area</button></div></div>`;
+  $('#mapBar').appendChild(top);
 
   /* Tools popover toggle */
   const toolsBtn=top.querySelector('#mapToolsBtn');
@@ -3484,11 +3537,11 @@ function addMapControls(){
   toolsBtn.addEventListener('click',e=>{
     e.stopPropagation();
     const open=toolsPop.classList.toggle('open');
-    toolsBtn.classList.toggle('open',open);
+    toolsBtn.classList.toggle('open',open);toolsBtn.setAttribute('aria-expanded',open);
   });
   /* Close popover when clicking outside */
   document.addEventListener('click',e=>{
-    if(!toolsPop.contains(e.target)&&e.target!==toolsBtn){
+    if(!toolsPop.contains(e.target)&&!toolsBtn.contains(e.target)){
       toolsPop.classList.remove('open');toolsBtn.classList.remove('open');
     }
   });
@@ -3566,8 +3619,8 @@ function updateMapInfo(){
      mode, and when we're not hitting the 50k cap. */
   const capped=!S.mapUncapped&&S.total>MAP_POINT_CAP;
   const unmapped=(!loading&&!capped&&!filtered)?Math.max(0,S.total-allCount):0;
-  $('#mapC').querySelectorAll('.map-info').forEach(e=>e.remove());
-  const info=document.createElement('div');info.className='map-info';
+  $('#mapShell').querySelectorAll('.map-info').forEach(e=>e.remove());
+  const info=document.createElement('div');info.className='map-info';info.setAttribute('role','status');
   let txt=`<b>Markers:</b> ${fmt(visCount)}`;
   if(filtered&&visCount!==allCount)txt+=` <span style="color:#22622c">${S.mapPoly?'in '+esc(S.mapPoly.source==='drawn'?'drawn area':S.mapPoly.source||'area'):'in box'}</span> / ${fmt(allCount)} loaded`;
   const asking=!loading&&mapLoadNeedsAsking()&&S._mapDoneId!==S.mapLoadId;
@@ -3580,7 +3633,7 @@ function updateMapInfo(){
   else if(S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--orange);font-weight:600">(uncapped)</span>`;
   if(S.mapYearRange)txt+=` · <span style="color:var(--ink);font-weight:600">${S.mapYearRange[0]}–${S.mapYearRange[1]}</span>`;
   info.innerHTML=txt;
-  $('#mapC').appendChild(info);
+  $('#mapDock').appendChild(info);
   const lb=info.querySelector('#mapLoadBtn');
   if(lb)lb.addEventListener('click',()=>{S._mapAskedId=S.mapLoadId;startMapLoad(getFilters(),S.mapLoadId);updateMapInfo()});
 }
@@ -3969,8 +4022,9 @@ function initTemporalSlider(){
   const mc=$('#mapC');
   /* Create the slider DOM */
   const wrap=document.createElement('div');wrap.className='map-temporal';wrap.id='mapTemporal';
-  wrap.innerHTML=`<div class="mt-head"><span class="mt-label">Collection year</span><span class="mt-range" id="mtRange">—</span><button class="mt-tog" id="mtTog" aria-label="Collapse year scrubber" title="Collapse">▾</button></div><div class="mt-hist" id="mtHist"></div><div class="mt-slider" id="mtSlider"><div class="mt-track"></div><div class="mt-fill" id="mtFill"></div><div class="mt-thumb" id="mtLo" tabindex="0"></div><div class="mt-thumb" id="mtHi" tabindex="0"></div></div>`;
-  mc.appendChild(wrap);
+  wrap.innerHTML=`<div class="mt-head"><span class="mt-label">Collection year</span><span class="mt-range" id="mtRange">—</span><button class="mt-reset" id="mtReset" type="button" title="Show all years again">Reset</button><button class="mt-tog" id="mtTog" aria-label="Collapse year scrubber" title="Collapse">▾</button></div><div class="mt-hist" id="mtHist"></div><div class="mt-slider" id="mtSlider"><div class="mt-track"></div><div class="mt-fill" id="mtFill"></div><div class="mt-thumb" id="mtLo" tabindex="0"></div><div class="mt-thumb" id="mtHi" tabindex="0"></div></div>`;
+  $('#mapDock').appendChild(wrap);
+  wrap.querySelector('#mtReset').addEventListener('click',()=>{S.mapYearRange=null;updateTemporalSlider();addMarkers();updateMapInfo()});
   /* Toggle collapse */
   wrap.querySelector('#mtTog').addEventListener('click',()=>{
     const collapsed=wrap.classList.toggle('collapsed');
@@ -4030,6 +4084,7 @@ function updateTemporalSlider(){
   const sliderEl=$('#mtSlider');
 
   rangeEl.textContent=`${curLo} – ${curHi}`;
+  wrap.classList.toggle('ranged',!!S.mapYearRange);
   const pctLo=(curLo-minY)/span*100;
   const pctHi=(curHi-minY+1)/span*100;
   fillEl.style.left=pctLo+'%';fillEl.style.width=(pctHi-pctLo)+'%';
@@ -4072,12 +4127,12 @@ function updateTemporalSlider(){
 function initCursorCoords(){
   if(!S.map)return;
   const mc=$('#mapC');
-  const el=document.createElement('div');el.className='map-coords';el.id='mapCoords';el.textContent='—';
+  const el=document.createElement('div');el.className='map-coords';el.id='mapCoords';el.textContent='';el.hidden=true;el.setAttribute('aria-hidden','true');
   mc.appendChild(el);
   S.map.on('mousemove',e=>{
-    el.textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
+    el.hidden=false;el.textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
   });
-  S.map.on('mouseout',()=>{el.textContent='—'});
+  S.map.on('mouseout',()=>{el.hidden=true});
 }
 
 /* ═════════════════════════════════════════════════
@@ -4740,7 +4795,27 @@ function renderCharts(){
     }
   }catch(e){console.error('[Charts] Rings:',e)}
 
-  /* ── 2. Collections Pie ── */
+  /* ── 1b. Collecting through time: one column per year ── */
+  try{
+    var nowY=new Date().getFullYear();
+    var yrs=safeArr(f.year).map(function(y){return{y:parseInt(y.value!=null?y.value:y.name,10),c:Number(y.count)||0}}).filter(function(y){return y.y>=1770&&y.y<=nowY&&y.c>0});
+    if(yrs.length>2){
+      yrs.sort(function(a,b){return a.y-b.y});
+      var y0=yrs[0].y,y1=yrs[yrs.length-1].y,byY={},yMax=0,ySum=0,dec={};
+      yrs.forEach(function(y){byY[y.y]=y.c;if(y.c>yMax)yMax=y.c;ySum+=y.c;var d=Math.floor(y.y/10)*10;dec[d]=(dec[d]||0)+y.c});
+      var topDec=Object.keys(dec).sort(function(a,b){return dec[b]-dec[a]})[0];
+      var span=y1-y0+1,colsH='';
+      for(var yy=y0;yy<=y1;yy++){var c=byY[yy]||0;colsH+='<i style="height:'+(c?Math.max(1,Math.round(c/yMax*160)):0)+'px" title="'+yy+': '+fmt(c)+' records"></i>'}
+      var step=span>160?50:span>70?25:span>30?10:5,ax='';
+      for(var t=Math.ceil(y0/step)*step;t<=y1;t+=step){ax+='<span style="left:'+((t-y0+.5)/span*100).toFixed(2)+'%">'+t+'</span>'}
+      sections.push('<div class="ch-p w"><div class="ch-t">Collecting through time <span class="ch-n">'+fmt(ySum)+' records with a collecting year</span></div>'
+        +'<div class="yc-key"><span><b>'+y0+'</b>earliest</span><span><b>'+topDec+'s</b>busiest decade, '+fmt(dec[topDec])+' records</span><span><b>'+y1+'</b>latest</span></div>'
+        +'<div class="yc" role="img" aria-label="Records by collecting year, '+y0+' to '+y1+'. The busiest decade is the '+topDec+'s with '+fmt(dec[topDec])+' records.">'+colsH+'</div>'
+        +'<div class="yc-ax" aria-hidden="true">'+ax+'</div></div>');
+    }
+  }catch(e){console.error('[Charts] Years:',e)}
+
+  /* ── 2. Collections ── */
   try{
     var collItems=safeArr(f.collection_uid).map(function(c){return{name:shortColl(c.name||''),count:Number(c.count)||0}});
     collItems.sort(function(a,b){return b.count-a.count});
@@ -4801,43 +4876,45 @@ function renderCharts(){
     }
   }catch(e){console.error('[Charts] Types:',e)}
 
-  /* ── 5. Top Collectors ── */
+  /* ── 5. Ranked lists: orders and families side by side, then place and season ── */
   try{
-    var collFacet=safeArr(f.collector).filter(function(c){
-      var nm=(c.name||'').toLowerCase();
-      return nm&&nm!=='unknown'&&nm!=='not supplied'&&nm!=='undefined';
-    });
-    if(collFacet.length){
-      collFacet.sort(function(a,b){return(b.count||0)-(a.count||0)});
-      var top15=collFacet.slice(0,15);
-      var mx=top15[0].count||1;
-      var s='<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#0f7bab"></span>Top collectors</div><div class="hb">';
-      for(var i=0;i<top15.length;i++){
-        var nm=top15[i].name||'?';
-        var ct=top15[i].count||0;
-        var w=(ct/mx*100).toFixed(1);
-        s+='<div class="hb-item"><span class="hb-nm" style="width:220px;min-width:220px" title="'+esc(nm)+'">'+esc(nm)+'</span><div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:#0a0a0a">'+(w>=12?'<span class="hb-val">'+fmt(ct)+'</span>':'')+'</div>'+(w<12?'<span class="hb-val out">'+fmt(ct)+'</span>':'')+'</div></div>';
-      }
-      s+='</div></div>';sections.push(s);
-    }
-  }catch(e){console.error('[Charts] Collectors:',e)}
-
-  /* ── 6. Facet bar charts ── */
-  try{
-    function mkBar(items,label,color,wide){
-      var arr=safeArr(items);if(!arr.length)return'';
+    function mkRank(items,label,note,n,wide){
+      var arr=safeArr(items).slice(0,n);if(!arr.length)return'';
       var mx=1;for(var i=0;i<arr.length;i++){var c=Number(arr[i].count)||0;if(c>mx)mx=c}
-      var s='<div class="ch-p'+(wide?' w':'')+'"><div class="ch-t"><span class="al" style="background:'+color+'"></span>'+esc(label)+'</div><div class="hb">';
+      var s='<div class="ch-p'+(wide?' w':'')+'"><div class="ch-t">'+esc(label)+(note?' <span class="ch-n">'+esc(note)+'</span>':'')+'</div><div class="sh">';
       for(var i=0;i<arr.length;i++){
-        var it=arr[i];var nm=it.dn||it.name||'?';var ct=Number(it.count)||0;var w=(ct/mx*100).toFixed(1);
-        s+='<div class="hb-item"><span class="hb-nm">'+esc(nm)+'</span><div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:#0a0a0a">'+(w>=12?'<span class="hb-val">'+fmt(ct)+'</span>':'')+'</div>'+(w<12?'<span class="hb-val out">'+fmt(ct)+'</span>':'')+'</div></div>';
+        var it=arr[i];var nm=it.dn||it.name||'?';var ct=Number(it.count)||0;
+        s+='<div class="sh-row"><span class="sh-nm" title="'+esc(nm)+'">'+esc(nm)+'</span>'
+          +'<span class="sh-bar"><i style="width:'+(ct/mx*100).toFixed(1)+'%;background:#0a0a0a"></i></span>'
+          +'<span class="sh-ct">'+fmt(ct)+'</span><span class="sh-pct">'+(T>0&&ct<=T?esc(pctLabel(ct,T)):'')+'</span></div>';
       }
-      s+='</div></div>';return s;
+      return s+'</div></div>';
     }
-    sections.push(mkBar(safeArr(f.order).slice(0,15),'Top orders','#a86a00',true));
-    sections.push(mkBar(safeArr(f.family).slice(0,15),'Top families','#0f7bab',true));
-    sections.push(mkBar(safeArr(f.state).slice(0,12),'By state or province','#c93f1a',true));
-  }catch(e){console.error('[Charts] Bars:',e)}
+    var nOrd=safeArr(f.order).length,nFamL=safeArr(f.family).length;
+    sections.push(mkRank(f.order,'Orders',nOrd>10?'ten largest':'',10,false));
+    sections.push(mkRank(f.family,'Families',nFamL>10?'ten largest':'',10,false));
+
+    /* Month of collection: twelve columns, January to December */
+    var mo=[0,0,0,0,0,0,0,0,0,0,0,0],moMax=0,moSum=0;
+    var mIdx=function(v){var i=parseInt(v,10);if(i>=1&&i<=12)return i;var k=String(v||'').slice(0,3).toLowerCase();var j=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(k);return j<0?0:j+1};
+    safeArr(f.month).forEach(function(m){var i=mIdx(m.value)||mIdx(m.name);if(i){mo[i-1]+=Number(m.count)||0}});
+    for(var i=0;i<12;i++){if(mo[i]>moMax)moMax=mo[i];moSum+=mo[i]}
+    var monthHtml='';
+    if(moSum>0){
+      var mN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var mFull=['January','February','March','April','May','June','July','August','September','October','November','December'];
+      var kf=function(c){return c>=10000?Math.round(c/1000)+'k':c>=1000?(c/1000).toFixed(1)+'k':String(c)};
+      var mh='';
+      for(var i=0;i<12;i++){
+        mh+='<div class="mc-col" title="'+mFull[i]+': '+fmt(mo[i])+' records"><em>'+kf(mo[i])+'</em><i style="height:'+Math.max(1,Math.round(mo[i]/moMax*196))+'px"></i><span>'+mN[i]+'</span></div>';
+      }
+      monthHtml='<div class="ch-p"><div class="ch-t">Month collected <span class="ch-n">'+fmt(moSum)+' records with a month</span></div>'
+        +'<div class="mc" role="img" aria-label="Records by month of collection. '+mFull.map(function(n,i){return n+' '+fmt(mo[i])}).join(', ')+'.">'+mh+'</div></div>';
+    }
+    var nSt=safeArr(f.state).length;
+    sections.push(mkRank(f.state,'State or province',nSt>8?'eight largest':'',8,!monthHtml));
+    sections.push(monthHtml);
+  }catch(e){console.error('[Charts] Ranked lists:',e)}
 
   /* ── Assemble ── */
   var html=sections.filter(Boolean).join('');
