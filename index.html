@@ -460,6 +460,71 @@ button,select,input{font-family:var(--font)}
 .ack{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:11px 24px 12px;background:var(--ink);color:#e9e6df;font-size:13.5px;line-height:1.45}
 .ack strong{font-weight:800;color:#fff;white-space:nowrap}
 @media(max-width:900px){.ack{padding:10px 14px;font-size:12.5px}}
+/* ── third pass (16 November 2026): structure ── */
+/* one summary line under the tabs replaces three separate counts */
+.sum{display:flex;align-items:baseline;gap:8px 28px;flex-wrap:wrap;padding:14px 24px 13px;background:var(--paper);border-bottom:1px solid var(--hair);flex-shrink:0}
+.sum .rc{align-self:auto;padding:0;font-size:15px;font-weight:500;color:var(--muted);white-space:normal;overflow:visible}
+.sum .rc b{font-size:34px;font-weight:900;letter-spacing:-.03em;line-height:1;color:var(--ink);margin-right:2px}
+.sum .rc-split{display:inline;margin-left:6px;font-size:13.5px}
+.sum .stats-g{display:flex;gap:22px;background:none;border:none;margin-left:auto}
+.sum .sc{display:flex;align-items:baseline;gap:6px;background:none;padding:0}
+.sum .sc.a{display:none}
+.sum .sc .sv{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.sum .sc .sl{font-size:14px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);margin:0}
+@media(max-width:1280px){.sum .rc-split{display:none}}
+@media(max-width:900px){.sum{padding:10px 14px}.sum .rc b{font-size:26px}.sum .stats-g{margin-left:0}}
+/* tabs and export */
+.csv-btn{margin-left:0}
+.csv-plus{font-size:13px;font-weight:600;color:var(--muted)}
+.csv-plus.on{color:var(--ink)}
+.density-tog button{font-size:14px;font-weight:700;padding:0 18px}
+/* filter panel */
+.side{padding-top:18px}
+.side-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.side-h h2{font-size:28px;font-weight:900;letter-spacing:-.025em;line-height:1}
+.side-h .btn-rst{width:auto;margin:0;min-height:36px;padding:0 14px;font-size:13.5px;font-weight:600}
+.hr{border-top:1px solid var(--hair);margin:20px 0 18px}
+/* taxonomy as a ladder: one rank per row, joined by a single line */
+.sec.tx .fr{display:block}
+.sec.tx .fg{position:relative;padding-left:18px;margin-bottom:10px}
+.sec.tx .fg::before{content:"";position:absolute;left:3px;top:-10px;bottom:0;width:2px;background:var(--ink)}
+.sec.tx > .fg::before{top:36px}
+.sec.tx .fg::after{content:"";position:absolute;left:3px;bottom:19px;width:11px;height:2px;background:var(--ink)}
+.sec.tx .fr:last-child .fg:last-child::before{bottom:19px}
+.sec.tx .fg label{margin-bottom:3px}
+/* taxonomy tree: names lead, counts line up on the right */
+.tn-h{gap:10px}
+.tn-nm{order:1}.tn-com{order:2}.tn-rk{order:3}.tn-btns{order:4}.tn-ct{order:5;min-width:84px;text-align:right;color:var(--ink);font-weight:600}
+.tn-ct{margin-left:auto}
+.tn-h:hover .tn-ct,.tn-h:focus-within .tn-ct{margin-left:12px}
+.tn-btns{display:none}
+.tn-h:hover .tn-btns,.tn-h:focus-within .tn-btns{display:flex}
+/* record window: details as a ruled two-column table */
+.det-flow{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;padding:2px 0 0;font-size:14.5px;line-height:1.4}
+.det-flow .df{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--hair2);white-space:normal;min-width:0}
+.det-flow .df .k{margin:0;line-height:1.5}
+.det-flow .df .v{overflow-wrap:anywhere}
+.det-flow .df.wide{grid-column:1/-1}
+@media(max-width:1100px){.mod-dlg:not(.no-media) .det-flow{grid-template-columns:1fr}}
+@media(max-width:700px){.det-flow{grid-template-columns:1fr}}
+/* analytics */
+.ch-n{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:0}
+.st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+.st-n{font-size:56px;font-weight:900;letter-spacing:-.035em;line-height:.9}
+.st-l{font-size:16px;font-weight:700;margin-top:8px}
+.st-bar{height:6px;background:var(--bone2);margin:12px 0 10px}
+.st-bar i{display:block;height:100%;background:var(--ink);min-width:2px}
+.st-bar.none{background:none}
+.st-s{font-size:13.5px;color:var(--muted);line-height:1.5}.st-s b{color:var(--ink);font-weight:700}
+@media(max-width:1100px){.st-grid{grid-template-columns:1fr 1fr}.st-n{font-size:44px}}
+.sh{display:flex;flex-direction:column}
+.sh-row{display:grid;grid-template-columns:minmax(90px,34%) 1fr 72px 44px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--hair2);font-size:14px}
+.sh-row:last-child{border-bottom:none}
+.sh-nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh-bar{height:12px;background:var(--bone)}
+.sh-bar i{display:block;height:100%;min-width:2px}
+.sh-ct{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.sh-pct{text-align:right;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -479,34 +544,32 @@ button,select,input{font-family:var(--font)}
 
 <div class="lay" id="lay">
   <aside class="side" id="side" role="complementary" aria-label="Filters">
-    <div class="sec"><div class="sec-t"><span class="d" style="background:var(--green)" aria-hidden="true"></span> Snapshot</div>
-      <div class="stats-g" role="group" aria-label="Collection snapshot"><div class="sc a"><div class="sv" id="sRec" aria-label="Record count">—</div><div class="sl">Records</div></div><div class="sc"><div class="sv" id="sFam" aria-label="Family count">—</div><div class="sl">Families</div></div><div class="sc"><div class="sv" id="sGen" aria-label="Genera count">—</div><div class="sl">Genera</div></div></div></div>
-    <hr class="hr"/>
-    <div class="sec"><div class="sec-t"><span class="d" style="background:var(--blue)" aria-hidden="true"></span> Taxonomy</div>
+    <div class="side-h"><h2>Filters</h2><button class="btn-rst" id="resetBtn">Reset all</button></div>
+    <div class="sec tx"><div class="sec-t">Taxonomy</div>
       <div class="fg"><label for="fK">Kingdom</label><select id="fK"><option value="">All Kingdoms</option></select></div>
       <div class="fr"><div class="fg"><label for="fP">Phylum</label><select id="fP"><option value="">All Phyla</option></select></div><div class="fg"><label for="fC">Class</label><select id="fC"><option value="">All Classes</option></select></div></div>
       <div class="fr"><div class="fg"><label for="fO">Order</label><select id="fO"><option value="">All Orders</option></select></div><div class="fg"><label for="fF">Family</label><select id="fF"><option value="">All Families</option></select></div></div>
       <div class="fr"><div class="fg"><label for="fG">Genus</label><select id="fG"><option value="">All Genera</option></select></div><div class="fg"><label for="fSp">Species</label><select id="fSp"><option value="">All Species</option></select></div></div></div>
     <hr class="hr"/>
     <div class="sec"><div class="sec-t"><span class="d" style="background:var(--orange)" aria-hidden="true"></span> Record filters</div>
-      <div class="fg"><label for="fCat">Catalog #</label><div class="cat-row"><input type="text" id="fCat" placeholder="e.g. T11670 or T1167*" aria-label="Catalog number"/><button id="catGo" aria-label="Search catalog number">Go</button></div></div>
+      <div class="fg"><label for="fCat">Registration number</label><div class="cat-row"><input type="text" id="fCat" placeholder="e.g. T11670 or T1167*" aria-label="Registration number"/><button id="catGo" aria-label="Search registration number">Go</button></div></div>
       <div class="fg"><label for="fColl">Collection</label><select id="fColl"><option value="">All Collections</option></select></div>
       <div class="fg"><label for="fSrc">Source</label><select id="fSrc" title="All sources: records returned by the Atlas of Living Australia together with specimens added from Queensland Museum's register. ALA Biocache: records returned by ALA. QM Register: specimens ALA does not show because they share a registration number with another specimen, added from the museum's register."><option value="">All sources</option><option value="ala">ALA Biocache</option><option value="reg">QM Register</option></select></div>
-      <div class="fr"><div class="fg"><label for="fType">Type specimen</label><select id="fType"><option value="">Any</option><option value="true">Yes — types only</option><option value="primary">Primary types</option><option value="false">No — exclude types</option></select></div><div class="fg"><label for="fMedia">Has media</label><select id="fMedia"><option value="">Any</option><option value="StillImage">Yes</option></select></div></div>
+      <div class="fr"><div class="fg"><label for="fType">Type status</label><select id="fType"><option value="">Any</option><option value="true">Yes — types only</option><option value="primary">Primary types</option><option value="false">No — exclude types</option></select></div><div class="fg"><label for="fMedia">With images</label><select id="fMedia"><option value="">Any</option><option value="StillImage">Yes</option></select></div></div>
       <div class="fg"><label for="fCoord">Georeferenced</label><select id="fCoord" title="Yes = ALA holds a latitude and longitude for the record, so it can be placed on the map. No = ALA holds no coordinate."><option value="">Any</option><option value="true">Yes — has a coordinate</option><option value="false">No</option></select></div>
       <div class="fr"><div class="fg"><label for="fCo">Country</label><select id="fCo"><option value="">All</option><option value="AU">Australia</option><option value="PG">PNG</option><option value="NZ">New Zealand</option><option value="FJ">Fiji</option><option value="SB">Solomon Islands</option></select></div><div class="fg"><label for="fSt">State / province</label><select id="fSt"><option value="">All</option></select></div></div></div>
     <hr class="hr"/>
-    <div class="sec"><div class="sec-t"><span class="d" style="background:var(--red)" aria-hidden="true"></span> Display</div>
-      <div class="fg"><label for="fSort">Taxon sort</label><select id="fSort"><option value="count">Most records first</option><option value="az">A → Z</option><option value="za">Z → A</option></select></div></div>
-    <button class="btn-rst" id="resetBtn">Reset all filters</button>
+    <div class="sec"><div class="sec-t"><span class="d" style="background:var(--red)" aria-hidden="true"></span> Lists</div>
+      <div class="fg"><label for="fSort">Order taxon lists by</label><select id="fSort"><option value="count">Most records first</option><option value="az">A → Z</option><option value="za">Z → A</option></select></div></div>
   </aside>
 
   <main class="main" role="main">
-    <div class="tabs" role="tablist" aria-label="View tabs"><button class="tab on" data-v="gallery" role="tab" aria-selected="true" aria-controls="v-gallery" id="tab-gallery">Records</button><button class="tab" data-v="taxa" role="tab" aria-selected="false" aria-controls="v-taxa" id="tab-taxa">Taxa</button><button class="tab" data-v="guide" role="tab" aria-selected="false" aria-controls="v-guide" id="tab-guide">Browse</button><button class="tab" data-v="map" role="tab" aria-selected="false" aria-controls="v-map" id="tab-map">Map</button><button class="tab" data-v="charts" role="tab" aria-selected="false" aria-controls="v-charts" id="tab-charts">Analytics</button><button class="tab csv-btn" id="csvBtn" title="Export CSV" aria-label="Export records as CSV">⬇ CSV</button><button class="tab csv-btn csv-plus" id="csvPlusBtn" title="Toggle enriched export (spatial context)" aria-label="Toggle enriched CSV export" aria-pressed="false">+</button><span class="tab-sp"></span><span class="rc" id="rc" role="status" aria-live="polite"></span></div>
+    <div class="tabs" role="tablist" aria-label="View tabs"><button class="tab on" data-v="gallery" role="tab" aria-selected="true" aria-controls="v-gallery" id="tab-gallery">Records</button><button class="tab" data-v="taxa" role="tab" aria-selected="false" aria-controls="v-taxa" id="tab-taxa">Taxonomy</button><button class="tab" data-v="guide" role="tab" aria-selected="false" aria-controls="v-guide" id="tab-guide">Field guide</button><button class="tab" data-v="map" role="tab" aria-selected="false" aria-controls="v-map" id="tab-map">Map</button><button class="tab" data-v="charts" role="tab" aria-selected="false" aria-controls="v-charts" id="tab-charts">Analytics</button><span class="tab-sp"></span><button class="tab csv-btn" id="csvBtn" title="Export these records as a CSV file" aria-label="Export records as CSV">Export CSV</button><button class="tab csv-btn csv-plus" id="csvPlusBtn" title="Toggle enriched export (spatial context)" aria-label="Toggle enriched CSV export" aria-pressed="false">+ place context</button></div>
+    <div class="sum" id="sum"><span class="rc" id="rc" role="status" aria-live="polite"></span><div class="stats-g" role="group" aria-label="Collection snapshot"><div class="sc a"><div class="sv" id="sRec" aria-label="Record count">—</div><div class="sl">Records</div></div><div class="sc"><div class="sv" id="sFam" aria-label="Family count">—</div><div class="sl">families</div></div><div class="sc"><div class="sv" id="sGen" aria-label="Genera count">—</div><div class="sl">genera</div></div></div></div>
     <div class="scroll" id="scroll">
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
-        <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Grid view" aria-pressed="false">⊞</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">☰</button></div></div>
+        <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Gallery view" aria-pressed="false">Gallery</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">List</button></div></div>
         <div id="gal" class="gal" role="list" aria-label="Specimen records"></div><div id="galLoad"></div>
         <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div><p class="pg-note" id="pgNote" hidden></p></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
@@ -2248,7 +2311,7 @@ function renderTaxa(){
   
   const ctl=document.createElement('div');ctl.className='tree-ctl';
   const scanning=S.mapPoly&&!S._polyScanDone;
-  ctl.innerHTML=`<label>Taxonomy Tree</label><span class="muted">(${fmt(S.total)} total${scanning?' — scanning…':''})</span><button id="expAll" class="p">Expand all</button><button id="colAll" class="p">Collapse all</button>`;
+  ctl.innerHTML=`<label>Taxonomy tree</label><span class="muted">(${fmt(S.total)} total${scanning?' — scanning…':''})</span><button id="expAll" class="p">Expand all</button><button id="colAll" class="p">Collapse all</button>`;
   root.appendChild(ctl);
   
   ctl.querySelector('#colAll')?.addEventListener('click',()=>{
@@ -2914,7 +2977,7 @@ function renderGuide(){
   if(S.guideFocus){renderGuideFocus(root);return}
   const polyName=S.mapPoly?.name;
   const contextLabel=polyName?`in ${polyName}`:'matching current filters';
-  root.innerHTML=`<div class="gu-hdr"><h2>Browse</h2><div class="crumb">${fmt(S.total)} ${recWord(S.total)} ${esc(contextLabel)}. Select a group to explore.</div></div>`;
+  root.innerHTML=`<div class="gu-hdr"><h2>Field guide</h2><div class="crumb">${fmt(S.total)} ${recWord(S.total)} ${esc(contextLabel)}. Select a group to explore.</div></div>`;
   const rankOpts=[
     {i:0,l:'Phylum',k:'phylum',fk:'phylum'},
     {i:1,l:'Order',k:'order',fk:'order'},
@@ -3143,7 +3206,7 @@ function holdingsSentence(H){
 function renderGuideFocus(root){
   const f=S.guideFocus;const isIt=['Genus','Species'].includes(f.rank);
   const nm=isIt?`<em>${esc(f.name)}</em>`:esc(f.name);
-  root.innerHTML=`<div class="gu-hdr"><h2>${nm}</h2><div class="crumb"><a href="#" id="guideBack">← Browse</a> › ${esc(f.rank)}: ${nm}</div></div><div id="gfLoading" style="padding:20px;color:var(--muted)">Loading…</div>`;
+  root.innerHTML=`<div class="gu-hdr"><h2>${nm}</h2><div class="crumb"><a href="#" id="guideBack">← Field guide</a> › ${esc(f.rank)}: ${nm}</div></div><div id="gfLoading" style="padding:20px;color:var(--muted)">Loading…</div>`;
   root.querySelector('#guideBack')?.addEventListener('click',e=>{e.preventDefault();guideBack()});
   
   const rkMap={Kingdom:'kingdom',Phylum:'phylum',Class:'class',Order:'order',Superfamily:'superfamily',Family:'family',Genus:'genus',Species:'species'};
@@ -4653,36 +4716,25 @@ function renderCharts(){
     var hasQC=(qc.georef!=null||qc.media!=null||qc.typed!=null);
 
     function mkRing(yes,total,yesC,label,yesL,noL){
-      var p=pc(yes,total);var no=total-yes;var deg=Math.round(p*3.6);
-      return '<div style="display:flex;align-items:center;gap:16px;margin:10px 0">'
-        +'<div style="position:relative;width:80px;height:80px;flex-shrink:0;border-radius:50%;background:conic-gradient('+yesC+' 0deg '+deg+'deg, #e0e0e0 '+deg+'deg 360deg)">'
-        +'<div style="position:absolute;top:10px;left:10px;right:10px;bottom:10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">'+esc(pctLabel(yes,total))+'</div>'
-        +'</div><div>'
-        +'<div style="font-size:14px;font-weight:700;margin-bottom:4px">'+esc(label)+'</div>'
-        +'<div style="font-size:12px;color:#55524b"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+yesC+';vertical-align:middle;margin-right:4px"></span>'+esc(yesL)+': <b>'+fmt(yes)+'</b></div>'
-        +'<div style="font-size:12px;color:#55524b"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e0e0e0;vertical-align:middle;margin-right:4px"></span>'+esc(noL)+': <b>'+fmt(no)+'</b></div>'
-        +'</div></div>';
+      var p=pc(yes,total);var no=total-yes;
+      return '<div class="st"><div class="st-n">'+esc(pctLabel(yes,total))+'</div><div class="st-l">'+esc(label)+'</div>'
+        +'<div class="st-bar"><i style="width:'+p+'%"></i></div>'
+        +'<div class="st-s"><b>'+fmt(yes)+'</b> '+esc(yesL.toLowerCase())+'<br><b>'+fmt(no)+'</b> '+esc(noL.toLowerCase())+'</div></div>';
     }
     /* Species richness from dedicated counts (S.richness) — NOT capped by facet limit */
     var rich=S.richness||{};
     var nFam=rich.families||safeArr(f.family).length;
     var nGen=rich.genera||safeArr(f.genus).length;
     var nSp=rich.species||safeArr(f.species).length;
-    var richnessHtml='<div style="display:flex;align-items:center;gap:16px;margin:10px 0">'
-      +'<div style="position:relative;width:80px;height:80px;flex-shrink:0;border-radius:50%;background:conic-gradient(#1f5a46 0deg 120deg, #1f5378 120deg 240deg, #a86a00 240deg 360deg)">'
-      +'<div style="position:absolute;top:10px;left:10px;right:10px;bottom:10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">'+fmt(nSp)+'</div>'
-      +'</div><div>'
-      +'<div style="font-size:14px;font-weight:700;margin-bottom:4px">Taxonomic Richness</div>'
-      +'<div style="font-size:12px;color:#55524b"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1f5a46;vertical-align:middle;margin-right:4px"></span>Families: <b>'+fmt(nFam)+'</b></div>'
-      +'<div style="font-size:12px;color:#55524b"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1f5378;vertical-align:middle;margin-right:4px"></span>Genera: <b>'+fmt(nGen)+'</b></div>'
-      +'<div style="font-size:12px;color:#55524b"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#a86a00;vertical-align:middle;margin-right:4px"></span>Species: <b>'+fmt(nSp)+'</b></div>'
-      +'</div></div>';
+    var richnessHtml='<div class="st"><div class="st-n">'+fmt(nSp)+'</div><div class="st-l">Species</div>'
+      +'<div class="st-bar none"></div>'
+      +'<div class="st-s"><b>'+fmt(nGen)+'</b> genera<br><b>'+fmt(nFam)+'</b> families</div></div>';
     if((hasQC&&T>0)||nFam>0){
-      sections.push('<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#2f7d3b"></span>Data Quality &amp; Richness <span style="font-weight:400;color:#55524b;font-size:12px">('+fmt(T)+' total records)</span></div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
-        +mkRing(hasCoord,T,'#2f7d3b','Georeferenced','With coordinates','Missing coordinates')
+      sections.push('<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#2f7d3b"></span>At a glance <span class="ch-n">'+fmt(T)+' records</span></div>'
+        +'<div class="st-grid">'
+        +mkRing(hasCoord,T,'#2f7d3b','Georeferenced','With a coordinate','Without')
         +mkRing(hasMedia,T,'#0f7bab','Imaged','With media','No media')
-        +mkRing(hasTyped,T,'#a86a00','Type Specimens','Type material','Non-type')
+        +mkRing(hasTyped,T,'#a86a00','Type specimens','Type material','Not types')
         +richnessHtml
         +'</div></div>');
     }
@@ -4704,19 +4756,13 @@ function renderCharts(){
         stops.push(c+' '+cumDeg.toFixed(1)+'deg '+(cumDeg+deg).toFixed(1)+'deg');
         cumDeg+=deg;
       }
-      var s='<div class="ch-p"><div class="ch-t"><span class="al" style="background:#264939"></span>Collections</div>'
-        +'<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">'
-        +'<div style="position:relative;width:140px;height:140px;flex-shrink:0;border-radius:50%;background:conic-gradient('+stops.join(',')+')"></div>'
-        +'<div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:3px">';
+      var s='<div class="ch-p"><div class="ch-t">Collections</div><div class="sh">';
       for(var i=0;i<collItems.length;i++){
-        var pctVal=esc(pctLabel(collItems[i].count,collTotal));
-        s+='<div style="display:flex;align-items:center;gap:8px;font-size:12px">'
-          +'<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+pieColors[i]+';flex-shrink:0"></span>'
-          +'<span style="flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(collItems[i].name)+'">'+esc(collItems[i].name)+'</span>'
-          +'<span style="font-weight:700;white-space:nowrap">'+fmt(collItems[i].count)+' <span style="color:#55524b;font-weight:400">('+pctVal+')</span></span>'
-          +'</div>';
+        s+='<div class="sh-row"><span class="sh-nm" title="'+esc(collItems[i].name)+'">'+esc(collItems[i].name)+'</span>'
+          +'<span class="sh-bar"><i style="width:'+(collItems[i].count/collItems[0].count*100).toFixed(1)+'%;background:'+pieColors[i]+'"></i></span>'
+          +'<span class="sh-ct">'+fmt(collItems[i].count)+'</span><span class="sh-pct">'+esc(pctLabel(collItems[i].count,collTotal))+'</span></div>';
       }
-      s+='</div></div></div>';
+      s+='</div></div>';
       sections.push(s);
     }
   }catch(e){console.error('[Charts] Collections pie:',e)}
@@ -4741,22 +4787,17 @@ function renderCharts(){
         tStops.push(c+' '+tCum.toFixed(1)+'deg '+(tCum+deg).toFixed(1)+'deg');
         tCum+=deg;
       }
-      var s='<div class="ch-p"><div class="ch-t"><span class="al" style="background:#c93f1a"></span>Type Specimens <span style="font-weight:400;color:#55524b;font-size:12px">('+fmt(totalTypes)+')</span></div>'
-        +'<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">'
-        +'<div style="position:relative;width:140px;height:140px;flex-shrink:0;border-radius:50%;background:conic-gradient('+tStops.join(',')+')"></div>'
-        +'<div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:3px">';
+      var s='<div class="ch-p"><div class="ch-t">Type specimens <span class="ch-n">'+fmt(totalTypes)+'</span></div><div class="sh">';
+      var tMax=typeFacet[0].count||1;
       for(var i=0;i<typeFacet.length;i++){
         var tn=(typeFacet[i].name||'').toUpperCase();
         var ct=typeFacet[i].count||0;
         var label=tn.charAt(0)+tn.slice(1).toLowerCase();
-        var pctVal=esc(pctLabel(ct,totalTypes));
-        s+='<div style="display:flex;align-items:center;gap:8px;font-size:12px">'
-          +'<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+tColors[i]+';flex-shrink:0"></span>'
-          +'<span style="flex:1;font-weight:500">'+esc(label)+'</span>'
-          +'<span style="font-weight:700;white-space:nowrap">'+fmt(ct)+' <span style="color:#55524b;font-weight:400">('+pctVal+')</span></span>'
-          +'</div>';
+        s+='<div class="sh-row"><span class="sh-nm">'+esc(label)+'</span>'
+          +'<span class="sh-bar"><i style="width:'+(ct/tMax*100).toFixed(1)+'%;background:'+tColors[i]+'"></i></span>'
+          +'<span class="sh-ct">'+fmt(ct)+'</span><span class="sh-pct">'+esc(pctLabel(ct,totalTypes))+'</span></div>';
       }
-      s+='</div></div></div>';sections.push(s);
+      s+='</div></div>';sections.push(s);
     }
   }catch(e){console.error('[Charts] Types:',e)}
 
@@ -4770,7 +4811,7 @@ function renderCharts(){
       collFacet.sort(function(a,b){return(b.count||0)-(a.count||0)});
       var top15=collFacet.slice(0,15);
       var mx=top15[0].count||1;
-      var s='<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#0f7bab"></span>Top Collectors (across '+fmt(T)+' '+recWord(T)+')</div><div class="hb">';
+      var s='<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#0f7bab"></span>Top collectors</div><div class="hb">';
       for(var i=0;i<top15.length;i++){
         var nm=top15[i].name||'?';
         var ct=top15[i].count||0;
@@ -4793,9 +4834,9 @@ function renderCharts(){
       }
       s+='</div></div>';return s;
     }
-    sections.push(mkBar(safeArr(f.order).slice(0,15),'Top Orders','#a86a00',true));
-    sections.push(mkBar(safeArr(f.family).slice(0,15),'Top Families','#0f7bab',true));
-    sections.push(mkBar(safeArr(f.state).slice(0,12),'By State / Province','#c93f1a',true));
+    sections.push(mkBar(safeArr(f.order).slice(0,15),'Top orders','#a86a00',true));
+    sections.push(mkBar(safeArr(f.family).slice(0,15),'Top families','#0f7bab',true));
+    sections.push(mkBar(safeArr(f.state).slice(0,12),'By state or province','#c93f1a',true));
   }catch(e){console.error('[Charts] Bars:',e)}
 
   /* ── Assemble ── */
