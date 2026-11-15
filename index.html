@@ -389,6 +389,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1
 .supp-note .sn-h{font-weight:700;font-size:12px}
 .supp-note .sn-review{display:inline-block;margin:4px 0 2px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--orange);padding:2px 7px;border-radius:1px}
 .supp-note .sn-b{color:var(--muted);margin-top:2px}
+.card-names .cn-l{display:block;font-size:10.5px;line-height:1.35;color:var(--muted)}
 .card-src{font-size:11px;line-height:1.35;color:var(--orange);font-weight:600;margin-top:4px}
 .card-review{display:block;color:var(--ink);font-weight:700}
 .rc-split{color:var(--muted);font-weight:400}
@@ -743,7 +744,7 @@ function getFilters(){
     }
     bbox={s,n,w,e};
   }
-  return{q:S.q,kingdom:$('#fK').value,phylum:$('#fP').value,class_:$('#fC').value,
+  return{q:alaQ(S.q),qText:S.q,kingdom:$('#fK').value,phylum:$('#fP').value,class_:$('#fC').value,
     order:$('#fO').value,family:$('#fF').value,genus:$('#fG').value,species:$('#fSp').value,
     hasType:$('#fType').value,coord:$('#fCoord').value,media:$('#fMedia').value,
     country:$('#fCo').value,state:$('#fSt').value,
@@ -754,7 +755,7 @@ function getFilters(){
 }
 
 /* Fields asked for with fl=. With fl=, ALA returns most descriptive fields inside otherProperties (see normRec_A). */
-const ALA_FL='id,uuid,raw_scientificName,scientificName,vernacularName,commonName,taxonConceptID,taxonConceptLsid,kingdom,phylum,classs,order,superfamily,family,subfamily,tribe,genus,species,scientificNameAuthorship,raw_scientificNameAuthorship,basisOfRecord,raw_basisOfRecord,year,month,day,eventDate,raw_eventDate,verbatimEventDate,raw_verbatimEventDate,decimalLatitude,decimalLongitude,raw_decimalLatitude,raw_decimalLongitude,latLong,country,stateProvince,state,locality,raw_locality,verbatimLocality,raw_verbatimLocality,minimumElevationInMeters,maximumElevationInMeters,minimumDepthInMeters,catalogNumber,raw_catalogNumber,collectionCode,raw_collectionCode,collectionUid,institutionCode,raw_institutionCode,collector,recordedBy,raw_recordedBy,raw_collector,identifiedBy,raw_identifiedBy,typeStatus,raw_typeStatus,preparations,raw_preparations,sex,raw_sex,lifeStage,raw_lifeStage,habitat,raw_habitat,samplingProtocol,raw_samplingProtocol,samplingMethod,raw_samplingMethod,occurrenceRemarks,raw_occurrenceRemarks,fieldNumber,raw_fieldNumber,individualCount,raw_individualCount,datasetName,dataResourceName,multimedia,largeImageUrl,imageUrl,smallImageUrl,geospatial_kosher';
+const ALA_FL='id,uuid,raw_scientificName,scientificName,taxonRank,vernacularName,commonName,taxonConceptID,taxonConceptLsid,kingdom,phylum,classs,order,superfamily,family,subfamily,tribe,genus,species,scientificNameAuthorship,raw_scientificNameAuthorship,basisOfRecord,raw_basisOfRecord,year,month,day,eventDate,raw_eventDate,verbatimEventDate,raw_verbatimEventDate,decimalLatitude,decimalLongitude,raw_decimalLatitude,raw_decimalLongitude,latLong,country,stateProvince,state,locality,raw_locality,verbatimLocality,raw_verbatimLocality,minimumElevationInMeters,maximumElevationInMeters,minimumDepthInMeters,catalogNumber,raw_catalogNumber,collectionCode,raw_collectionCode,collectionUid,institutionCode,raw_institutionCode,collector,recordedBy,raw_recordedBy,raw_collector,identifiedBy,raw_identifiedBy,typeStatus,raw_typeStatus,preparations,raw_preparations,sex,raw_sex,lifeStage,raw_lifeStage,habitat,raw_habitat,samplingProtocol,raw_samplingProtocol,samplingMethod,raw_samplingMethod,occurrenceRemarks,raw_occurrenceRemarks,fieldNumber,raw_fieldNumber,individualCount,raw_individualCount,datasetName,dataResourceName,multimedia,largeImageUrl,imageUrl,smallImageUrl,geospatial_kosher';
 async function alaFetch(f,off,lim){
   const fq=alaBaseFQ(f);
   const u=new URLSearchParams();u.set('q',f.q||'*:*');appendFQ(u,fq);
@@ -772,6 +773,7 @@ async function alaFetch(f,off,lim){
 /* Build base ALA filter queries (shared by alaFetch and quality count queries) */
 function alaBaseFQ(f){
   const fq=[`institution_uid:${S.alaInst}`];
+  if(f.q&&f.q!=='*:*')fq.push(...HELD_TEXT_FQ);
   if(f.kingdom)fq.push(`kingdom:"${f.kingdom}"`);if(f.phylum)fq.push(`phylum:"${f.phylum}"`);
   if(f.class_)fq.push(`class:"${f.class_}"`);if(f.order)fq.push(`order:"${f.order}"`);
   if(f.family)fq.push(`family:"${f.family}"`);if(f.genus)fq.push(`genus:"${f.genus}"`);
@@ -905,9 +907,15 @@ function clientFilterRecs(recs, f){
       }
     }
     if(f.q && f.q !== '*:*'){
-      const qLo = f.q.replace(/^"|"$/g, '').toLowerCase();
-      const haystack = [r.sci, r.species, r.vern, r.cat, r.family, r.genus, r.order, r.recBy, r.locality].join(' ').toLowerCase();
-      if(!haystack.includes(qLo)) return false;
+      const qRaw = (f.qText!=null?f.qText:f.q);
+      const qLo = String(qRaw).replace(/^"|"$/g, '').toLowerCase().trim();
+      const haystack = [r.sci, r._nm?.qm, r._nm?.ala, r._suppExtra?.['Original name'], r._suppExtra?.['Previous identifications'], r.species, r.vern, r.cat, r.family, r.genus, r.order, r.recBy, r.locality].join(' ').toLowerCase();
+      let hit = haystack.includes(qLo);
+      if(!hit && looksLikeName(qRaw)){
+        const keys = recNameKeys(r), qk = _nameKey(qRaw), v = verifiedFor(qRaw);
+        hit = keys.has(qk) || (!!v && (keys.has(_nameKey(v.accepted)) || keys.has(_nameKey(v.original))));
+      }
+      if(!hit || !_notHeldHit(r)) return false;
     }
     return true;
   });
@@ -1080,29 +1088,129 @@ function classifyBackboneVern(name){
 const _OP_LIFT=['raw_locality','locality','raw_verbatimLocality','verbatimLocality','scientificNameAuthorship','raw_scientificNameAuthorship','preparations','raw_preparations','sex','raw_sex','lifeStage','raw_lifeStage','identifiedBy','raw_identifiedBy','habitat','raw_habitat','samplingProtocol','raw_samplingProtocol','samplingMethod','raw_samplingMethod','occurrenceRemarks','raw_occurrenceRemarks','fieldNumber','raw_fieldNumber','individualCount','raw_individualCount','verbatimEventDate','raw_verbatimEventDate','raw_eventDate','day','minimumElevationInMeters','maximumElevationInMeters','minimumDepthInMeters'];
 /* ALA's processed lifeStage can be a JSON string such as {"concept":"Adult",...} */
 function _conceptText(v){if(typeof v==='string'&&v.charAt(0)==='{'){try{const o=JSON.parse(v);return o.concept||''}catch(e){return''}}return v}
+/* ── Supplied names (stage 3c, 15 November 2026) ─────────────────────────────
+   raw_scientificName is the name Queensland Museum supplied; scientificName is ALA's match.
+   Where the two differ, the museum's name leads, labelled "Supplied as (Queensland Museum)",
+   and ALA's match is shown beside it as "ALA match", each with its own authorship. Working
+   names ("Pheidole RGBB sp.1") are shown exactly as supplied.
+   Names marked as unpublished (MS name, ms/ns name, n. sp., sp. nov., nov.) are held: they are
+   not shown, not searchable and not exported, and ALA's match is cut back to its first word if
+   it would repeat a held epithet. This is a rule, not a list of records; it was checked on
+   15 November 2026 against "Held names – MS and n. sp. list 2026-11-14" (all 23 found; it also
+   holds "Vaceletia nov", 5 databased records, and two "n.sp." sponges outside that list). */
+const HELD_NAME_RE=/\b(?:ms|ns)\.?\s*names?\b|\bMS\b|\bn\.\s?sp\b|\bsp\.?\s?nov\b|\bsp\.\s?n\.(?!\w)|\bnov\.?\s*(?:sp\b|\d|$)|\bn\.\s?gen\b/i;
+function isHeldName(n){return !!n&&HELD_NAME_RE.test(String(n))}
+/* A trailing author and year that some supplied names carry ("Xus yus Smith, 1900") */
+const _AUTH_TAIL=/\s+\(?(?:[A-Z]\.\s?|[A-Z]\.-)*[A-Z][a-zà-ÿ'’\-]+[^()\d]*,?\s*(?:1[6-9]|20)\d{2}\)?\s*$/;
+function _stripAuth(n){return String(n||'').replace(_AUTH_TAIL,'').trim()}
+/* Comparison key: case, spacing and a subgenus in brackets do not make two names different */
+function _nameKey(n){return String(n||'').replace(/\s+\([A-Z][a-z]+\)/g,'').replace(/\s+/g,' ').trim().toLowerCase()}
+function _nameTokens(n){return String(n||'').toLowerCase().split(/[^a-z0-9]+/).filter(t=>t.length>=3)}
+/* Pair the museum's name and ALA's match. Returns what to show; a held name never leaves here
+   except as tokens kept in memory for the search guard (heldTok), which are never displayed. */
+function buildNamePair(qm,qmAuth,ala,alaAuth,alaRank){
+  qm=String(qm||'').trim();ala=String(ala||'').trim();qmAuth=String(qmAuth||'').trim();alaAuth=String(alaAuth||'').trim();alaRank=String(alaRank||'').trim().toLowerCase();
+  const held=isHeldName(qm);
+  if(held){
+    const alaTok=new Set(_nameTokens(ala));
+    const heldTok=_nameTokens(qm).filter(t=>!alaTok.has(t)&&!['name','names','nov','sp'].includes(t));
+    let alaShow=ala,aAuth=alaAuth,aRank=alaRank;
+    const qmEpi=new Set(_nameTokens(qm).slice(1));
+    if(isHeldName(ala)||_nameTokens(ala).slice(1).some(t=>qmEpi.has(t))){alaShow=ala.split(/\s+/)[0]||'';aAuth='';aRank='genus'}
+    return{qm:'',qmAuth:'',ala:alaShow,alaAuth:aAuth,alaRank:aRank,differ:false,held:true,heldTok,lead:alaShow,leadAuth:aAuth};
+  }
+  const qmCanon=_stripAuth(qm);
+  if(!qmAuth&&qmCanon!==qm)qmAuth=qm.slice(qmCanon.length).trim();
+  const differ=!!qmCanon&&!!ala&&_nameKey(qmCanon)!==_nameKey(ala);
+  if(differ)return{qm:qmCanon,qmAuth,ala,alaAuth,alaRank,differ:true,held:false,lead:qmCanon,leadAuth:qmAuth};
+  const lead=qmCanon||ala;
+  return{qm:qmCanon,qmAuth,ala,alaAuth,alaRank,differ:false,held:false,lead,leadAuth:alaAuth||qmAuth};
+}
+/* Name relationships checked against the AFD or the original publication (data/verified-names.json).
+   Only listed names have a relationship; every other pair is left unresolved. */
+let _verifiedP=null,_verified=[];
+function loadVerifiedNames(){
+  if(!_verifiedP)_verifiedP=fetch('data/verified-names.json').then(r=>r.ok?r.json():{names:[]})
+    .then(d=>{_verified=Array.isArray(d.names)?d.names:[];return _verified})
+    .catch(e=>{console.warn('[verified names]',e);_verifiedP=null;return[]});
+  return _verifiedP;
+}
+function verifiedFor(name){const k=_nameKey(_stripAuth(name));if(!k)return null;return _verified.find(v=>_nameKey(v.accepted)===k||_nameKey(v.original)===k)||null}
+/* Every name a record can be found by: shown name, supplied name, ALA match, the register's original name,
+   and the verified accepted and original names */
+function recNameKeys(r){
+  const out=new Set();
+  const add=n=>{const k=_nameKey(_stripAuth(n));if(k&&!isHeldName(n))out.add(k)};
+  add(r.sci);if(r._nm){add(r._nm.qm);add(r._nm.ala)}
+  if(r._suppExtra){add(r._suppExtra['Original name']);add(r._suppExtra['Previous identifications'])}
+  for(const k of [...out]){const v=verifiedFor(k);if(v){add(v.accepted);add(v.original)}}
+  return out;
+}
+/* ── Name search ──
+   ALA treats a two-word search as free text and, when it cannot match the species, falls back to the
+   genus ("Cosmophasis tavurvur" gave 114 databased records; by the supplied name, 3; 15 November 2026).
+   A search that looks like a name is sent as the supplied name, plus its verified accepted and
+   original names, plus ALA's own taxon where ALA matches it at species level or below. If none of
+   that finds anything in ALA or the register additions, the plain words are sent, as before. */
+function _capName(s){s=String(s||'').trim().replace(/\s+/g,' ');return s.charAt(0).toUpperCase()+s.slice(1)}
+function looksLikeName(t){
+  t=String(t||'').trim();
+  if(!t||/[:*"\\\[\]{}]/.test(t)||/\b(?:AND|OR|NOT)\b/.test(t))return false;
+  const parts=t.split(/\s+/);
+  return parts.length>=2&&parts.length<=7&&/^[A-Za-z][a-z]+$/.test(parts[0]);
+}
+const _qResolve=new Map();
+async function resolveNameQuery(text){
+  const t=String(text||'').trim();
+  S._heldQTok=new Set(_nameTokens(t));
+  if(!t||_qResolve.has(t))return;
+  if(!looksLikeName(t)){_qResolve.set(t,t);return}
+  await loadVerifiedNames();
+  const name=_capName(t);
+  if(isHeldName(name)){_qResolve.set(t,t);return}
+  const names=[name];const v=verifiedFor(name);
+  if(v)for(const n of [v.accepted,v.original])if(n&&!names.some(x=>_nameKey(x)===_nameKey(n)))names.push(n);
+  const parts=names.map(n=>`raw_scientificName:"${n.replace(/"/g,'')}"`);
+  for(const n of names){
+    try{
+      const r=await cachedFetch('https://api.ala.org.au/namematching/api/search?q='+encodeURIComponent(n));
+      const m=r&&r.ok?await r.json():null;
+      if(m&&m.success!==false&&m.scientificName&&/^(?:species|subspecies|variety|form|infraspecificname)$/i.test(m.rank||'')&&m.matchType!=='higherMatch')parts.push(`taxa:"${n.replace(/"/g,'')}"`);
+    }catch(e){}
+  }
+  const q=parts.join(' OR ');
+  let n=-1;
+  try{
+    const u=new URLSearchParams();u.set('q',q);appendFQ(u,[`institution_uid:${S.alaInst}`]);u.set('pageSize','0');u.set('facets','');u.set('flimit','0');
+    const r=await fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u);
+    if(r.ok)n=(await r.json()).totalRecords||0;
+  }catch(e){}
+  let inSupp=false;
+  if(n===0){try{const keys=new Set(names.map(_nameKey));inSupp=(await loadSupplement()).some(r=>[...recNameKeys(r)].some(k=>keys.has(k)))}catch(e){}}
+  _qResolve.set(t,(n===0&&!inSupp)?t:q);
+}
+function alaQ(text){const t=String(text||'').trim();return t?(_qResolve.get(t)||t):''}
+/* A held record must not be found through the words of its held name (ALA's free-text search
+   reaches raw_scientificName: "bignews" finds six Argoctenus records, 15 November 2026). */
+function _notHeldHit(r){
+  if(!r||!r._nm||!r._nm.held||!S._heldQTok||!S._heldQTok.size)return true;
+  return !r._nm.heldTok.some(t=>S._heldQTok.has(t));
+}
+/* Phrases ALA can exclude on its side during a text search (rule-based; 22 of the held databased records,
+   15 November 2026). The page guard above covers the rest. */
+const HELD_TEXT_FQ=['-text:"ms name"','-text:"ns name"','-text:"n sp"'];
+
 function normRec_A(r){
   const _op=r&&r.otherProperties&&typeof r.otherProperties==='object'?r.otherProperties:null;
   if(_op){r={...r};for(const k of _OP_LIFT){if(r[k]==null&&_op[k]!=null)r[k]=_op[k]}}
   const cat = r.catalogNumber || r.raw_catalogNumber || r.catalogue_number || r.catalogueNumber || '';
   const coll = r.collectionCode || r.raw_collectionCode || r.collectionUid || r.collection_uid || '';
   const collUid = r.collectionUid || r.collection_uid || '';
-  /* Smart sci name: prefer raw name when processed name is a higher-rank fallback.
-     ALA sets scientificName to family/order when it can't match species in its backbone. 
-     Signs of a higher-rank fallback: single word, all-caps, matches family/order, or ends in -idae/-inae/-ales */
+  /* The museum's supplied name and ALA's match, paired (see buildNamePair) */
   const procSci=(r.scientificName||'').trim();
   const rawSci=(r.raw_scientificName||'').trim();
-  let bestSci=procSci||rawSci;
-  if(procSci&&rawSci&&procSci!==rawSci){
-    const isHigherRank=!procSci.includes(' ') && (
-      procSci===r.family||procSci===r.order||procSci===r.kingdom||procSci===r.phylum||
-      procSci===(r.classs||r['class'])||
-      /^[A-Z]+$/.test(procSci)||
-      /(?:idae|inae|ales|aceae|phyta|opsida)$/i.test(procSci)
-    );
-    if(isHigherRank&&rawSci.includes(' ')){
-      bestSci=rawSci;
-    }
-  }
+  const _nm=buildNamePair(rawSci,r.raw_scientificNameAuthorship,procSci,r.scientificNameAuthorship,r.taxonRank);
+  let bestSci=_nm.lead||procSci||(_nm.held?'':rawSci);
   /* Extract genus/species from name when ALA backbone didn't resolve them */
   let genusVal=r.genus||'';let speciesVal=r.species||'';
   if(!genusVal&&bestSci.includes(' ')){
@@ -1115,7 +1223,7 @@ function normRec_A(r){
   }
   const _sl=fixSexLifeStage(safe$(r.raw_sex||r.sex),safe$(r.raw_lifeStage||_conceptText(r.lifeStage)));
   const _vn=r.vernacularName||r.commonName||'';
-  return{_hasFl:!!_op,key:r.uuid,sci:bestSci,vern:_vn,vernRank:_vn?classifyBackboneVern(_vn):null,
+  return{_hasFl:!!_op,key:r.uuid,sci:bestSci,_nm:_nm,vern:_vn,vernRank:_vn?classifyBackboneVern(_vn):null,
     kingdom:r.kingdom||'',phylum:r.phylum||'',class_:r.classs||r['class']||'',order:r.order||'',superfamily:r.superfamily||'',family:r.family||'',subfamily:r.subfamily||'',tribe:r.tribe||'',genus:genusVal,species:speciesVal,
     basis:r.basisOfRecord||r.raw_basisOfRecord||'',year:r.year?parseInt(r.year):null,month:r.month?parseInt(r.month):null,day:r.day?parseInt(r.day):null,
     lat:toNum(r.decimalLatitude)??toNum(r.latitude)??toNum(r.raw_decimalLatitude)??parseLatLong(r.latLong)[0],lng:toNum(r.decimalLongitude)??toNum(r.longitude)??toNum(r.raw_decimalLongitude)??parseLatLong(r.latLong)[1],country:r.country||'',state:r.stateProvince||r.state||'',locality:r.raw_locality||r.locality||'',
@@ -1123,7 +1231,7 @@ function normRec_A(r){
     media:dedupImgs([r.largeImageUrl,r.imageUrl,r.smallImageUrl].filter(Boolean)),
     /* Darwin Core extras */
     typeStatus:safe$(r.typeStatus||r.raw_typeStatus),
-    authorship:extractAuth(bestSci,safe$((bestSci===rawSci&&rawSci!==procSci)?r.raw_scientificNameAuthorship:(r.scientificNameAuthorship||r.raw_scientificNameAuthorship))), /* when the museum's own name is shown, use the museum's author, not the author of ALA's different match */
+    authorship:safe$(_nm.leadAuth)||(_nm.differ||_nm.held?'':extractAuth(bestSci,'')), /* each name keeps its own author: the museum's with its name, ALA's with its match */
     preparations:safe$(r.preparations||r.raw_preparations),
     sex:_sl.sex,
     eventDate:safe$(r.eventDate||r.raw_eventDate),
@@ -1210,7 +1318,7 @@ function normRec_S(s){
   const ex={};
   for(const [k,l] of [['originalNameUsage','Original name'],['previousIdentifications','Previous identifications'],['identificationQualifier','Identification qualifier'],['dateIdentified','Date identified'],['otherCatalogNumbers','Other numbers'],['eventID','Event ID'],['verbatimLatitude','Verbatim latitude'],['verbatimLongitude','Verbatim longitude'],['geodeticDatum','Datum'],['coordinateUncertaintyInMeters','Coordinate uncertainty (m)'],['coordinatePrecision','Coordinate precision'],['municipality','Municipality'],['locationRemarks','Location remarks'],['fieldNotes','Field notes']])if(s[k])ex[l]=s[k];
   return{_supp:true,_hasFl:true,key:'reg:'+s.registerId,regId:s.registerId,uuid:null,
-    sci:s.scientificName||'',vern:s.vernacularName||'',vernRank:s.vernacularName?classifyBackboneVern(s.vernacularName):null,
+    sci:isHeldName(s.scientificName)?(s.genus||s.family||''):(s.scientificName||''),_nm:buildNamePair(s.scientificName,s.scientificNameAuthorship,'','',''),vern:s.vernacularName||'',vernRank:s.vernacularName?classifyBackboneVern(s.vernacularName):null,
     kingdom:s.kingdom||'',phylum:s.phylum||'',class_:s['class']||'',order:s.order||'',superfamily:'',family:s.family||'',subfamily:s.subfamily||'',tribe:'',genus:s.genus||'',species:sp,
     basis:s.basisOfRecord||'',year:ed?parseInt(ed[1]):null,month:ed&&ed[2]?parseInt(ed[2]):null,day:ed&&ed[3]?parseInt(ed[3]):null,
     lat:toNum(s.decimalLatitude),lng:toNum(s.decimalLongitude),country:s.country||'',state:s.stateProvince||'',locality:s.locality||'',
@@ -1253,6 +1361,7 @@ function mergeFacets(a,b){
    ═════════════════════════════════════════════════ */
 async function doSearch(){
   S._searchStale=false;
+  try{await Promise.all([resolveNameQuery(S.q),loadVerifiedNames()])}catch(e){console.warn('[name search]',e)}
   const hasPoly=!!(S.mapPoly&&S.mapPoly.rings);
   /* Reset polygon pagination on fresh searches (not triggered by polygon prev/next) */
   if(!S._polyNavActive){S._polyPage=0;S._polyPageBookmarks=[{alaId:'',alaFetched:0}]}
@@ -1361,9 +1470,9 @@ async function doSearch(){
           const d = await r.json();
           if(!bboxTotal) bboxTotal = d.totalRecords || 0;
           const rawOccs = d.occurrences || [];
-          const recs = rawOccs.map(normRec_A);
+          const recs = rawOccs.map(normRec_A).filter(_notHeldHit);
           alaFetched += rawOccs.length;
-          if(!recs.length) break;
+          if(!rawOccs.length) break;
           for(const r of recs){
             if(r.lat == null || r.lng == null) continue;
             if(pointInPolygon(r.lat, r.lng, S.mapPoly.rings)){polyCountSoFar++; collected.push(r)}
@@ -1494,8 +1603,12 @@ async function doSearch(){
         const facP=fetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+facU).then(r=>r.ok?r.json():null).catch(e=>{console.warn('[facets]',e);return null});
         const d=await recP;
         if(S._searchId!==searchId)return;
-        const alaTotal=d.totalRecords||0;S._alaTotal=alaTotal;
-        let page=wantALA?(d.occurrences||[]).map(normRec_A):[];
+        let alaTotal=d.totalRecords||0;
+        const _occ=wantALA?(d.occurrences||[]).map(normRec_A):[];
+        let page=_occ.filter(_notHeldHit);
+        /* A held record dropped by the search guard is not counted either, when the whole result is on this page */
+        if(page.length<_occ.length&&S.off===0&&alaTotal<=_occ.length)alaTotal-=(_occ.length-page.length);
+        S._alaTotal=alaTotal;
         const [ss,sc]=suppSliceFor(S.off,alaTotal,page.length,nS);
         if(sc)page=page.concat(supp.slice(ss,ss+sc));
         S.res=page;S.total=alaTotal+nS;
@@ -1626,7 +1739,7 @@ async function bgLoadAllPages(f,loadId){
         u.set('pageSize',sz);u.set('startIndex',off);u.set('sort','id');u.set('dir','asc');u.set('facets','');u.set('flimit','0');
         const d=await fetchJSON(''+u);
         if(cancelled())return;
-        if(d&&d.occurrences)d.occurrences.map(normRec_A).forEach(addGeo);
+        if(d&&d.occurrences)d.occurrences.map(normRec_A).filter(_notHeldHit).forEach(addGeo);
         redraw(false);
       }
     };
@@ -1711,9 +1824,9 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
       const d=await r.json();
       if(S.mapLoadId!==loadId||S._searchId!==searchId)return;
       const rawOccs=d.occurrences||[];
-      const recs=rawOccs.map(normRec_A);
+      const recs=rawOccs.map(normRec_A).filter(_notHeldHit);
       alaFetched+=rawOccs.length;
-      if(!recs.length)break;
+      if(!rawOccs.length)break;
       for(const r of recs){
         if(!S.mapPoly?.rings)break;
         if(r.lat!=null&&r.lng!=null&&pointInPolygon(r.lat,r.lng,S.mapPoly.rings)){
@@ -2029,6 +2142,7 @@ function renderGallery(){
       <div class="card-th">${th}${hasType?`<span class="card-type" style="background:${tc}">${esc(r.typeStatus)}</span>`:''}</div>
       <div class="card-body">
         <div class="card-sci${shouldItalic(r.sci)?' it':''}">${esc(sciDisplay)}</div>
+        <div class="card-names">${cardNamesHTML(r)}</div>
         <div class="card-cat-line">${r.cat?`<span class="card-cat">${esc(r.cat)}</span>`:''} ${hasType?`<span class="card-type-inline" style="background:${tc}">${esc(r.typeStatus)}</span>`:''}</div>
         ${vernShow?`<div class="card-com">${esc(vernShow)}</div>`:''}
         ${r.family?`<div class="card-fam">${esc(r.family)}</div>`:''}
@@ -4101,6 +4215,12 @@ async function fetchFullAlaRecord(uuid){
       images:imgs,
       /* Raw scientific name — may be better than processed when species not in ALA backbone */
       rawSci:pick(rOcc.scientificName,raw.scientificName),
+      /* Both names with their own authors: the museum's (raw) and ALA's match (processed) */
+      qmName:pick(raw.classification?.scientificName,rOcc.scientificName,raw.scientificName),
+      qmAuth:pick(raw.classification?.scientificNameAuthorship),
+      alaName:pick(proc.classification?.scientificName),
+      alaAuth:pick(proc.classification?.scientificNameAuthorship),
+      alaRank:pick(proc.classification?.taxonRank),
       /* Taxonomy — ALA stores in classification sub-objects */
       family:pick(proc.classification?.family,raw.classification?.family,d.family,raw.family),
       order:pick(proc.classification?.order,raw.classification?.order,d.order,raw.order),
@@ -4141,14 +4261,11 @@ async function fetchFullAlaRecord(uuid){
 function enrichRecord(r,fields){
   if(!fields)return;
   if(fields.images?.length)r.media=dedupImgs([...(r.media||[]),...fields.images]);
-  /* Fix sci name if current one looks like a higher-rank fallback and raw has a binomial */
-  if(fields.rawSci&&fields.rawSci.includes(' ')&&r.sci&&!r.sci.includes(' ')){
-    const old=r.sci;
-    r.sci=fields.rawSci;
-    /* Also extract genus/species */
-    const parts=fields.rawSci.split(/\s+/);
-    if(!r.genus)r.genus=parts[0]||'';
-    if(!r.species&&parts.length>=2&&parts[1][0]===parts[1][0].toLowerCase())r.species=parts[0]+' '+parts[1];
+  /* Names: the museum's supplied name and ALA's match, each with its own author */
+  if(fields.qmName||fields.alaName){
+    r._nm=buildNamePair(fields.qmName,fields.qmAuth,fields.alaName,fields.alaAuth,fields.alaRank);
+    if(r._nm.lead)r.sci=r._nm.lead;
+    if(r._nm.leadAuth)r.authorship=r._nm.leadAuth;
   }
   /* Only overwrite if we got a non-empty value and the existing one is empty */
   const fill=(key)=>{if(fields[key]&&!r[key])r[key]=fields[key]};
@@ -4201,7 +4318,8 @@ async function fillDescriptiveFields(recs,f){
       const rec=need.get(o.uuid);if(!rec)continue;
       const src=normRec_A(o);
       for(const k of _CSV_FILL){if(!rec[k]&&src[k])rec[k]=src[k]}
-      if(src.authorship)rec.authorship=src.authorship;
+      if(src._nm){rec._nm=src._nm;if(src.sci)rec.sci=src.sci;rec.authorship=src.authorship||''}
+      else if(src.authorship)rec.authorship=src.authorship;
       for(const k of ['elevMin','elevMax','depth']){if(rec[k]==null&&src[k]!=null)rec[k]=src[k]}
       rec._hasFl=true;need.delete(o.uuid);
     }
@@ -4224,7 +4342,7 @@ function exportQueryTexts(){
     const ala='https://biocache-ws.ala.org.au/ws/occurrences/search?'+u.toString()+(notes.length?' ('+notes.join('; ')+')':'');
     const fl=[];
     const L={q:'Search',kingdom:'Kingdom',phylum:'Phylum',class_:'Class',order:'Order',family:'Family',genus:'Genus',species:'Species',hasType:'Type status',coord:'Georeferenced',media:'Has media',country:'Country',state:'State',catNum:'Catalog number',collCode:'Collection'};
-    for(const [k,l] of Object.entries(L)){let v=f[k];if(!v||v==='*:*')continue;if(k==='collCode')v=S._collUidMap.get(v)||v;if(k==='media')v='yes';if(k==='hasType'&&v.startsWith('ts:'))v=v.slice(3);fl.push(l+' = '+String(v).replace(/^"|"$/g,''))}
+    for(const [k,l] of Object.entries(L)){let v=k==='q'?f.qText:f[k];if(!v||v==='*:*')continue;if(k==='collCode')v=S._collUidMap.get(v)||v;if(k==='media')v='yes';if(k==='hasType'&&v.startsWith('ts:'))v=v.slice(3);fl.push(l+' = '+String(v).replace(/^"|"$/g,''))}
     if(f.bbox&&!S.mapPoly)fl.push('map box');
     const reg="Queensland Museum register additions in QM Explorer (added "+fmtLongDate(S.suppMeta?.addedDate||'')+"); Source = "+SRC_LABEL[f.source||'']+(fl.length?'; '+fl.join('; '):'')+(notes.length?'; '+notes.join('; '):'');
     return{ala,reg};
@@ -4265,6 +4383,7 @@ async function exportCSV(enriched=false){
         const d=await alaFetch(f,off,Math.min(BATCH,target-off));
         const batch=(d.occurrences||[]).map(normRec_A);
         for(const r of batch){
+          if(!_notHeldHit(r))continue;
           if(r.uuid){if(seen.has(r.uuid))continue;seen.add(r.uuid)}
           recs.push(r);
         }
@@ -4388,7 +4507,7 @@ async function exportCSV(enriched=false){
 
   /* ── Build CSV ── */
   const sp0=r=>r._spatial&&!r._spatial.loading?r._spatial:r._csvSpatial||{};
-  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid','source','registerId','curatorReview','addedFromRegister','imagedInRegister'];
+  const coreCols=['catalogNumber','scientificName','authorship','typeStatus','kingdom','phylum','class','order','superfamily','family','subfamily','tribe','genus','species','vernacularName','basisOfRecord','recordedBy','identifiedBy','eventDate','locality','stateProvince','country','latitude','longitude','elevationMin_m','elevationMax_m','depth_m','habitat','sex','lifeStage','preparations','individualCount','samplingProtocol','occurrenceRemarks','collectionCode','uuid','source','registerId','curatorReview','addedFromRegister','imagedInRegister','qmSuppliedName','qmSuppliedAuthorship','alaMatchName','alaMatchAuthorship','alaMatchRank'];
   const infoCols=['retrievalDate','query'];
   const spatialCols=['elevationDEM_m','ibraBioregion','ibraSubregion','lga','drainageBasin','protectedArea','estateType','capadName','capadType','regionalEcosystem','traditionalOwners','nnttType','marineZone','marinePark','fishHabitatArea'];
   const cols=enriched?[...coreCols,...spatialCols,...infoCols]:[...coreCols,...infoCols];
@@ -4407,7 +4526,8 @@ async function exportCSV(enriched=false){
       r.elevMin??'',r.elevMax??'',r.depth??'',
       r.habitat||'',r.sex||'',r.lifeStage||'',r.preparations||'',r.individualCount||'',r.samplingProtocol||'',r.occurrenceRemarks||'',
       r.coll,r.uuid||'',
-      r._supp?'QM Register':'ALA Biocache',r.regId||'',r._suppReview?'pending':'',r._supp?r._suppAdded:'',r._imagedReg?'yes':''
+      r._supp?'QM Register':'ALA Biocache',r.regId||'',r._suppReview?'pending':'',r._supp?r._suppAdded:'',r._imagedReg?'yes':'',
+      r._nm?.qm||'',r._nm?.qmAuth||'',r._nm?.ala||'',r._nm?.alaAuth||'',r._nm?.alaRank||''
     ];
     const spatialVals=enriched?[
       sp.demElev!=null?Math.round(sp.demElev):'',
@@ -5216,7 +5336,7 @@ function openModal(idx){
       fetchWikiSummary(r);
       if(vernNeedsEnrich(r))fetchVernacular(r);
       else $('#mCom').textContent=singularize(r.vern);
-      if(!r.authorship)fetchAuthorship(r,idx);
+      if(!r.authorship&&!(r._nm&&(r._nm.differ||r._nm.held)))fetchAuthorship(r,idx);
       try{updateGalleryCard(idx,r)}catch(e){}
       enrichClassificationChain(r,idx);
     }).catch((err)=>{
@@ -5224,7 +5344,7 @@ function openModal(idx){
       // Even on error, still fetch wiki
       fetchWikiSummary(r);
       if(vernNeedsEnrich(r))fetchVernacular(r);
-      if(!r.authorship)fetchAuthorship(r,idx);
+      if(!r.authorship&&!(r._nm&&(r._nm.differ||r._nm.held)))fetchAuthorship(r,idx);
       enrichClassificationChain(r,idx);
     });
   }else{
@@ -6544,6 +6664,31 @@ async function clipCopy(text){
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);return true}catch(e){return false}
 }
 
+/* Specimen window: the two sources and, where checked, the accepted and original names */
+function modalNamesHTML(r,df){
+  const nm=r._nm||{};
+  const it=n=>shouldItalic(n)?`<em>${esc(displaySci(n))}</em>`:esc(displaySci(n));
+  const rows=[];
+  if(nm.differ){
+    rows.push(['Supplied as (Queensland Museum)',`${it(nm.qm)}${nm.qmAuth?' '+esc(nm.qmAuth):''}`]);
+    rows.push(['ALA match',`${it(nm.ala)}${nm.alaAuth?' '+esc(nm.alaAuth):''}${nm.alaRank?' ('+esc(nm.alaRank)+')':''}`]);
+  }
+  const v=nm.held?null:(verifiedFor(nm.qm)||verifiedFor(nm.ala)||verifiedFor(r.sci)||verifiedFor(r._suppExtra?.['Original name']));
+  if(v){
+    if(!nm.differ&&r._supp)rows.push(['Supplied as (Queensland Museum)',it(nm.qm||r.sci)]);
+    rows.push(['Accepted name (AFD)',`${it(v.accepted)}${v.acceptedAuthorship?' '+esc(v.acceptedAuthorship):''}${v.acceptedUrl?` <a href="${esc(v.acceptedUrl)}" target="_blank" rel="noopener">AFD ↗</a>`:''}`]);
+    if(v.original)rows.push(['Originally described as',`${it(v.original)}${v.originalAuthorship?' '+esc(v.originalAuthorship):''}${v.originalCitation?'. '+esc(v.originalCitation)+'.':''}`]);
+    if(v.combinationCitation)rows.push(['Present combination',esc(v.combinationCitation)+'.']);
+    if(v.typeData)rows.push(['Type data (AFD)',esc(v.typeData)]);
+    rows.push(['Names checked',`${esc(v.checkedAgainst||'Australian Faunal Directory')}, ${esc(fmtLongDate(v.checkedDate||''))}`]);
+  }else if(nm.differ&&_nameKey(nm.qm).split(' ')[0]!==_nameKey(nm.ala).split(' ')[0]&&!/^(?:family|order|class|phylum|kingdom|subfamily|superfamily|tribe|suborder|infraorder)$/.test(nm.alaRank)){
+    /* A different genus (S35609: Palpelius and ALA's Pristobaeus) is not explained until checked */
+    rows.push(['How the two names relate','Not yet checked against the AFD']);
+  }
+  if(!rows.length)return'';
+  return`<div class="det-sec"><div class="ds" style="background:var(--green)"></div> Names</div>
+    <div class="det-flow">${rows.map(([k,val])=>df(esc(k),val,true)).join('')}</div>`;
+}
 function renderModalDetails(r){
   const link=`https://biocache.ala.org.au/occurrences/${r.key}`;
   const src='ALA';
@@ -6583,6 +6728,7 @@ function renderModalDetails(r){
     ${suppNote}
     ${hasType?`<div class="type-badge" style="background:${typeColor(r.typeStatus)}">${esc(r.typeStatus)}</div>`:''}
     ${r.authorship?`<div class="auth-line"><em>${esc(r.authorship)}</em></div>`:''}
+    ${modalNamesHTML(r,df)}
 
     <div class="tax-chips">${taxArr.map(([rk,v,rkey])=>`<span class="tc" data-rk="${esc(rkey)}" data-nm="${esc(v)}"><span class="rk">${rk}</span> ${esc(v)}</span>`).join('')}</div>
 
@@ -6652,6 +6798,12 @@ function renderModalDetails(r){
   });
 }
 
+/* The two sources on a tile, when the museum's name and ALA's match differ */
+function cardNamesHTML(r){
+  const nm=r._nm;if(!nm||!nm.differ)return'';
+  const a=shouldItalic(nm.ala)?`<i>${esc(displaySci(nm.ala))}</i>`:esc(displaySci(nm.ala));
+  return`<span class="cn-l">Supplied as (Queensland Museum)</span><span class="cn-l">ALA match: ${a}${nm.alaRank?' ('+esc(nm.alaRank)+')':''}</span>`;
+}
 /* Update a single gallery card after enrichment */
 function updateGalleryCard(idx,r){
   const card=$(`#gal .card[data-i="${idx}"]`);if(!card)return;
@@ -6661,6 +6813,7 @@ function updateGalleryCard(idx,r){
     sci.className='card-sci'+(shouldItalic(r.sci)?' it':'');
     sci.textContent=displaySci(r.sci);
   }
+  const nmEl=card.querySelector('.card-names');if(nmEl)nmEl.innerHTML=cardNamesHTML(r);
   /* Update catalog + type line */
   const catLine=card.querySelector('.card-cat-line');
   if(catLine){
@@ -7265,6 +7418,27 @@ if(_SELFTEST){
       eq("pctLabel(0, 100) === '0%'", pctLabel(0,100), '0%');
       eq("pctLabel(999, 1000) === '99%'", pctLabel(999,1000), '99%');
       eq("pctLabel(5, 5) === '100%'", pctLabel(5,5), '100%');
+
+      /* ── SUPPLIED NAMES (stage 3c, 15 November 2026) ── */
+      const npC=buildNamePair('Cosmophasis tavurvur','Zabka & Waldock, 2012','Cosmophasis','Simon, 1901','genus');
+      assert('supplied name leads when ALA matched the genus (S90048)', npC.differ&&npC.lead==='Cosmophasis tavurvur'&&npC.leadAuth==='Zabka & Waldock, 2012'&&npC.alaAuth==='Simon, 1901', JSON.stringify(npC));
+      const npP=buildNamePair('Palpelius vitiensis','Patoleta, 2008','Pristobaeus','Simon, E., 1902','genus');
+      assert('different genus: both names kept, each with its own author (S35609)', npP.differ&&npP.qm==='Palpelius vitiensis'&&npP.ala==='Pristobaeus'&&npP.qmAuth==='Patoleta, 2008', JSON.stringify(npP));
+      const npW=buildNamePair('Pheidole RGBB sp.1','','Pheidole','','genus');
+      eq('working name shown exactly as supplied', npW.lead, 'Pheidole RGBB sp.1');
+      const npS=buildNamePair('Maratus volans','','Maratus volans','(O.P.-Cambridge, 1874)','species');
+      assert('same name: one name, not two', !npS.differ&&npS.lead==='Maratus volans', JSON.stringify(npS));
+      assert('subgenus alone does not make two names', !buildNamePair('Bactrocera (Bulladacus) cinnabaria','','Bactrocera cinnabaria','','species').differ);
+      for(const h of ['Argoctenus bignews ns name','Comptosia basivillosa MS name','Miturgopelma ms name rar ms name','Rhabdastrella 4712  n. sp. tropicostellifera','Dysidea sp. 1 (n.sp)','Lophocalyx 4709  sp.nov.(Tabachnick)','Cryptoerithus sp nov. 5 with scopula','Crellid nov. 1020','Vaceletia nov','Psammastra n.sp.1'])
+        assert('held: '+h, isHeldName(h));
+      for(const pub of ['Cosmophasis tavurvur','Neotrombicula novaehollandiae','Pheidole RGBB sp.1','Transkalliapseudes banana','Lymaenon circumvagus','Pheidole CNBB.A'])
+        assert('not held: '+pub, !isHeldName(pub));
+      const npH=buildNamePair('Rhabdastrella 4712  n. sp. tropicostellifera','','Rhabdastrella','','genus');
+      assert('held name: nothing of it shown, ALA match only', npH.held&&npH.qm===''&&npH.lead==='Rhabdastrella'&&!JSON.stringify({q:npH.qm,l:npH.lead,a:npH.ala}).includes('tropicostellifera'), JSON.stringify(npH));
+      const npH2=buildNamePair('Xus yus MS name','','Xus yus','','species');
+      eq('held name: an ALA match repeating the held epithet is cut to the genus', npH2.lead, 'Xus');
+      assert('name search: two words look like a name; a registration number does not', looksLikeName('Cosmophasis tavurvur')&&!looksLikeName('T2455')&&!looksLikeName('family:Salticidae'));
+      assert('held phrases excluded during a text search, each its own fq', alaBaseFQ({q:'bignews'}).filter(c=>c.startsWith('-text:')).length===3&&alaBaseFQ({q:''}).every(c=>!c.startsWith('-text:')));
 
       /* ── ONE TYPE STATUS ── */
       const fqTs=alaBaseFQ({hasType:'ts:holotype'});

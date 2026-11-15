@@ -1,0 +1,19 @@
+{
+  "about": "Name relationships checked against the Australian Faunal Directory (AFD) or the original publication, used by QM Explorer to find a specimen by its accepted or original name and to show both in the specimen details. A name not listed here has no checked relationship, and the Explorer leaves it unresolved.",
+  "checkedDate": "2026-11-15",
+  "names": [
+    {
+      "accepted": "Lymaenon circumvagus",
+      "acceptedAuthorship": "(Girault, 1915)",
+      "acceptedUrl": "https://biodiversity.org.au/afd/taxa/Lymaenon_circumvagus",
+      "original": "Gonatocerus circumvagus",
+      "originalAuthorship": "Girault, 1915",
+      "originalCitation": "Girault, A.A. 1915. Australian Hymenoptera Chalcidoidea II. Second supplement. Memoirs of the Queensland Museum 3: 154–169 [159]",
+      "combinationCitation": "Huber, J.T. 2015. World reclassification of the Gonatocerus group of genera (Hymenoptera: Mymaridae). Zootaxa 3967(1): 1–184 [44]",
+      "typeData": "Holotype QM ♀, Kuranda, QLD",
+      "checkedAgainst": "Australian Faunal Directory",
+      "checkedDate": "2026-11-15",
+      "specimens": ["T2455 (register IX1084, holotype)"]
+    }
+  ]
+}
