@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 15 November 2026 (evening).
+profile). Read both. Last updated 16 November 2026.
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -188,13 +188,13 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    working names shown exactly as supplied; primary types are holotype, neotype, type, lectotype
    and syntype. Next: filters and counts driven by the museum's `raw_` fields, with ALA's match
    second; a report on whether held names have since been published.
-4. Shared registration numbers and records ALA lacks — Entomology, Molluscs and Arachnids
-   fully inventoried (14–15 November 2026). `data/qm-register-supplement.json` (v5, live 15
-   November 2026) holds 1,179 specimens from the museum's register: 1,097 hidden in ALA because
-   they share a registration number, and 82 ALA holds under no QM collection, marked
-   `addedBecause: "not in ALA"` (6 Molluscs holotypes; 74 Arachnids holotypes, confirmed on the
-   museum's public collections catalogue; the two S107148 records). 14 are marked
-   `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
+4. Shared registration numbers and records ALA lacks — Entomology, Molluscs, Arachnids,
+   Herpetology and Corals fully inventoried (14–15 November 2026).
+   `data/qm-register-supplement.json` (v6, live 15 November 2026) holds 2,068 specimens from the
+   museum's register: 1,097 hidden in ALA because they share a registration number, and 971 ALA
+   holds under no QM collection, marked `addedBecause: "not in ALA"` (among them 652 Corals and
+   237 Herpetology, published once Lily confirmed the set is public). Items awaiting a curator
+   are marked `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
    Register); ALA's results come first and the additions follow, keyed `reg:<register
    identifier>`. Where coordinates are withheld, locality and location remarks are withheld too.
    `imagedInRegister` is a yes/no flag (no image links). The file is built in
@@ -204,9 +204,13 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    ALA records only. CSV: ALA rows' `query` is a working ALA address; register rows' `query` is
    plain text with no web address.
 5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
-6. Redesign in the Queensland Museum Design System — review, mock-up for Lily, then code.
+6. Redesign in the Queensland Museum Design System — under way on branch
+   `redesign/museum-2026-11` (three passes, 16 November 2026; not merged). Visual layer and
+   page structure only; element ids and all search, filter, export and map logic unchanged.
+   Status, decisions and the remaining list are in `project-notes/HANDOVER.md` ("Redesign").
    The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion
-   #9 and virtualising large ranks #10) is folded into this stage.
+   #9 and virtualising large ranks #10) is folded into this stage; Browse is now called
+   "Field guide" on the redesign branch.
 
 Also pending: the report to ALA. `docs/ALA-API-bug-report.md` (the CORS fault) has not been
 sent. To add before sending: wrong-group name matches, the leading-X family fault, older copies
@@ -240,8 +244,9 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` is at 439e236 (register additions v5, live and checked on GitHub Pages 15 November 2026:
-1,179 records). Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
+`main` is at 2e06fc8 (register additions v6, live on GitHub Pages 15 November 2026: 2,068
+records; plus this file's update, pushed 16 November 2026). The live site still has the former
+design; the redesign is on its own branch. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
 searches, both CSV exports and every outside service work, with the faults listed under stage 2
 batch 3. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
 map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;
