@@ -203,7 +203,7 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    T3136/T6182 records shown as "Curator review pending"). v3 (15 November 2026) brings it to
    1,094: 60 Molluscs specimens hidden by shared numbers, and six Molluscs holotypes ALA holds
    under no QM collection, marked `addedBecause: "not in ALA"` (worded so in the record window
-   and Copy Sources). v4 (branch `supplement/v4-arachnids`, 15 November 2026, not yet on `main`)
+   and Copy Sources). v4 (merged to `main` 15 November 2026, not yet pushed)
    adds 11 Arachnids records: nine hidden by shared numbers (four marked "Curator review
    pending") and both records at S107148, which ALA does not hold; 1,105 in all. Entomology,
    Molluscs and Arachnids are fully inventoried. Records has a Source filter
