@@ -841,7 +841,8 @@ function computeLocalQC(recs){
   let georef=0,media=0,typed=0;
   for(const r of recs){
     if(r.lat!=null&&r.lng!=null)georef++;
-    if(r.media&&r.media.length)media++;
+    /* Imaged = an image shown here, or a register addition the museum's register records as imaged. */
+    if((r.media&&r.media.length)||r._imagedReg)media++;
     if(isType(r.typeStatus))typed++;
   }
   return{georef,media,typed};
@@ -4627,7 +4628,7 @@ function renderCharts(){
       sections.push('<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#00a561"></span>Data Quality &amp; Richness <span style="font-weight:400;color:#4a4a4a;font-size:12px">('+fmt(T)+' total records)</span></div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
         +mkRing(hasCoord,T,'#00a561','Georeferenced','With coordinates','Missing coordinates')
-        +mkRing(hasMedia,T,'#46c2d2','Imaged','With media','No media')
+        +mkRing(hasMedia,T,'#46c2d2','Imaged','Imaged','Not imaged')
         +mkRing(hasTyped,T,'#f7941d','Type Specimens','Type material','Non-type')
         +richnessHtml
         +'</div></div>');
@@ -7486,6 +7487,7 @@ if(_SELFTEST){
       eq('register additions: collection maps to the ALA collection uid', _s1.collUid, 'co50');
       eq('register additions: curator review pending is carried', _s1._suppReview && !_s2._suppReview, true);
       eq('register additions: imaged in the register counts for Has Media', clientFilterRecs([_s1,_s2],{media:'StillImage'}).length, 1);
+      eq('register additions: imaged in the register counts in the Imaged total', computeLocalQC([_s1,_s2,{media:['x']},{media:[]}]).media, 2);
       eq('register additions: binomial search finds a subgenus name', clientFilterRecs([normRec_S({registerId:'X',scientificName:'Bactrocera (Zeugodacus) nigra',genus:'Bactrocera',specificEpithet:'nigra'})],{q:'Bactrocera nigra'}).length, 1);
       eq("fmtLongDate('2026-11-15') === '15 November 2026'", fmtLongDate('2026-11-15'), '15 November 2026');
       eq('paging: ALA 1 + register 4 on page 1', JSON.stringify(suppSliceFor(0,1,1,4)), '[0,4]');
