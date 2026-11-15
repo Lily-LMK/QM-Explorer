@@ -4024,7 +4024,7 @@ async function exportCSV(enriched=false){
   let recs;
   if(S.mapPoly&&S._polyAllRecs?.length){
     recs=[...S._polyAllRecs];
-  }else if(S.total<=INIT_PAGE){
+  }else if(S.total<=INIT_PAGE&&S.off===0){
     recs=[...S.res];
   }else{
     /* Need to fetch all pages from ALA. ALA serves at most ALA_MAX_RESULTS per
@@ -4032,18 +4032,24 @@ async function exportCSV(enriched=false){
     const max=ALA_MAX_RESULTS;
     const target=Math.min(S.total,max);
     if(S.total>max){
-      const ok=confirm(`This query has ${fmt(S.total)} records, but the Atlas of Living Australia now returns at most ${fmt(max)} records per query.\n\nExport the first ${fmt(max)}? (To export everything, narrow the search — e.g. by collection or taxon — so each query stays under ${fmt(max)}.)`);
+      const ok=confirm(`This search has ${fmt(S.total)} records. The Atlas of Living Australia serves only the first ${fmt(max)} records of any one search, so this file would hold the first ${fmt(max)}.\n\nExport those ${fmt(max)}?\n\nTo export everything, narrow the search (by collection, family or type status, for example) until it has ${fmt(max)} records or fewer.`);
       if(!ok)return;
     }
     toast(`Fetching all ${fmt(target)} records… 0%`);
-    recs=[...S.res]; /* start with what we have */
+    /* Always read from record 0, whichever page is on screen. (Starting from the page on
+       screen repeated that page and left out every page before it.) Each record is held once. */
+    recs=[];
+    const seen=new Set();
     const f=getFilters();
     const BATCH=ALA_MAX_PAGE;
-    for(let off=recs.length;off<target;off+=BATCH){
+    for(let off=0;off<target;off+=BATCH){
       try{
         const d=await alaFetch(f,off,Math.min(BATCH,target-off));
         const batch=(d.occurrences||[]).map(normRec_A);
-        recs.push(...batch);
+        for(const r of batch){
+          if(r.uuid){if(seen.has(r.uuid))continue;seen.add(r.uuid)}
+          recs.push(r);
+        }
         if(batch.length<BATCH)break; /* no more records */
       }catch(e){toast('Fetch error — exporting what we have');break}
       toast(`Fetching all ${fmt(target)} records… ${Math.round(recs.length/target*100)}%`);
