@@ -183,11 +183,6 @@ button,select,input{font-family:var(--font)}
 .nav-btn{font-size:18px;font-weight:700;width:44px;height:44px;border:1.5px solid var(--ink);border-radius:50%;background:#fff;cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;line-height:1;padding:0;transition:var(--tr)}
 .nav-btn:hover:not(:disabled){background:var(--ink);color:#fff}
 .nav-btn:disabled{opacity:.3;cursor:default}
-.density-tog{display:flex;gap:0;background:#fff;border:1.5px solid var(--ink);border-radius:var(--pill);padding:0;overflow:hidden}
-.density-tog button{font-size:15px;padding:0 14px;border:none;background:transparent;cursor:pointer;border-radius:0;color:var(--ink);line-height:1;min-width:48px;min-height:38px;display:flex;align-items:center;justify-content:center;transition:var(--tr)}
-.density-tog button:hover{background:var(--bone)}
-.density-tog button.on{background:var(--ink);color:#fff}
-.density-tog button:focus-visible{outline-offset:-3px}
 .gal-link{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:none;border:0;padding:0;min-height:44px;cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-color:var(--chart-ink,#0a0a0a)}
 .gal-link b{font-weight:800}
 .gal-link:hover{text-decoration-color:var(--muted)}
@@ -481,7 +476,6 @@ button,select,input{font-family:var(--font)}
 .csv-btn{margin-left:0}
 .csv-plus{font-size:13px;font-weight:600;color:var(--muted)}
 .csv-plus.on{color:var(--ink)}
-.density-tog button{font-size:14px;font-weight:700;padding:0 18px}
 /* filter panel */
 .side{padding-top:18px}
 .side-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
@@ -632,7 +626,7 @@ button,select,input{font-family:var(--font)}
     <div class="scroll" id="scroll">
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
-        <div class="gal-bar" id="galBar"><div class="gal-count" id="galCount" aria-live="polite"></div><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Gallery view" aria-pressed="false">Gallery</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">List</button></div></div>
+        <div class="gal-bar" id="galBar"><div class="gal-count" id="galCount" aria-live="polite"></div></div>
         <div id="gal" class="gal" role="list" aria-label="Specimen records"></div><div id="galLoad"></div>
         <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div><p class="pg-note" id="pgNote" hidden></p></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
@@ -2356,7 +2350,6 @@ function renderGallery(){
   if(density==='grid'&&!mediaFilter&&!galMostPics()){density='compact';S._densityManual=false;S.galDensity=null}
   updateGalLink(density);
   g.className=density==='compact'?'gal compact':'gal';
-  bar.querySelectorAll('.density-tog button').forEach(b=>{const on=b.dataset.d===density;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false')});
 
   g.innerHTML=S.res.map((r,i)=>{
     const hasImg=r.media?.length>0;
@@ -3574,7 +3567,7 @@ function renderMap(){
       const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'© Esri'});
       const esriCanvas='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
       const light=L.layerGroup([L.tileLayer(esriCanvas+'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:16,attribution:'© Esri, HERE, Garmin, © OpenStreetMap contributors'}),L.tileLayer(esriCanvas+'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:16})]);
-      light.addTo(S.map);L.control.layers({'Light':light,'Streets':streets,'Topo':topo,'Satellite':sat},{},{collapsed:true}).addTo(S.map);
+      streets.addTo(S.map);L.control.layers({'Streets':streets,'Light':light,'Topo':topo,'Satellite':sat},{},{collapsed:true}).addTo(S.map);
       /* The toolbar and dock sit in the page flow, so the map's box can change size; keep Leaflet in step. */
       try{if(window.ResizeObserver){let _rz;new ResizeObserver(()=>{clearTimeout(_rz);_rz=setTimeout(()=>{try{S.map.invalidateSize()}catch(e){}},80)}).observe($('#mapC'))}}catch(e){}
       S.markers=createMarkerLayer();S.markers.addTo(S.map);
@@ -7485,7 +7478,6 @@ $('#nextP')?.addEventListener('click',()=>{
   }else{if(S.off+INIT_PAGE<Math.min(S.total,ALA_MAX_RESULTS)){S.off+=INIT_PAGE;doSearch()}}
 });
 /* Density toggle + CSV export + Nav buttons */
-$('#galBar').querySelectorAll('.density-tog button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.d==='grid')showGallery();else showList(false)}));
 $('#galCount').addEventListener('click',e=>{const b=e.target.closest('.gal-link');if(!b)return;if(b.dataset.go==='grid')showGallery();else showList(true)});
 $('#csvBtn').addEventListener('click',e=>{e.stopPropagation();exportCSV($('#csvPlusBtn').classList.contains('on'))});
 $('#csvPlusBtn').addEventListener('click',e=>{e.stopPropagation();const btn=$('#csvPlusBtn');btn.classList.toggle('on');btn.setAttribute('aria-pressed',btn.classList.contains('on'));toast(btn.classList.contains('on')?'CSV+ on — export will include full spatial enrichment':'CSV+ off — fast export')});
