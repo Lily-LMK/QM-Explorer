@@ -626,7 +626,6 @@ button,select,input{font-family:var(--font)}
 .mf-copy .meta-hint{min-height:0;padding:0 0 0 6px;color:var(--green-d);font-weight:700}
 .mf-copy .meta-hint:empty{display:none}
 .mf-body{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
-.mf-body.has-ref{grid-template-columns:minmax(0,1fr) 236px}
 .mf-links{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0 20px}
 .mf-l{display:flex;align-items:center;gap:10px;min-height:44px;text-decoration:none;color:var(--ink);min-width:0}
 .mf-l i{flex:0 0 26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px;font-weight:800}
@@ -635,21 +634,23 @@ button,select,input{font-family:var(--font)}
 .mf-l:hover b{text-decoration:underline;text-underline-offset:3px}
 .mf-l:focus-visible{outline:none;box-shadow:var(--focus)}
 .mf-ack{margin:0;padding-top:6px;border-top:1px solid var(--hair2);font-size:11.5px;line-height:1.4;color:var(--muted)}
-.mf-ref{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ref-sec[hidden]{display:none!important}
+.ref-row{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start}
+.ref-row.solo{grid-template-columns:minmax(0,1fr)}
 .ref-fig{margin:0;display:flex;flex-direction:column;gap:5px}
-.ref-img{position:relative;display:block;width:100%;height:132px;background:#fff;border:1px solid var(--hair)}
+.ref-img{position:relative;display:block;width:100%;height:160px;background:#fff;border:1px solid var(--hair)}
 .ref-img img{width:100%;height:100%;object-fit:contain;display:block}
 .ref-img:focus-visible{outline:none;box-shadow:var(--focus)}
 .ref-tag{position:absolute;left:0;top:0;background:var(--ink);color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px}
-.ref-fig figcaption{font-size:12px;line-height:1.35;color:#444}
+.ref-fig figcaption{font-size:12.5px;line-height:1.35;color:#444}
 .ref-fig figcaption a{color:var(--ink);font-weight:600;text-underline-offset:2px}
-.ref-note{border:1px solid var(--hair);background:#fff;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.ref-note{display:flex;flex-direction:column;gap:6px;max-width:460px}
 .ref-k{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)}
-.ref-t{margin:0;font-size:13.5px;line-height:1.4;color:#2a2a2a}
+.ref-t{margin:0;font-size:15px;line-height:1.5;color:#2a2a2a}
 .ref-t.mu{color:var(--muted)}
-.ref-q{margin:0;font-size:13.5px;line-height:1.4;font-weight:700;display:flex;gap:7px;align-items:baseline;color:var(--ink)}
+.ref-q{margin:0;font-size:15px;line-height:1.4;font-weight:700;display:flex;gap:7px;align-items:baseline;color:var(--ink)}
 .ref-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center}
-@media(max-width:700px),(max-height:640px){.mod-right{overflow-y:auto}.mod-right-body{flex:none;overflow:visible}.mf-body.has-ref{grid-template-columns:1fr}.mf-ref{max-width:320px}}
+@media(max-width:700px),(max-height:640px){.mod-right{overflow-y:auto}.mod-right-body{flex:none;overflow:visible}.ref-row{grid-template-columns:1fr}.ref-fig{max-width:320px}}
 </style>
 </head>
 <body>
@@ -6003,16 +6004,11 @@ function _refMerge(a,g){
 }
 async function _refLookup(sp,gen,r){
   const out={checked:_localISO(),species:sp,genus:gen,spCands:[],genCands:[]};
-  if(sp){
-    const[a,g]=await Promise.all([_refAla('species',sp,r),_refGbif('species',sp,r)]);
-    out.spAla=a.ok;out.spGbif=g.ok;out.spCands=_refMerge(a,g);
-  }
-  if(!out.spCands.length&&gen){
-    const[a,g]=await Promise.all([_refAla('genus',gen,r),_refGbif('genus',gen,r)]);
-    out.genAla=a.ok;out.genGbif=g.ok;out.genCands=_refMerge(a,g);
-  }
-  const top=(out.spCands.length?out.spCands:out.genCands).slice(0,3);
-  await Promise.all(top.map(_refAlaCredit));
+  const[sa,sg,ga,gg]=await Promise.all([
+    sp?_refAla('species',sp,r):{ok:false,c:[]},sp?_refGbif('species',sp,r):{ok:false,c:[]},
+    gen?_refAla('genus',gen,r):{ok:false,c:[]},gen?_refGbif('genus',gen,r):{ok:false,c:[]}]);
+  if(sp){out.spAla=sa.ok;out.spGbif=sg.ok;out.spCands=_refMerge(sa,sg)}
+  if(!out.spCands.length&&gen){out.genAla=ga.ok;out.genGbif=gg.ok;out.genCands=_refMerge(ga,gg)}
   return out;
 }
 async function fetchRefImage(r,idx){
@@ -6029,28 +6025,29 @@ async function fetchRefImage(r,idx){
   if(!p){p=_refLookup(sp,gen,r);_refCache.set(key,p)}
   const out=await p;
   r._ref=out;
-  if(S.modalIdx>=0&&S.res[S.modalIdx]===r)renderRef(r);
+  const here=()=>S.modalIdx>=0&&S.res[S.modalIdx]===r;
+  if(here())renderRef(r);
+  /* Photographer and licence arrive a moment later */
+  const c=(out.spCands.length?out.spCands:out.genCands)[out.pick||0];
+  if(c&&c.via==='ALA'&&!c._credited){await _refAlaCredit(c);if(here())renderRef(r)}
 }
 function renderRef(r){
   const box=$('#mRef');if(!box)return;
-  const body=box.parentElement;
   const R=r._ref;
-  const off=()=>{box.hidden=true;box.innerHTML='';body.classList.remove('has-ref')};
+  const off=()=>{box.hidden=true;box.innerHTML=''};
   if(!R||S.modalPhotos.length)return off();
-  if(R.loading){
-    box.innerHTML=`<div class="ref-note"><div class="ref-k">Specimen photographs</div><p class="ref-t mu">Looking in ALA and GBIF…</p></div>`;
-    box.hidden=false;body.classList.add('has-ref');return;
-  }
+  const head=`<div class="det-sec"><div class="ds" style="background:var(--ink)"></div> Specimen photographs</div>`;
+  if(R.loading){box.innerHTML=head+`<p class="ref-t mu">Looking in ALA and GBIF for museum photographs…</p>`;box.hidden=false;return}
   const level=R.spCands.length?'species':(R.genCands.length?'genus':'');
   const cands=level==='species'?R.spCands:R.genCands;
   const pick=R.pick||0;
   const c=cands[pick];
-  let h='';
+  let fig='',note='';
   if(c){
     const nameBit=level==='genus'&&c.name?`<em>${esc(c.name)}</em>, `:'';
     const who=[c.type?c.type.toLowerCase():'',[c.inst,c.cat].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const credit=c.creator?`Photo ${esc(c.creator)}${c.lic?', '+esc(c.lic):''}`:(c.lic?esc(c.lic):'');
-    h+=`<figure class="ref-fig">
+    fig=`<figure class="ref-fig">
       <a class="ref-img" href="${esc(c.href)}" target="_blank" rel="noopener" aria-label="Museum photograph of ${esc(c.name||'a related specimen')}, ${level==='species'?'not this specimen':'another species in the genus'}. Opens its source.">
         <img src="${esc(c.img)}" alt="" loading="lazy">
         <span class="ref-tag">${level==='species'?'Not this specimen':'Genus only'}</span>
@@ -6064,12 +6061,13 @@ function renderRef(r){
   if(subj.n&&subj.none&&srcs.length){
     const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
     const holds=isType(ts)?`Queensland Museum holds ${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}.`:'Queensland Museum holds a specimen.';
-    h+=`<div class="ref-note"><div class="ref-k">Specimen photographs</div>
-      <p class="ref-t">No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')} (checked ${esc(fmtLongDate(R.checked))}).</p>
-      <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p></div>`;
+    note=`<div class="ref-note"><p class="ref-t">No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')} (checked ${esc(fmtLongDate(R.checked))}).</p>
+      <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p>${c?`<p class="ref-t mu">The photograph is of another species in the genus.</p>`:''}</div>`;
+  }else if(c&&level==='species'){
+    note=`<div class="ref-note"><p class="ref-t mu">A museum photograph of the same species, held elsewhere. Not this specimen.</p></div>`;
   }
-  if(!h)return off();
-  box.innerHTML=h;box.hidden=false;body.classList.add('has-ref');
+  if(!fig&&!note)return off();
+  box.innerHTML=head+`<div class="ref-row${fig?'':' solo'}">${fig}${note}</div>`;box.hidden=false;
   const img=box.querySelector('.ref-img img');
   if(img)img.addEventListener('error',async()=>{
     R.pick=pick+1;
@@ -7243,6 +7241,7 @@ function renderModalDetails(r){
     </div>
 
     ${r.lat!=null&&r.lng!=null?`<div class="det-sec"><div class="ds" style="background:#6daf21"></div> Country &amp; context</div><div id="spatialCtx"></div>`:''}
+    <section id="mRef" class="ref-sec" aria-label="Specimen photographs" hidden></section>
 
     ${suppExtra}
     ${r.occurrenceRemarks?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> Remarks</div><p class="m-remarks">${esc(r.occurrenceRemarks)}</p>`:''}
@@ -7275,7 +7274,6 @@ function renderModalDetails(r){
     </div>
     <div class="mf-body">
       <div class="mf-links">${L.map(lk).join('')}<a class="mf-l" id="mWikiLink" href="#" target="_blank" rel="noopener" hidden><i style="background:#dcb77e" aria-hidden="true">↗</i><span><b>Wikipedia</b><small></small></span></a></div>
-      <div class="mf-ref" id="mRef" hidden></div>
     </div>
     <p class="mf-ack">Queensland Museum acknowledges the First Peoples – the Traditional Custodians of the lands, waters and sky where we live and work.</p>`;
 
