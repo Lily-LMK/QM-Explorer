@@ -785,6 +785,8 @@ function pctLabel(a,b){
   if(a/b<0.01)return '<1%';
   return Math.min(99,Math.round(a/b*100))+'%';
 }
+/* Locality, state and country, without repeating a part (ALA often gives the state as the locality) */
+function placeLine(r){const out=[];for(const p of[r.locality,r.state,r.country]){const t=(p||'').trim();if(t&&!out.some(x=>x.toLowerCase()===t.toLowerCase()))out.push(t)}return out.join(', ')}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500)}
 
 /* ── In-memory fetch cache ──
@@ -2432,7 +2434,7 @@ function renderGallery(){
     const th=hasImg
       ? `<img src="${esc(r.media[0])}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${phUrl}'"/>`
       : null;
-    const loc=r.locality?[r.locality,r.state,r.country].filter(Boolean).join(', '):'';
+    const loc=r.locality?placeLine(r):'';
     const hasType=isType(r.typeStatus);
     /* Breadcrumb: order › family › genus, but exclude any that duplicates the sci name */
     const sciLo=(r.sci||'').toLowerCase().trim();
@@ -7081,7 +7083,7 @@ function specCaption(r){
   if(l2.length)s2=' Collected '+l2.join(', ')+'.';
 
   /* Line 3: "Bunya Mountains, Queensland, Australia." */
-  const place=[r.locality,r.state,r.country].filter(Boolean).join(', ');
+  const place=placeLine(r);
   let s3='';
   if(place)s3=' '+place+'.';
 
@@ -7203,7 +7205,7 @@ function renderModalDetails(r){
   const df=(label,val,wide)=>val?`<span class="df${wide?' wide':''}"><span class="k">${label}</span><span class="v">${val}</span></span>`:'';
   /* One field in the record columns; a muted value says what the record does not give */
   const fv=(label,val,muted)=>val?`<div class="rc-f"><div class="rc-k">${label}</div><div class="rc-v${muted?' mu':''}">${val}</div></div>`:'';
-  const loc=[r.locality,r.state,r.country].filter(Boolean).join(', ');
+  const loc=placeLine(r);
 
   /* Authors and year sit in the header, after the common name */
   const au=$('#mAuth');if(au)au.textContent=r.authorship||'';
@@ -7291,7 +7293,7 @@ function renderModalDetails(r){
   const showText=(what,t)=>{out.innerHTML=`<div class="det-sec"><div class="ds" style="background:var(--ink)"></div> ${esc(what)}</div><div class="copy-block">${esc(t)}</div>`;out.scrollIntoView({behavior:'smooth',block:'nearest'})};
   const wire=(id,what,fn,alwaysShow)=>$(id)?.addEventListener('click',async()=>{
     const t=fn(r);const ok=await clipCopy(t);
-    if(ok)say(`Copied ${what.toLowerCase()}.`);else say('Copy it from the box below.');
+    if(ok){say(`Copied ${what.toLowerCase()}.`);toast(`${what} copied`)}else{say('Copy it from the box below.');toast('Copy it from the box at the end of the record')}
     if(!ok||alwaysShow)showText(what,t);
   });
   wire('#mCopyTitle','Title',specTitle);
@@ -7340,7 +7342,7 @@ function updateGalleryCard(idx,r){
   }
   /* Update details */
   const det=card.querySelector('.card-det');if(!det)return;
-  const loc=r.locality?[r.locality,r.state,r.country].filter(Boolean).join(', '):'';
+  const loc=r.locality?placeLine(r):'';
   const sciLo=(r.sci||'').toLowerCase().trim();
   const taxParts=[[r.order,'order'],[r.family,'family'],[r.genus,'genus']].filter(([v])=>v&&v.toLowerCase()!==sciLo);
   const taxCrumb=taxParts.map(([v,rk])=>`<a href="#" class="tax-link" data-rk="${rk}" data-nm="${esc(v)}">${esc(v)}</a>`).join(' › ');
