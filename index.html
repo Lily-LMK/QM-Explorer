@@ -139,8 +139,8 @@ button,select,input{font-family:var(--font)}
 .card{background:#fff;border:1px solid var(--hair);border-radius:0;overflow:hidden;cursor:pointer;transition:transform var(--tr),box-shadow var(--tr),border-color var(--tr);display:flex;flex-direction:column;position:relative}
 .card:hover{border-color:var(--ink);transform:translate(-2px,-2px);box-shadow:var(--lift)}
 .card:active{transform:none;box-shadow:none}
-.card-th{aspect-ratio:4/3;background:var(--ink);overflow:hidden;position:relative}
-.card-th img{width:100%;height:100%;object-fit:cover;display:block}
+.card-th{aspect-ratio:4/3;background:var(--bone2);overflow:hidden;position:relative}
+.card-th img{width:100%;height:100%;object-fit:contain;display:block} /* the whole specimen, on warm grey; never cropped (Lily, 17 November 2026) */
 .card-th .ni{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8a867d;font-size:12px;gap:4px;background:var(--bone2)}
 .card-th .ni .ico{font-size:14px;font-weight:300;color:#a39f95;font-style:normal}
 .card-th .ni .ni-ord{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted2);display:none}
@@ -700,8 +700,8 @@ body.on-home #csvBtn,body.on-home #csvPlusBtn{display:none}
 .hm-ct.ld{background:var(--bone2);border-top-color:var(--hair)}
 .hm-photos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px;margin:0;padding:0;list-style:none}
 .hm-ph{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--ink)}
-.hm-ph .f{width:100%;aspect-ratio:1/1;background:var(--ink);overflow:hidden}
-.hm-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.hm-ph .f{width:100%;aspect-ratio:1/1;background:var(--bone2);overflow:hidden}
+.hm-ph img{width:100%;height:100%;object-fit:contain;display:block}
 .hm-ph .nm{font-size:16px;font-weight:600;font-style:italic;line-height:1.2}
 .hm-ph .id{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700}
 .hm-ph .id span+span{font-size:13px;font-weight:500;color:var(--muted)}
