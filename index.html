@@ -654,6 +654,62 @@ button,select,input{font-family:var(--font)}
 .ref-q{margin:0;font-size:15px;line-height:1.4;font-weight:700;display:flex;gap:7px;align-items:baseline;color:var(--ink)}
 .ref-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center}
 @media(max-width:700px),(max-height:640px){.mod-right{overflow-y:auto}.mod-right-body{flex:none;overflow:visible}.ref-row{grid-template-columns:1fr}.ref-fig{max-width:320px}}
+
+/* ═══ OPENING PAGE (17 November 2026; mock-up "Opening page 1 · Front page") ═══ */
+.home{display:none}
+body.on-home .home{display:block}
+body.on-home .vp{display:none!important}
+body.on-home .lay{grid-template-columns:1fr}
+body.on-home .side,body.on-home .sum,body.on-home .chip-bar{display:none!important}
+body.on-home .scroll{padding:0}
+body.on-home #csvBtn,body.on-home #csvPlusBtn{display:none}
+.home{background:var(--bone);color:var(--ink)}
+.hm-hero{background:var(--ink);color:#fff;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);min-height:560px}
+.hm-intro{padding:64px 56px 56px 48px;display:flex;flex-direction:column;gap:22px}
+.hm-kick{font-size:14px;font-weight:700;letter-spacing:.12em;color:var(--chart);text-transform:uppercase}
+.hm-intro h1{margin:0;font-size:clamp(48px,5.8vw,84px);font-weight:900;letter-spacing:-.035em;line-height:.9}
+.hm-intro h1 span{display:block}
+.hm-lede{margin:0;font-size:20px;line-height:1.5;color:#d4d2cc;max-width:560px}
+.hm-stats{display:flex;flex-wrap:wrap;gap:16px 40px;margin:6px 0 0;padding:0;list-style:none}
+.hm-stats b{display:block;font-size:40px;font-weight:900;letter-spacing:-.02em;line-height:1}
+.hm-stats span{display:block;font-size:15px;color:#b4b4b4;margin-top:6px}
+.hm-acts{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.hm-pill{font:700 16px var(--font);min-height:48px;padding:0 22px;border-radius:var(--pill);display:inline-flex;align-items:center;text-decoration:none;border:2px solid #fff;color:#fff;transition:background var(--tr),color var(--tr)}
+.hm-pill:hover{background:#fff;color:var(--ink)}
+.hm-pill.pri{background:var(--chart);border-color:var(--chart);color:var(--ink)}
+.hm-pill.pri:hover{background:#fff;border-color:#fff}
+.hm-fig{margin:0;position:relative;background:#000;overflow:hidden;min-height:420px}
+.hm-fig img{width:100%;height:100%;object-fit:contain;display:block;position:absolute;inset:0}
+.hm-fig figcaption{position:absolute;left:24px;bottom:22px;right:24px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.hm-fig .row{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:700}
+.hm-fig a{color:#fff;font-size:20px;font-weight:600;font-style:italic}
+.hm-fig .cr{font-size:13.5px;color:#b4b4b4}
+.hm-badge{display:inline-block;color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:var(--pill);background:var(--red);font-style:normal}
+.hm-sec{padding:52px 48px 8px}
+.hm-sec+.hm-sec{padding:44px 48px 56px}
+.hm-sh{display:flex;align-items:baseline;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:20px}
+.hm-sh h2{margin:0;font-size:32px;font-weight:900;letter-spacing:-.02em}
+.hm-sh .nt{font-size:14.5px;color:var(--muted)}
+.hm-sh a{font-size:16px;font-weight:700;color:var(--ink)}
+.hm-colls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:0;padding:0;list-style:none}
+.hm-ct{display:flex;flex-direction:column;gap:6px;background:#fff;border-top:4px solid var(--cc,var(--ink));padding:16px 18px;text-decoration:none;color:var(--ink);min-height:132px;box-sizing:border-box;height:100%;transition:box-shadow var(--tr)}
+.hm-ct:hover{box-shadow:var(--lift)}
+.hm-ct .n{font-size:18px;font-weight:800;line-height:1.2}
+.hm-ct .c{font-size:30px;font-weight:900;letter-spacing:-.02em;line-height:1;margin-top:auto}
+.hm-ct .i{font-size:13.5px;color:var(--muted)}
+.hm-ct.ld{background:var(--bone2);border-top-color:var(--hair)}
+.hm-photos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px;margin:0;padding:0;list-style:none}
+.hm-ph{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--ink)}
+.hm-ph .f{width:100%;aspect-ratio:1/1;background:var(--ink);overflow:hidden}
+.hm-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.hm-ph .nm{font-size:16px;font-weight:600;font-style:italic;line-height:1.2}
+.hm-ph .id{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700}
+.hm-ph .id span+span{font-size:13px;font-weight:500;color:var(--muted)}
+.hm-ph:hover .nm{text-decoration:underline}
+.hm-err{font-size:15px;color:var(--muted);margin:0}
+.home a:focus-visible{outline:3px solid var(--peri);outline-offset:3px}
+@media(max-width:1200px){.hm-colls{grid-template-columns:repeat(4,minmax(0,1fr))}.hm-photos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.hm-hero{grid-template-columns:1fr}.hm-intro{padding:40px 20px 36px}.hm-fig{min-height:0;aspect-ratio:4/5;max-height:560px}.hm-sec,.hm-sec+.hm-sec{padding:36px 20px 8px}.hm-sec+.hm-sec{padding-bottom:40px}.hm-colls{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-photos{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-stats b{font-size:32px}.hm-lede{font-size:18px}.hm-sh h2{font-size:26px}}
 </style>
 </head>
 <body>
@@ -697,6 +753,41 @@ button,select,input{font-family:var(--font)}
     <div class="tabs" role="tablist" aria-label="View tabs"><button class="tab on" data-v="gallery" role="tab" aria-selected="true" aria-controls="v-gallery" id="tab-gallery">Records</button><button class="tab" data-v="taxa" role="tab" aria-selected="false" aria-controls="v-taxa" id="tab-taxa">Taxonomy</button><button class="tab" data-v="guide" role="tab" aria-selected="false" aria-controls="v-guide" id="tab-guide">Field guide</button><button class="tab" data-v="map" role="tab" aria-selected="false" aria-controls="v-map" id="tab-map">Map</button><button class="tab" data-v="charts" role="tab" aria-selected="false" aria-controls="v-charts" id="tab-charts">Analytics</button><span class="tab-sp"></span><button class="tab csv-btn" id="csvBtn" title="Export these records as a CSV file" aria-label="Export records as CSV">Export CSV</button><button class="tab csv-btn csv-plus" id="csvPlusBtn" title="Toggle enriched export (spatial context)" aria-label="Toggle enriched CSV export" aria-pressed="false">+ place context</button></div>
     <div class="sum" id="sum"><span class="rc" id="rc" role="status" aria-live="polite"></span><div class="stats-g" role="group" aria-label="Collection snapshot"><div class="sc a"><div class="sv" id="sRec" aria-label="Record count">—</div><div class="sl">Records</div></div><div class="sc"><div class="sv" id="sFam" aria-label="Family count">—</div><div class="sl">families</div></div><div class="sc"><div class="sv" id="sGen" aria-label="Genera count">—</div><div class="sl">genera</div></div></div></div>
     <div class="scroll" id="scroll">
+      <div class="home" id="home">
+        <section class="hm-hero" aria-labelledby="hmH">
+          <div class="hm-intro">
+            <div class="hm-kick">Queensland Museum · State Collection</div>
+            <h1 id="hmH"><span id="hmTotal">…</span><span>specimen records</span></h1>
+            <p class="hm-lede">Natural history specimens databased by Queensland Museum, from beetles to corals, shown through the Atlas of Living Australia with <span id="hmSupp">more</span> from the museum’s register.</p>
+            <ul class="hm-stats" aria-label="The collection in numbers">
+              <li><b id="hmImg">…</b><span>imaged</span></li>
+              <li><b id="hmPrim">…</b><span>primary types</span></li>
+              <li><b id="hmColl">…</b><span>collections</span></li>
+            </ul>
+            <div class="hm-acts">
+              <a class="hm-pill pri" id="hmBrowse" href="#view=gallery">Browse all records →</a>
+              <a class="hm-pill" href="#hasType=primary">Type specimens</a>
+              <a class="hm-pill" href="#media=StillImage">Imaged specimens</a>
+            </div>
+          </div>
+          <figure class="hm-fig">
+            <img src="qm-T8408-anoplognathus-blackdownensis-holotype-dorsal.jpg" width="1920" height="2400" alt="Holotype of Anoplognathus blackdownensis, a Christmas beetle, photographed from above on black" decoding="async" fetchpriority="high">
+            <figcaption>
+              <span class="row"><span class="hm-badge">HOLOTYPE</span><span>T8408</span></span>
+              <a href="#catNum=T8408">Anoplognathus blackdownensis</a>
+              <span class="cr">Entomology · Photo: Queensland Museum</span>
+            </figcaption>
+          </figure>
+        </section>
+        <section class="hm-sec" aria-labelledby="hmCollH">
+          <div class="hm-sh"><h2 id="hmCollH">Collections</h2><span class="nt" id="hmDate">Databased records in ALA and the museum’s register</span></div>
+          <ul class="hm-colls" id="hmColls" aria-busy="true"></ul>
+        </section>
+        <section class="hm-sec" aria-labelledby="hmPhH">
+          <div class="hm-sh"><h2 id="hmPhH">Holotypes, photographed</h2><a id="hmHoloAll" href="#hasType=ts%3Aholotype&amp;media=StillImage">All imaged holotypes →</a></div>
+          <ul class="hm-photos" id="hmPhotos" aria-busy="true"></ul>
+        </section>
+      </div>
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
         <div class="gal-bar" id="galBar"><div class="gal-count" id="galCount" aria-live="polite"></div></div>
@@ -889,6 +980,7 @@ const COLL_COLOR_MAP={
   'birds':'#a9793a','ornithology':'#a9793a',
   'mammals':'#5b3a24','mammalogy':'#5b3a24',
   'porifera':'#7f9a12','sponges':'#7f9a12',
+  'plants':'#2a2a2a',
 };
 const COLL_FALLBACK=['#2f7d3b','#0f7bab','#c93f1a','#d98e00','#9b4fc4','#c8358f','#4b6fd6','#17897f','#7a1f3d','#a9793a'];
 const collColorMap=new Map();let collColorIdx=0;
@@ -1632,6 +1724,7 @@ function mergeFacets(a,b){
    MAIN SEARCH
    ═════════════════════════════════════════════════ */
 async function doSearch(){
+  if(S.home&&!S._homeQuiet)hideHome(); /* a search the person makes leaves the opening page */
   S._searchStale=false;
   try{syncTaxFold()}catch(e){}
   try{await Promise.all([resolveNameQuery(S.q),loadVerifiedNames()])}catch(e){console.warn('[name search]',e)}
@@ -7399,6 +7492,7 @@ function closeModal(){$('#modal').classList.remove('open');S.modalIdx=-1;S.modal
    VIEW SWITCH
    ═════════════════════════════════════════════════ */
 function switchView(v){
+  if(S.home)hideHome();
   /* Leaving the Map stops its background loader, so the other views are not slowed by it.
      (A polygon scan is left alone: every view reads its records.) Coming back starts it again. */
   if(v!=='map'&&!S.mapPoly&&S._bgRunning!=null){
@@ -7716,8 +7810,8 @@ FIDS.forEach((id,idx)=>{$('#'+id).addEventListener('change',()=>{for(let i=idx+1
 $('#catGo')?.addEventListener('click',()=>{S.off=0;doSearch()});
 $('#fCat')?.addEventListener('keydown',e=>{if(e.key==='Enter'){S.off=0;doSearch()}});
 $('#fSort')?.addEventListener('change',()=>{updateDropdowns()});
-/* "Queensland Museum" goes to the home page; "Collections Explorer" goes to all records.
-   Until the opening page is built (see HANDOVER), both start again with the whole collection. */
+/* "Queensland Museum" goes to the opening page; "Collections Explorer" goes to all records.
+   Both start again with the whole collection. */
 const _goAllRecords=e=>{
   if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button!==0)return; /* new tab or window: let the browser open it */
   e.preventDefault();
@@ -7725,7 +7819,13 @@ const _goAllRecords=e=>{
   if(S.view!=='gallery')switchView('gallery');
   const sc=$('#scroll');if(sc)sc.scrollTop=0;
 };
-$('#homeLink')?.addEventListener('click',_goAllRecords);
+$('#homeLink')?.addEventListener('click',e=>{
+  if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button!==0)return;
+  e.preventDefault();
+  if(S.view!=='gallery')switchView('gallery');
+  showHome();
+  S._homeQuiet=true;$('#resetBtn').click();S._homeQuiet=false;
+});
 $('#recordsLink')?.addEventListener('click',_goAllRecords);
 $('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;S._taxWasSet=false;try{setTaxFold(false)}catch(e){};_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
   const catEl=$('#fCat');if(catEl)catEl.value='';
@@ -7742,7 +7842,7 @@ document.querySelector('.tabs[role="tablist"]')?.addEventListener('keydown',e=>{
   else if(e.key==='End')ni=tabs.length-1;
   if(ni>=0){e.preventDefault();tabs[ni].focus();tabs[ni].click()}
 });
-$('#togSide').addEventListener('click',()=>{$('#lay').classList.toggle('col');const btn=$('#togSide');btn.setAttribute('aria-expanded',!$('#lay').classList.contains('col'));if(S.map)setTimeout(()=>S.map.invalidateSize(),300)});
+$('#togSide').addEventListener('click',()=>{if(S.home){hideHome();$('#lay').classList.remove('col');$('#togSide').setAttribute('aria-expanded','true');pushURLState();return}$('#lay').classList.toggle('col');const btn=$('#togSide');btn.setAttribute('aria-expanded',!$('#lay').classList.contains('col'));if(S.map)setTimeout(()=>S.map.invalidateSize(),300)});
 $('#prevP')?.addEventListener('click',()=>{
   if(S.mapPoly&&S.mapPoly.rings){
     if((S._polyPage||0)>0){S._polyPage--;S._polyNavActive=true;doSearch()}
@@ -7819,6 +7919,7 @@ function pushURLState(){
      already serialised above via _URL_KEYS; this captures the focus state). */
   if(S.view==='guide'&&S.guideFocus){p.set('gfRank',S.guideFocus.rank);p.set('gfName',S.guideFocus.name)}
   /* Build hash */
+  if(!S.home&&!p.toString())p.set('view','gallery'); /* the address with no hash is the opening page */
   const h=p.toString();
   const newHash=h?'#'+h:'';
   const boot=_urlBoot;_urlBoot=false; /* the state on arrival is already the current entry */
@@ -7884,8 +7985,9 @@ function _onHistoryNav(){
     $('#q').value='';S.q='';S.guideFocus=null;
     for(const domId of Object.values(_URL_KEYS)){const el=$('#'+domId);if(el){if(el.tagName==='SELECT')el.selectedIndex=0;else el.value=''}}
     _urlSuppressPush=false;
-    doSearch();
-    switchView('gallery');
+    if(S.view!=='gallery')switchView('gallery');
+    showHome();
+    S._homeQuiet=true;doSearch();S._homeQuiet=false;
     return;
   }
   const p=new URLSearchParams(raw);
@@ -7915,6 +8017,101 @@ let _lastNavHash=location.hash;
 function _historyNav(){if(location.hash===_lastNavHash)return;_lastNavHash=location.hash;_onHistoryNav()}
 window.addEventListener('popstate',_historyNav);
 window.addEventListener('hashchange',_historyNav);
+
+/* ═════════════════════════════════════════════════
+   OPENING PAGE — what the Explorer shows before a search (17 November 2026).
+   Shown at the address with no hash. Live counts: ALA's databased records for
+   institution_uid:in15 plus the register additions (data/qm-register-supplement.json).
+   Its links are ordinary addresses (#hasType=primary …), so they open in a new tab too;
+   a plain click changes the hash and the history handler runs that search.
+   ═════════════════════════════════════════════════ */
+S.home=false;S._homeQuiet=false;
+function showHome(){
+  S.home=true;document.body.classList.add('on-home');
+  const sc=$('#scroll');if(sc)sc.scrollTop=0;
+  loadHome();
+}
+function hideHome(){
+  S.home=false;document.body.classList.remove('on-home');
+  const sc=$('#scroll');if(sc)sc.scrollTop=0;
+}
+/* "Browse all records" opens the current search in the Records view, without searching again. */
+$('#hmBrowse')?.addEventListener('click',e=>{
+  if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button!==0)return;
+  e.preventDefault();hideHome();
+  if(S.view!=='gallery')switchView('gallery');else pushURLState();
+});
+const HOME_F0={q:'',qText:'',kingdom:'',phylum:'',class_:'',order:'',family:'',genus:'',species:'',hasType:'',coord:'',media:'',country:'',state:'',catNum:'',collCode:'',source:'',bbox:null};
+/* The photographed holotypes Lily chose for the opening page (mock-up, 17 November 2026). */
+const HOME_PHOTOS=[
+  ['T239568','A cicada, wings spread'],['MO86845','A pinwheel snail shell from above'],['T3283','A eucharitid wasp in profile'],
+  ['T123826','A planthopper from above'],['MO85748','A cockle shell in three views'],['T99033','A bee fly, pinned']];
+let _homeP=null;
+function loadHome(){if(!_homeP)_homeP=_loadHome().catch(e=>{console.warn('[opening page]',e);_homeP=null});return _homeP}
+async function _loadHome(){
+  const ALA='https://biocache-ws.ala.org.au/ws/occurrences/search?';
+  const get=(fq,extra)=>{const u=new URLSearchParams();u.set('q','*:*');appendFQ(u,fq);u.set('pageSize','0');u.set('facets','');
+    for(const [k,v] of Object.entries(extra||{}))u.set(k,v);
+    return fetch(ALA+u).then(r=>{if(!r.ok)throw new Error('ALA '+r.status);return r.json()})};
+  const base=alaBaseFQ(HOME_F0);
+  const imgFQ=alaBaseFQ({...HOME_F0,media:'StillImage'});
+  const primFQ=alaBaseFQ({...HOME_F0,hasType:'primary'});
+  const holoFQ=alaBaseFQ({...HOME_F0,hasType:'ts:holotype',media:'StillImage'});
+  const today=new Date();const iso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  _homePhotos(ALA);
+  const fac={facets:'collection_uid',flimit:'50'};
+  let all,img,prim,holo,supp=[];
+  try{[all,img,prim,holo]=await Promise.all([get(base,fac),get(imgFQ,fac),get(primFQ),get(holoFQ)])}
+  catch(e){
+    $('#hmTotal').textContent='—';['#hmImg','#hmPrim','#hmColl'].forEach(id=>$(id).textContent='—');
+    $('#hmColls').removeAttribute('aria-busy');
+    $('#hmColls').outerHTML='<p class="hm-err" id="hmColls">The counts could not be loaded from the Atlas of Living Australia just now. Browse all records still works; please try again shortly.</p>';
+    throw e;
+  }
+  try{supp=await loadSupplement()}catch(e){console.warn('[opening page] register additions',e)}
+  const sf=g=>suppFilter(supp,{...HOME_F0,...g});
+  const suppImg=sf({media:'StillImage'}),suppPrim=sf({hasType:'primary'}),suppHolo=sf({hasType:'ts:holotype',media:'StillImage'});
+  const facOf=d=>extractFacets_A(d).collection_uid||[];
+  const rev=Object.fromEntries(Object.entries(SUPP_COLL_UID).map(([n,u])=>[u,n]));
+  const C=new Map();
+  const slot=(uid,label)=>{if(!C.has(uid))C.set(uid,{uid,name:rev[uid]||shortColl(label||uid),n:0,img:0});return C.get(uid)};
+  for(const c of facOf(all))slot(c.value,c.name).n+=c.count;
+  for(const c of facOf(img))slot(c.value,c.name).img+=c.count;
+  for(const r of supp)if(r.collUid){const c=slot(r.collUid,r.coll);c.n++;if(r._imagedReg)c.img++}
+  const colls=[...C.values()].filter(c=>c.n>0).sort((a,b)=>b.n-a.n);
+  $('#hmTotal').textContent=fmt((all.totalRecords||0)+supp.length);
+  $('#hmSupp').textContent=supp.length?fmt(supp.length)+' more':'more';
+  $('#hmImg').textContent=fmt((img.totalRecords||0)+suppImg.length);
+  $('#hmPrim').textContent=fmt((prim.totalRecords||0)+suppPrim.length);
+  $('#hmColl').textContent=fmt(colls.length);
+  $('#hmDate').textContent=`Databased records in ALA and the museum’s register, counted ${fmtLongDate(iso)}`;
+  const pc=(a,b)=>{if(!b)return'0%';const p=a/b*100;return(p<1?p.toFixed(2):p.toFixed(1))+'%'};
+  const ul=$('#hmColls');ul.removeAttribute('aria-busy');
+  ul.innerHTML=colls.map(c=>`<li><a class="hm-ct" href="#collCode=${encodeURIComponent(c.uid)}" style="--cc:${collColor(c.name)}"><span class="n">${esc(c.name)}</span><span class="c">${fmt(c.n)}</span><span class="i">${fmt(c.img)} imaged · ${pc(c.img,c.n)}</span></a></li>`).join('');
+  const nh=(holo.totalRecords||0)+suppHolo.length;
+  $('#hmHoloAll').textContent=`All ${fmt(nh)} imaged holotypes →`;
+}
+async function _homePhotos(ALA){
+  const ul=$('#hmPhotos');
+  ul.innerHTML=HOME_PHOTOS.map(()=>'<li><div class="hm-ph"><div class="f"></div></div></li>').join('');
+  try{
+    const u=new URLSearchParams();u.set('q','*:*');
+    appendFQ(u,[`institution_uid:${S.alaInst}`,'('+HOME_PHOTOS.map(([c])=>`catalogue_number:"${c}"`).join(' OR ')+')','multimedia:"Image"']);
+    u.set('pageSize','20');u.set('facets','');u.set('sort','id');u.set('dir','asc');
+    const r=await fetch(ALA+u);if(!r.ok)throw new Error('ALA '+r.status);
+    const occ=(await r.json()).occurrences||[];
+    const items=HOME_PHOTOS.map(([cat,alt])=>{
+      const o=occ.find(x=>(x.raw_catalogNumber||x.catalogNumber||'').toUpperCase()===cat&&(x.largeImageUrl||x.imageUrl));
+      if(!o)return'';
+      /* The museum's supplied name leads (never ALA's match); a held name is not shown. */
+      let nm=o.raw_scientificName||o.scientificName||'';if(isHeldName(nm))nm=o.genus||o.family||'';
+      const src=o.largeImageUrl||o.imageUrl;
+      return`<li><a class="hm-ph" href="#catNum=${encodeURIComponent(cat)}"><span class="f"><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy" decoding="async"></span><span class="nm">${esc(nm)}</span><span class="id"><span>${esc(cat)}</span><span>${esc(shortColl(o.collectionName||''))}</span></span></a></li>`;
+    }).filter(Boolean);
+    ul.innerHTML=items.join('')||'<li class="hm-err">The photographs could not be loaded just now.</li>';
+  }catch(e){console.warn('[opening page] photographs',e);ul.innerHTML='<li class="hm-err">The photographs could not be loaded from the Atlas of Living Australia just now.</li>'}
+  ul.removeAttribute('aria-busy');
+}
 
 /* BOOT */
 const hadURLState=restoreFromURL();
@@ -7959,7 +8156,11 @@ async function loadTypeStatusOptions(){
   }catch(e){console.warn('[type status list]',e)}
   fillTypeStatusOptions(items);
 }
-if(!_SELFTEST){doSearch();loadTypeStatusOptions()}
+if(!_SELFTEST){
+  if(!hadURLState)showHome(); /* the address with no hash opens on the opening page */
+  S._homeQuiet=true;doSearch();S._homeQuiet=false;
+  loadTypeStatusOptions();
+}
 
 /* ════════════════════════════════════════════════════════════════════════
    SELF-TEST HARNESS — opt-in via ?selftest. No build, no deps, no network.

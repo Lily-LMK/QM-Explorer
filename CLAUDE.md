@@ -215,6 +215,9 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    `project-notes/HANDOVER.md` ("Redesign"). The unfinished Browse work (8c-b, 8c-d, 8c-e in
    `docs/BROWSE-8C-PLAN.md`, then motion #9 and virtualising large ranks #10) is folded into
    this stage; Browse is now called "Field guide".
+   Opening page live 17 November 2026: shown at the address with no hash (`#home`, `showHome`/
+   `hideHome`, body class `on-home`); the Records view with no filters is `#view=gallery`. Live counts
+   per collection include register additions; its links are ordinary hash addresses.
 
 Also pending: the report to ALA. `docs/ALA-API-bug-report.md` (the CORS fault) has not been
 sent. To add before sending: wrong-group name matches, the leading-X family fault, older copies
