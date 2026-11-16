@@ -614,7 +614,7 @@ button,select,input{font-family:var(--font)}
 .wiki-p{margin:0;font-size:15.5px;line-height:1.55;color:#2a2a2a}
 .wiki-src{font-weight:700;color:var(--ink)}
 .wiki-box[hidden],.mf-l[hidden],.mf-ref[hidden]{display:none!important}
-.mod-right-body .copy-block{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5;background:var(--bone);padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:all}
+.mod-right-body .copy-block{margin:0;font-family:var(--font);font-size:15px;line-height:1.55;color:var(--ink);background:var(--bone);padding:14px 16px;overflow-wrap:anywhere;user-select:all}
 .mod-foot{flex-shrink:0;background:var(--bone);border-top:1px solid var(--hair);padding:12px 28px 10px;display:flex;flex-direction:column;gap:6px}
 .mod-dlg.no-media .mod-foot{padding:12px 32px 10px}
 .mf-top{display:flex;justify-content:space-between;align-items:center;gap:4px 16px;flex-wrap:wrap}
@@ -1337,7 +1337,7 @@ function classifyBackboneVern(name){
    a record whose coordinate ALA has withheld must not gain one here. */
 const _OP_LIFT=['raw_locality','locality','raw_verbatimLocality','verbatimLocality','scientificNameAuthorship','raw_scientificNameAuthorship','preparations','raw_preparations','sex','raw_sex','lifeStage','raw_lifeStage','identifiedBy','raw_identifiedBy','habitat','raw_habitat','samplingProtocol','raw_samplingProtocol','samplingMethod','raw_samplingMethod','occurrenceRemarks','raw_occurrenceRemarks','fieldNumber','raw_fieldNumber','individualCount','raw_individualCount','verbatimEventDate','raw_verbatimEventDate','raw_eventDate','day','minimumElevationInMeters','maximumElevationInMeters','minimumDepthInMeters'];
 /* ALA's processed lifeStage can be a JSON string such as {"concept":"Adult",...} */
-function _conceptText(v){if(typeof v==='string'&&v.charAt(0)==='{'){try{const o=JSON.parse(v);return o.concept||''}catch(e){return''}}return v}
+function _conceptText(v){if(v&&typeof v==='object')return v.concept||'';if(typeof v==='string'&&v.trim().charAt(0)==='{'){try{const o=JSON.parse(v);return o.concept||''}catch(e){return''}}return v}
 /* ── Supplied names (stage 3c, 15 November 2026) ─────────────────────────────
    raw_scientificName is the name Queensland Museum supplied; scientificName is ALA's match.
    Where the two differ, the museum's name leads, labelled "Supplied as (Queensland Museum)",
@@ -4567,7 +4567,7 @@ async function fetchFullAlaRecord(uuid){
       tribe:pick(proc.classification?.tribe,raw.classification?.tribe,d.tribe,raw.tribe),
       preparations:pick(pOcc.preparations,rOcc.preparations,raw.preparations),
       sex:pick(pOcc.sex,rOcc.sex,raw.sex),
-      lifeStage:pick(pOcc.lifeStage,rOcc.lifeStage,raw.lifeStage),
+      lifeStage:_conceptText(pick(pOcc.lifeStage,rOcc.lifeStage,raw.lifeStage)),
       samplingProtocol:pick(pEvt.samplingProtocol,rEvt.samplingProtocol,raw.samplingProtocol,rEvt.samplingMethod,raw.samplingMethod,pOcc.samplingProtocol,rOcc.samplingProtocol,d.samplingProtocol,d.samplingMethod),
       identifiedBy:pick(pOcc.identifiedBy,rOcc.identifiedBy,raw.identifiedBy),
       individualCount:pick(pOcc.individualCount,rOcc.individualCount,raw.individualCount),
@@ -5815,8 +5815,17 @@ function wikiRelevant(extract,r){
    (family, order, class…). This keeps out articles about an unrelated thing that shares the genus name. */
 function wikiNamesLineage(extract,r,term){
   const ex=(extract||'').toLowerCase();
-  const groups=[r.family,r.superfamily,r.subfamily,r.tribe,r.order,r.class_,r.phylum].filter(g=>g&&g.toLowerCase()!==(term||'').toLowerCase());
-  return groups.some(g=>ex.includes(g.toLowerCase()));
+  const t=(term||'').toLowerCase();
+  /* A genus or species name in its own article proves nothing (a plant can share it); a family name does */
+  const own=t&&(t===(r.genus||'').toLowerCase()||t===(r.species||'').toLowerCase());
+  const groups=[r.family,r.superfamily,r.subfamily,r.tribe,r.order,r.class_,r.phylum].filter(g=>g&&!(own&&g.toLowerCase()===t));
+  const forms=g=>{g=g.toLowerCase();return[g,g.replace(/idae$/,'id'),g.replace(/inae$/,'ine'),g.replace(/ini$/,'in'),g.replace(/a$/,'an')].filter(x=>x.length>4)};
+  if(groups.some(g=>forms(g).some(f=>ex.includes(f))))return true;
+  /* A direct article on the genus or species that describes an organism of the record's kind */
+  const kind=r.kingdom==='Plantae'?/\b(plants?|flowering|shrubs?|trees?|herbs?|grass(es)?|ferns?|orchids?|mosses|algae)\b/
+    :r.kingdom==='Fungi'?/\b(fung(us|i)|mushrooms?|lichens?)\b/
+    :/\b(insects?|butterfl(y|ies)|moths?|beetles?|wasps?|ants?|bees?|flies|fly|bugs?|cicadas?|weevils?|spiders?|mites?|ticks?|scorpions?|crabs?|shrimps?|prawns?|lobsters?|crustaceans?|fish(es)?|sharks?|rays?|birds?|frogs?|toads?|snakes?|lizards?|skinks?|geckos?|turtles?|reptiles?|mammals?|bats?|rodents?|snails?|slugs?|molluscs?|mollusks?|clams?|mussels?|octopus(es)?|squids?|worms?|corals?|sponges?|jellyfish|sea stars?|starfish|sea urchins?|echinoderms?|millipedes?|centipedes?|copepods?|amphipods?|isopods?)\b/;
+  return own&&/\b(genus|species|subspecies)\b/.test(ex)&&kind.test(ex);
 }
 async function fetchWikiSummary(r){
   if(r._wiki!==undefined){renderWikiBox(r);return}
@@ -5841,6 +5850,9 @@ async function fetchWikiSummary(r){
           for(const hit of(sd.query?.search||[])){
             const snip=(hit.snippet||'').toLowerCase();
             if(/genus|species|family|insect|animal|arthropod|moth|beetle|fish|bird|reptil|mammal|frog|spider|crab|taxonom|phylum|order|plant|coral|mollusc|worm|fly|wasp|ant|bug/.test(snip)){
+              /* Only an article titled with one of the record's own names (not "Taxonomy of the Lepidoptera") */
+              const own=[r.species,r.genus,r.family].filter(Boolean).map(x=>x.toLowerCase());
+              if(!own.includes((hit.title||'').toLowerCase())){d=null;continue}
               d=await wikiSummary(hit.title);
               if(d&&wikiRelevant(d.extract,r)&&wikiNamesLineage(d.extract,r,term))break;
               d=null; /* failed relevance check */
@@ -6021,9 +6033,16 @@ async function fetchRefImage(r,idx){
   if(r._ref!==undefined&&!r._ref?.loading){renderRef(r);return}
   const nm=r._nm||{};
   /* The species as a binomial (a subspecies is looked up as its species) */
-  const sp=r.species&&r.species.trim().split(/\s+/).length>=2?_canon(r.species):'';
+  let sp=r.species&&r.species.trim().split(/\s+/).length>=2?_canon(r.species):'';
   const gen=(r.genus||'').trim();
-  if(nm.differ||nm.held||(!sp&&!gen)){r._ref=null;renderRef(r);return}
+  /* Where the museum's name and ALA's match differ, go ahead only when they share the genus,
+     and look up the museum's species (Hypolimnas bolina pallescens → Hypolimnas bolina) */
+  if(nm.differ){
+    const q=_canon(nm.qm||'');
+    if(!gen||q.split(' ')[0].toLowerCase()!==gen.toLowerCase()){r._ref=null;renderRef(r);return}
+    sp=q.split(' ').length===2?q:'';
+  }
+  if(nm.held||(!sp&&!gen)){r._ref=null;renderRef(r);return}
   r._ref={loading:true};renderRef(r);
   const key=[sp,gen,r.family,r.order,r.kingdom,r.uuid].join('|');
   let p=_refCache.get(key);
@@ -7290,15 +7309,15 @@ function renderModalDetails(r){
   const hint=$('#mMetaHint');let hintT=0;
   const say=t=>{hint.textContent=t;clearTimeout(hintT);hintT=setTimeout(()=>{hint.textContent=''},4000)};
   const out=$('#mCopyOut');
-  const showText=(what,t)=>{out.innerHTML=`<div class="det-sec"><div class="ds" style="background:var(--ink)"></div> ${esc(what)}</div><div class="copy-block">${esc(t)}</div>`;out.scrollIntoView({behavior:'smooth',block:'nearest'})};
+  const showText=(what,t)=>{out.innerHTML=`<div class="det-sec"><div class="ds" style="background:var(--ink)"></div> ${esc(what)}</div><p class="copy-block">${esc(String(t).replace(/\s*\n+\s*/g,' '))}</p>`;out.scrollIntoView({behavior:'smooth',block:'nearest'})};
   const wire=(id,what,fn,alwaysShow)=>$(id)?.addEventListener('click',async()=>{
     const t=fn(r);const ok=await clipCopy(t);
     if(ok){say(`Copied ${what.toLowerCase()}.`);toast(`${what} copied`)}else{say('Copy it from the box below.');toast('Copy it from the box at the end of the record')}
     if(!ok||alwaysShow)showText(what,t);
   });
-  wire('#mCopyTitle','Title',specTitle);
-  wire('#mCopyCaption','Caption',specCaption);
-  wire('#mCopyKw','Keywords',specKeywords);
+  wire('#mCopyTitle','Title',specTitle,true);
+  wire('#mCopyCaption','Caption',specCaption,true);
+  wire('#mCopyKw','Keywords',specKeywords,true);
   wire('#mCopySrc','Sources',specSources,true);
 
   if(r._wiki!==undefined)renderWikiBox(r);
