@@ -787,6 +787,8 @@ function pctLabel(a,b){
 }
 /* Locality, state and country, without repeating a part (ALA often gives the state as the locality) */
 function placeLine(r){const out=[];for(const p of[r.locality,r.state,r.country]){const t=(p||'').trim();if(t&&!out.some(x=>x.toLowerCase()===t.toLowerCase()))out.push(t)}return out.join(', ')}
+/* Summary labels agree with their numbers: 1 family, 1 genus */
+function _sumLabels(nFam,nGen){const f=$('#sFam')?.nextElementSibling,g=$('#sGen')?.nextElementSibling;if(f)f.textContent=nFam===1?'family':'families';if(g)g.textContent=nGen===1?'genus':'genera'}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500)}
 
 /* ── In-memory fetch cache ──
@@ -1251,6 +1253,7 @@ async function fetchRichnessCounts(f){
     try{
       $('#sFam').textContent=nFam?fmt(nFam):'—';
       $('#sGen').textContent=nGen?fmt(nGen):'—';
+      _sumLabels(nFam,nGen);
     }catch(e){}
   }catch(e){console.warn('[Richness]',e)}
 }
@@ -2256,6 +2259,7 @@ function updateStats(){
   const nGen=rich.genera||genF.length;
   $('#sFam').textContent=nFam?fmt(nFam)+(!rich.families&&famF.length>=FLIM?'+':''):'—';
   $('#sGen').textContent=nGen?fmt(nGen)+(!rich.genera&&genF.length>=FLIM?'+':''):'—';
+  _sumLabels(nFam,nGen);
 }
 function updateDropdowns(){
   const sortMode=$('#fSort')?.value||'count';
@@ -4925,7 +4929,7 @@ function renderCharts(){
     var nSp=rich.species||safeArr(f.species).length;
     var richnessHtml='<div class="st"><div class="st-n">'+fmt(nSp)+'</div><div class="st-l">Species</div>'
       +'<div class="st-bar none"></div>'
-      +'<div class="st-s"><b>'+fmt(nGen)+'</b> genera<br><b>'+fmt(nFam)+'</b> families</div></div>';
+      +'<div class="st-s"><b>'+fmt(nGen)+'</b> '+(nGen===1?'genus':'genera')+'<br><b>'+fmt(nFam)+'</b> '+(nFam===1?'family':'families')+'</div></div>';
     if((hasQC&&T>0)||nFam>0){
       sections.push('<div class="ch-p w"><div class="ch-t"><span class="al" style="background:#2f7d3b"></span>At a glance <span class="ch-n">'+fmt(T)+' records</span></div>'
         +'<div class="st-grid">'
