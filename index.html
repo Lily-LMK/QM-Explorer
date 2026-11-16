@@ -5956,6 +5956,7 @@ function _canon(n){
   const p=(n||'').replace(/\s*\([^)]*\)/g,'').trim().split(/\s+/);
   return p.length>=2&&/^[a-z]/.test(p[1])?p[0]+' '+p[1]:(p[0]||'');
 }
+function _refType(t){t=(t||'').toString().trim();return isType(t)&&!/^not\s*a\s*type$/i.test(t)?t:''}
 function _typeRank(t){const s=(t||'').toLowerCase();if(!s)return 9;if(/holotype|lectotype|neotype/.test(s))return 0;if(/syntype/.test(s))return 1;return 2}
 async function _refAla(rank,name,r){
   try{
@@ -5970,7 +5971,7 @@ async function _refAla(rank,name,r){
     const c=(d.occurrences||[]).filter(o=>o.uuid!==r.uuid&&(o.imageUrl||o.largeImageUrl||(o.images&&o.images.length))).map(o=>{
       const id=(o.images&&o.images[0])||imgId(o.imageUrl||o.largeImageUrl);
       return{via:'ALA',imageId:id,img:id?`https://images.ala.org.au/image/proxyImageThumbnailLarge?imageId=${id}`:(o.largeImageUrl||o.imageUrl),
-        name:_canon(o.species||o.scientificName),type:(Array.isArray(o.typeStatus)?o.typeStatus[0]:o.typeStatus)||'',
+        name:_canon(o.species||o.scientificName),type:_refType(Array.isArray(o.typeStatus)?o.typeStatus[0]:o.typeStatus),
         inst:o.institutionName||o.dataResourceName||'',cat:o.raw_catalogNumber||o.catalogNumber||'',lic:_licShort(o.license),creator:'',
         href:'https://biocache.ala.org.au/occurrences/'+encodeURIComponent(o.uuid)};
     });
@@ -5993,7 +5994,7 @@ async function _refGbif(rank,name,r){
       const mm=(x.media||[]).find(v=>v.type==='StillImage'&&v.identifier);if(!mm)return null;
       if((x.institutionCode||'').toUpperCase()==='QM'&&r.cat&&x.catalogNumber===r.cat)return null;
       return{via:'GBIF',imageId:imgId(mm.identifier),img:mm.identifier.replace(/^http:\/\//,'https://'),
-        name:_canon(x.species||x.scientificName),type:(Array.isArray(x.typeStatus)?x.typeStatus[0]:x.typeStatus)||'',
+        name:_canon(x.species||x.scientificName),type:_refType(Array.isArray(x.typeStatus)?x.typeStatus[0]:x.typeStatus),
         inst:mm.rightsHolder||x.institutionCode||'',cat:x.catalogNumber||'',lic:_licShort(mm.license||x.license),creator:_personName(mm.creator||''),
         href:'https://www.gbif.org/occurrence/'+x.gbifID};
     }).filter(Boolean);
@@ -7247,7 +7248,8 @@ function renderModalDetails(r){
     return`<a href="#" class="crumb" data-rk="${esc(rkey)}" data-nm="${esc(v)}" title="${rk}: ${esc(v)}. Show its records" aria-label="${rk} ${esc(v)}, show its records">${nm}</a>`;
   }).join(' <span class="crumb-sep" aria-hidden="true">›</span> ');
 
-  const colSpec=[fv('Sex',esc(r.sex)),fv('Life stage',esc(r.lifeStage)),fv('Count',esc(r.individualCount)),fv('Field number',esc(r.fieldNumber))].join('');
+  const sc=v=>{v=(v||'').toString();return v&&v===v.toUpperCase()&&/[A-Z]{3}/.test(v)?v.charAt(0)+v.slice(1).toLowerCase():v};
+  const colSpec=[fv('Sex',esc(sc(r.sex))),fv('Life stage',esc(sc(r.lifeStage))),fv('Count',esc(r.individualCount)),fv('Field number',esc(r.fieldNumber))].join('');
   const colEvt=[fv('Collector',r.recBy?esc(r.recBy.replace(/\s*\|\s*/g,' & ')):'Not in this record',!r.recBy),fv('Date',esc(dateStr)),fv('Method',esc(r.samplingProtocol)),fv('Identified by',esc(r.identifiedBy))].join('');
   const colPlace=[fv('Locality',esc(loc)),fv('Coordinates',coordStr),fv('Elevation',elevStr),fv('Depth',r.depth!=null?esc(r.depth+' m'):''),fv('Habitat',esc(r.habitat))].join('');
 
