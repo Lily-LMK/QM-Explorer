@@ -188,6 +188,10 @@ button,select,input{font-family:var(--font)}
 .density-tog button:hover{background:var(--bone)}
 .density-tog button.on{background:var(--ink);color:#fff}
 .density-tog button:focus-visible{outline-offset:-3px}
+.gal-link{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:none;border:0;padding:0;min-height:44px;cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-color:var(--chart-ink,#0a0a0a)}
+.gal-link b{font-weight:800}
+.gal-link:hover{text-decoration-color:var(--muted)}
+.gal-none{font-size:14px;color:var(--muted)}
 @media(max-width:600px){.gal.compact{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}.gal.compact .card-body{padding:10px 10px 8px}.gal.compact .card-sci{font-size:14px}}
 
 /* ── RECORD WINDOW: copy buttons ── */
@@ -628,7 +632,7 @@ button,select,input{font-family:var(--font)}
     <div class="scroll" id="scroll">
       <div class="vp on" id="v-gallery" role="tabpanel" aria-labelledby="tab-gallery">
         <div class="hero" id="hero"><h2>Explore Queensland Museum Collections</h2><p>Search our natural history collection.</p><div class="badges"><span class="badge">GBIF — QM Publisher</span><span class="badge on">ALA — QM Institution (in15)</span></div></div>
-        <div class="gal-bar" id="galBar"><span class="muted" style="font-size:11px" id="galCount"></span><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Gallery view" aria-pressed="false">Gallery</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">List</button></div></div>
+        <div class="gal-bar" id="galBar"><div class="gal-count" id="galCount" aria-live="polite"></div><div class="density-tog" role="group" aria-label="Display density"><button data-d="grid" title="Grid view" aria-label="Gallery view" aria-pressed="false">Gallery</button><button data-d="compact" class="on" title="List view" aria-label="List view" aria-pressed="true">List</button></div></div>
         <div id="gal" class="gal" role="list" aria-label="Specimen records"></div><div id="galLoad"></div>
         <div class="pag" id="pag" role="navigation" aria-label="Pagination"><button class="pg-btn" id="prevP" disabled>← Prev</button><span class="pg-info" id="pgI"></span><button class="pg-btn" id="nextP">Next →</button></div><p class="pg-note" id="pgNote" hidden></p></div>
       <div class="vp" id="v-taxa" role="tabpanel" aria-labelledby="tab-taxa"><div id="taxaRoot"></div></div>
@@ -2093,11 +2097,6 @@ async function bgPolyScan(masterF,loadId,searchId,cursor,startCount,bboxTotal){
     try{$('#sRec').textContent=fmt(S.total)+(partial?' ⚠':'')}catch(e){}
     try{$('#rc').innerHTML=`<b>${fmt(S.total)}</b> ${recWord(S.total)} in area${partial?' <span style="color:#c44" title="Scan incomplete due to network errors">⚠ partial</span>':''}`}catch(e){}
     try{updatePag()}catch(e){}
-    try{const gc=$('#galCount');if(gc){
-      let ct=S.res.length+' shown of '+fmt(S.total);
-      ct+=` · <span style="color:#2d6a4f;font-weight:600">${esc(S.mapPoly.name)}</span>`;
-      gc.innerHTML=ct;
-    }}catch(e){}
     try{renderView()}catch(e){}
     if(S.view==='map'){try{addMarkers();updateMapInfo()}catch(e){}}
   }
@@ -2278,11 +2277,10 @@ function updatePag(){
     $('#prevP').disabled=pg<=1;$('#nextP').disabled=pg>=tp;
     $('#pgI').textContent=`Page ${pg} of ${fmt(tp)} · ${capped?`first ${fmt(reachable)} of ${fmt(t)}`:fmt(t)} ${recWord(t)} · ${S.res.length} shown`;
     $('#rc').innerHTML=t>0?`<b>${fmt(t)}</b> ${recWord(t)}`+((S._suppSrc==='')&&sN?` <span class="rc-split">(${fmt(alaT)} ALA Biocache · ${fmt(sN)} QM Register)</span>`:''):'';
-    /* Say plainly why the pages stop at 5,000, and what to do about it. */
     const pn=$('#pgNote');
     if(pn){
       pn.hidden=!capped;
-      pn.textContent=capped?`The Atlas of Living Australia serves only the first ${fmt(ALA_MAX_RESULTS)} records of any one search. This search has ${fmt(alaT)} from ALA, so ${fmt(alaT-ALA_MAX_RESULTS)} of them cannot be reached from these pages${sN?` (the ${fmt(sN)} added from Queensland Museum's register follow the first ${fmt(ALA_MAX_RESULTS)})`:''}. Narrowing the search (by collection, family or type status, for example) brings them within reach.`:'';
+      pn.textContent=capped?'Narrow the search (by collection, family or type status) to see more than 5,000 records.':'';
     }
   }
 }
@@ -2296,26 +2294,73 @@ function renderView(){try{const h=$('#hero');if(h&&S.total>0)h.style.display='no
   ({gallery:renderGallery,taxa:renderTaxa,guide:renderGuide,charts:renderCharts})[S.view]?.()}catch(e){console.error('[renderView]',e)}}
 
 /* GALLERY */
+function galMostPics(){const n=S.res.length;if(!n)return false;let k=0;for(const r of S.res)if(r.media?.length)k++;return k/n>0.5}
+/* All records and imaged records for the current search with "With images" set aside,
+   counting ALA and the register additions (imaged in the register counts as imaged). */
+const _imgSplitCache=new Map();
+async function fetchImagedSplit(f){
+  const g={...f,media:''};
+  if(S.mapPoly&&S._polyAllRecs){const a=clientFilterRecs(S._polyMasterRecs||S._polyAllRecs,g);return{all:a.length,imaged:a.filter(r=>(r.media&&r.media.length)||r._imagedReg).length}}
+  const key=JSON.stringify(g);
+  if(_imgSplitCache.has(key))return _imgSplitCache.get(key);
+  const p=(async()=>{
+    let all=0,imaged=0;const src=g.source||'';
+    if(src!=='reg'){
+      const fq=alaBaseFQ(g);const q=g.q||'*:*';
+      const url=extra=>{const u=new URLSearchParams();u.set('q',q);appendFQ(u,fq);if(extra)appendFQ(u,extra);u.set('pageSize','0');u.set('facets','');return 'https://biocache-ws.ala.org.au/ws/occurrences/search?'+u};
+      const [a,m]=await Promise.all([fetch(url()).then(r=>r.ok?r.json():null),fetch(url(['multimedia:"Image"'])).then(r=>r.ok?r.json():null)]);
+      if(!a||!m)throw new Error('count failed');
+      all+=a.totalRecords||0;imaged+=m.totalRecords||0;
+    }
+    if(src!=='ala'){const sp=suppFilter(await loadSupplement(),g);all+=sp.length;imaged+=sp.filter(r=>r._imagedReg).length}
+    return{all,imaged};
+  })();
+  _imgSplitCache.set(key,p);p.catch(()=>_imgSplitCache.delete(key));
+  return p;
+}
+let _galLinkTok=0;
+function updateGalLink(density){
+  const el=$('#galCount');if(!el)return;
+  const tok=++_galLinkTok;el.innerHTML='';
+  fetchImagedSplit(getFilters()).then(({all,imaged})=>{
+    if(tok!==_galLinkTok)return;
+    if(density==='grid'){
+      el.innerHTML=`<button type="button" class="gal-link" data-go="list">All ${fmt(all)} ${recWord(all)} in the List →</button>`;
+    }else if(imaged>0){
+      el.innerHTML=`<button type="button" class="gal-link" data-go="grid"><b>${fmt(imaged)}</b> with images — view in Gallery →</button>`;
+    }else{
+      el.innerHTML='<span class="gal-none">No records here are imaged yet</span>';
+    }
+  }).catch(()=>{});
+}
+function showGallery(){
+  S._densityManual=true;S.galDensity='grid';
+  if(!$('#fMedia').value&&!galMostPics()){$('#fMedia').value='StillImage';S.off=0;updateSearchRst();doSearch()}
+  else renderGallery();
+}
+function showList(clearMedia){
+  S._densityManual=true;S.galDensity='compact';
+  if(clearMedia&&$('#fMedia').value){$('#fMedia').value='';S.off=0;updateSearchRst();doSearch()}
+  else renderGallery();
+}
 function renderGallery(){
   const g=$('#gal');if(!S.res.length)return;
   /* Density toggle bar */
   const bar=$('#galBar');bar.classList.add('vis');
-  const scanning=S.mapPoly&&!S._polyScanDone;
-  let countTxt=S.res.length+' shown of '+fmt(S.total)+(scanning?' ⏳':'');
-  if(S.mapPoly)countTxt+=` · <span style="color:#2d6a4f;font-weight:600">${esc(S.mapPoly.name)}</span>`;
-  else if(S.mapBox)countTxt+=' · <span style="color:#22622c">box filter</span>';
-  $('#galCount').innerHTML=countTxt;
-  /* Default is the simplified text tiles ('compact'); applying the Has-Media filter
-     auto-switches to the full photo grid (and clearing it switches back) — UNLESS the
-     user has manually picked a density this session, which then wins. */
+  /* List is the default. The Gallery is for pictures: it opens by itself when
+     "With images" is on or most records on the page have a picture, and otherwise
+     only when asked for (which turns "With images" on). */
   const mediaFilter=!!$('#fMedia')?.value;
-  const autoDensity=mediaFilter?'grid':'compact';
-  const density=(S._densityManual&&S.galDensity)?S.galDensity:autoDensity;
+  const autoDensity=(mediaFilter||galMostPics())?'grid':'compact';
+  let density=(S._densityManual&&S.galDensity)?S.galDensity:autoDensity;
+  if(density==='grid'&&!mediaFilter&&!galMostPics()){density='compact';S._densityManual=false;S.galDensity=null}
+  updateGalLink(density);
   g.className=density==='compact'?'gal compact':'gal';
   bar.querySelectorAll('.density-tog button').forEach(b=>{const on=b.dataset.d===density;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false')});
 
   g.innerHTML=S.res.map((r,i)=>{
     const hasImg=r.media?.length>0;
+    if(density==='grid'&&!hasImg&&!r._imagedReg)return''; /* the Gallery shows imaged records only */
     /* Un-imaged tiles get a deterministic generative placeholder (reuse the cascade's),
        seeded by the scientific name, labelled with the family — honest "no photo" state,
        never a collapsed stub or a broken dash. */
@@ -3302,9 +3347,14 @@ function renderGuideFocus(root){
 
       const [facD,imgD,bieD]=await Promise.all([facP,imgP,bieP]);
 
-      const totalCount=facD?.totalRecords||0;
+      let totalCount=facD?.totalRecords||0;
       const facets=facD?extractFacets_A(facD):{};
-      const mediaTotal=imgD?.totalRecords||0;
+      const mediaShown=imgD?.totalRecords||0; /* ALA records with an image this page can show */
+      let mediaTotal=mediaShown;
+      /* Register additions in this group count in Records and Imaged, as everywhere else. */
+      try{if((getFilters().source||'')!=='ala'){const k=rkField==='class'?'class_':rkField;
+        const sp=suppFilter(await loadSupplement(),getFilters()).filter(r=>r[k]===f.name);
+        totalCount+=sp.length;mediaTotal+=sp.filter(r=>r._imagedReg||(r.media&&r.media.length)).length}}catch(e){}
       const imgRecs=(imgD?.occurrences||[]).map(normRec_A);
       const bieHit=(bieD?.searchResults?.results||[])[0]||null;
 
@@ -3372,7 +3422,7 @@ function renderGuideFocus(root){
       let rh='';
       if(ca.length){rh+=`<h4>${esc(RPLURAL[childRankLabel]||childRankLabel||'Taxa')}</h4><div class="cc">${ca.map(c=>`<span class="cc-chip" data-rk="${esc(childRankLabel)}" data-nm="${esc(c.name)}">${['genus','species'].includes(childRankLabel)?`<em>${esc(c.name)}</em>`:esc(c.name)} <span style="color:var(--muted)">${fmt(c.count)}</span></span>`).join('')}</div>`}
       if(imgUrls.length){rh+=`<h4 style="${ca.length?'margin-top:14px':''}">Specimens</h4><div class="gf-imgs">${imgUrls.map(u=>`<img src="${esc(u)}" loading="lazy" onerror="this.style.display='none'"/>`).join('')}</div>`}
-      if(!ca.length&&!imgUrls.length){rh=`<div style="padding:20px 0;text-align:center;color:var(--muted)"><div style="font-size:24px;margin-bottom:6px">—</div><div style="font-size:12px">${mediaTotal===0?'No imaged specimens in the QM collection.':'Loading…'}</div></div>`}
+      if(!ca.length&&!imgUrls.length){rh=`<div style="padding:20px 0;text-align:center;color:var(--muted)"><div style="font-size:24px;margin-bottom:6px">—</div><div style="font-size:12px">${mediaShown===0?'No imaged specimens in the QM collection.':'Loading…'}</div></div>`}
       right.innerHTML=rh;
       row.appendChild(right);
 
@@ -7435,7 +7485,8 @@ $('#nextP')?.addEventListener('click',()=>{
   }else{if(S.off+INIT_PAGE<Math.min(S.total,ALA_MAX_RESULTS)){S.off+=INIT_PAGE;doSearch()}}
 });
 /* Density toggle + CSV export + Nav buttons */
-$('#galBar').querySelectorAll('.density-tog button').forEach(b=>b.addEventListener('click',()=>{S.galDensity=b.dataset.d;S._densityManual=true;$('#galBar').querySelectorAll('.density-tog button').forEach(x=>{x.setAttribute('aria-pressed',x===b?'true':'false')});renderGallery()}));
+$('#galBar').querySelectorAll('.density-tog button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.d==='grid')showGallery();else showList(false)}));
+$('#galCount').addEventListener('click',e=>{const b=e.target.closest('.gal-link');if(!b)return;if(b.dataset.go==='grid')showGallery();else showList(true)});
 $('#csvBtn').addEventListener('click',e=>{e.stopPropagation();exportCSV($('#csvPlusBtn').classList.contains('on'))});
 $('#csvPlusBtn').addEventListener('click',e=>{e.stopPropagation();const btn=$('#csvPlusBtn');btn.classList.toggle('on');btn.setAttribute('aria-pressed',btn.classList.contains('on'));toast(btn.classList.contains('on')?'CSV+ on — export will include full spatial enrichment':'CSV+ off — fast export')});
 /* Nav: open sequential records in modal */
