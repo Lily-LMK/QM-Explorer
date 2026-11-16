@@ -254,8 +254,8 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 `main` carries register additions v6 (live on GitHub Pages 15 November 2026: 2,068 records),
 the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
-Herpetology, Crustacea and Protozoa shown under the collection's name, `COLL_ALIAS` in
-`shortColl`), and the redesign, merged and pushed 16 November 2026. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
+Crustacea and Protozoa shown under the collection's name, and ALA's "Amphibians and Reptiles" shown as
+Herpetology, the museum's name for it; `COLL_ALIAS` in `shortColl`), and the redesign, merged and pushed 16 November 2026. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
 searches, both CSV exports and every outside service work, with the faults listed under stage 2
 batch 3. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
 map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;

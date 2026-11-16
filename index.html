@@ -1006,8 +1006,10 @@ function markerColor(r){
 }
 /* Shorten collection names: "Queensland Museum Fishes" → "Fishes" */
 /* ALA files four collections under a short code that differs from the collection's name (checked 16 November 2026:
-   OtherInverts, Herpetology, Crustacea, Protozoa). Show one name for each, so a collection is never listed twice. */
-const COLL_ALIAS={otherinverts:'Other Invertebrates',herpetology:'Amphibians and Reptiles',crustacea:'Crustaceans',protozoa:'Protozoans'};
+   OtherInverts, Herpetology, Crustacea, Protozoa). Show one name for each, so a collection is never listed twice.
+   The museum calls its amphibian and reptile collection Herpetology (Lily, 17 November 2026); ALA names it
+   "Queensland Museum Amphibians and Reptiles", and the Explorer shows it as Herpetology. */
+const COLL_ALIAS={otherinverts:'Other Invertebrates','amphibians and reptiles':'Herpetology',crustacea:'Crustaceans',protozoa:'Protozoans'};
 function shortColl(s){const t=(s||'').replace(/^Queensland Museum\s*/i,'').replace(/^QM\s*/i,'').trim()||s||'Unknown';return COLL_ALIAS[String(t).toLowerCase()]||t}
 
 /* ICZN italic rules: genus and below are italicized; family and above are not.
@@ -1661,7 +1663,7 @@ function extractFacets_A(data){
    follow them, so the additions stay reachable however large the ALA result is.
    ═════════════════════════════════════════════════ */
 const SUPP_URL='data/qm-register-supplement.json';
-const SUPP_COLL_UID={Entomology:'co50',Arachnids:'co148','Other Invertebrates':'co201','Amphibians and Reptiles':'co153',Molluscs:'co147',Corals:'co200',Fishes:'co51',Crustaceans:'co135',Protozoans:'co143',Birds:'co151',Mammals:'co150',Porifera:'co191',Plants:'co334'};
+const SUPP_COLL_UID={Entomology:'co50',Arachnids:'co148','Other Invertebrates':'co201',Herpetology:'co153',Molluscs:'co147',Corals:'co200',Fishes:'co51',Crustaceans:'co135',Protozoans:'co143',Birds:'co151',Mammals:'co150',Porifera:'co191',Plants:'co334'};
 const SRC_LABEL={'':'All sources',ala:'ALA Biocache',reg:'QM Register'};
 let _suppP=null;
 function loadSupplement(){
