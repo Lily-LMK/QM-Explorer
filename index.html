@@ -600,7 +600,7 @@ button,select,input{font-family:var(--font)}
 .mod-right-body .m-crumbs a.crumb{color:#444!important;text-decoration:none!important;font-weight:500!important;border-bottom:1px solid var(--line)}
 .mod-right-body .m-crumbs a.crumb:hover{color:var(--ink)!important;border-bottom-color:var(--ink)}
 .mod-right-body .m-crumbs a.crumb:last-of-type{color:var(--ink)!important;font-weight:700!important}
-.crumb-sep{margin:0 .45em;color:var(--line)}
+.crumb-sep{margin:0 .15em;color:var(--line)}
 .rc-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px 24px;margin-top:22px}
 .rc-col{border-top:3px solid var(--rc,var(--ink));padding-top:9px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .rc-col h3{margin:0;font-size:14px;font-weight:800;letter-spacing:0}
@@ -5881,12 +5881,14 @@ async function wikiSummary(title){
   }catch(e){return null}
 }
 /* Which rank the article is about, judged from its title (a species name can redirect to its genus) */
-function _wikiLevel(title,r){
-  const t=(title||'').toLowerCase().trim();
-  if(r.species&&t===r.species.toLowerCase())return'Species';
-  if(r.genus&&t===r.genus.toLowerCase())return'Genus';
-  if(r.family&&t===r.family.toLowerCase())return'Family';
-  return'';
+function _wikiLevel(title,r,term){
+  const lv=x=>{const t=(x||'').toLowerCase().trim();
+    if(r.species&&t===r.species.toLowerCase())return'Species';
+    if(r.genus&&t===r.genus.toLowerCase())return'Genus';
+    if(r.family&&t===r.family.toLowerCase())return'Family';
+    return''};
+  /* The title first (a species name can redirect to its genus), then the name that was looked up */
+  return lv(title)||lv(term);
 }
 function renderWikiBox(r){
   const wb=$('#wikiBox'),wl=$('#mWikiLink');
@@ -5895,7 +5897,7 @@ function renderWikiBox(r){
   if(!w){wb.hidden=true;if(wl)wl.hidden=true;return}
   const itl=t=>shouldItalic(t)?`<em>${esc(t)}</em>`:esc(t);
   if(w.kind==='wiki'){
-    const d=w.d;const title=d.title||w.term;const lvl=_wikiLevel(title,r);
+    const d=w.d;const title=d.title||w.term;const lvl=_wikiLevel(title,r,w.term);
     const ex=d.extract.length>420?d.extract.slice(0,417)+'…':d.extract;
     const url=d.content_urls?.desktop?.page||'';
     const about=`${lvl?lvl+' article, ':'Article, '}${itl(title)}`;
@@ -5937,7 +5939,7 @@ function _personName(s){
   return m?`${m[2].trim()} ${m[1].trim()}`:s;
 }
 function _canon(n){
-  const p=(n||'').trim().split(/\s+/);
+  const p=(n||'').replace(/\s*\([^)]*\)/g,'').trim().split(/\s+/);
   return p.length>=2&&/^[a-z]/.test(p[1])?p[0]+' '+p[1]:(p[0]||'');
 }
 function _typeRank(t){const s=(t||'').toLowerCase();if(!s)return 9;if(/holotype|lectotype|neotype/.test(s))return 0;if(/syntype/.test(s))return 1;return 2}
@@ -6016,7 +6018,8 @@ async function fetchRefImage(r,idx){
   if(S.modalPhotos.length){renderRef(r);return}
   if(r._ref!==undefined&&!r._ref?.loading){renderRef(r);return}
   const nm=r._nm||{};
-  const sp=r.species&&r.species.trim().split(/\s+/).length>=2?r.species.trim():'';
+  /* The species as a binomial (a subspecies is looked up as its species) */
+  const sp=r.species&&r.species.trim().split(/\s+/).length>=2?_canon(r.species):'';
   const gen=(r.genus||'').trim();
   if(nm.differ||nm.held||(!sp&&!gen)){r._ref=null;renderRef(r);return}
   r._ref={loading:true};renderRef(r);
@@ -6060,7 +6063,7 @@ function renderRef(r){
   const srcs=[subj.ala?'ALA':'',subj.gbif?'GBIF':''].filter(Boolean);
   if(subj.n&&subj.none&&srcs.length){
     const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
-    const holds=isType(ts)?`Queensland Museum holds ${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}.`:'Queensland Museum holds a specimen.';
+    const holds=(isType(ts)?`Queensland Museum holds ${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}`:'Queensland Museum holds a specimen')+(r._imagedReg?', imaged in its register.':'.');
     note=`<div class="ref-note"><p class="ref-t">No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')} (checked ${esc(fmtLongDate(R.checked))}).</p>
       <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p>${c?`<p class="ref-t mu">The photograph is of another species in the genus.</p>`:''}</div>`;
   }else if(c&&level==='species'){
@@ -7222,7 +7225,7 @@ function renderModalDetails(r){
   const crumbs=taxArr.map(([rk,v,rkey])=>{
     const nm=(rkey==='genus'||rkey==='species')&&shouldItalic(v)?`<em>${esc(v)}</em>`:esc(v);
     return`<a href="#" class="crumb" data-rk="${esc(rkey)}" data-nm="${esc(v)}" title="${rk}: ${esc(v)}. Show its records" aria-label="${rk} ${esc(v)}, show its records">${nm}</a>`;
-  }).join('<span class="crumb-sep" aria-hidden="true">›</span>');
+  }).join(' <span class="crumb-sep" aria-hidden="true">›</span> ');
 
   const colSpec=[fv('Sex',esc(r.sex)),fv('Life stage',esc(r.lifeStage)),fv('Count',esc(r.individualCount)),fv('Field number',esc(r.fieldNumber))].join('');
   const colEvt=[fv('Collector',r.recBy?esc(r.recBy.replace(/\s*\|\s*/g,' & ')):'Not in this record',!r.recBy),fv('Date',esc(dateStr)),fv('Method',esc(r.samplingProtocol)),fv('Identified by',esc(r.identifiedBy))].join('');
