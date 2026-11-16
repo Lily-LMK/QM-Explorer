@@ -6061,13 +6061,12 @@ function renderRef(r){
   /* The quiet note: the species (or, for a record named only to genus, the genus) has no museum photograph */
   const subj=R.species?{n:R.species,ala:R.spAla,gbif:R.spGbif,none:!R.spCands.length,genus:false}:{n:R.genus,ala:R.genAla,gbif:R.genGbif,none:!R.genCands.length,genus:true};
   const srcs=[subj.ala?'ALA':'',subj.gbif?'GBIF':''].filter(Boolean);
-  if(subj.n&&subj.none&&srcs.length){
+  /* Shown only when there is no photograph at all: a "Genus only" or "Not this specimen" tag already says enough */
+  if(!c&&subj.n&&subj.none&&srcs.length){
     const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
     const holds=(isType(ts)?`Queensland Museum holds ${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}`:'Queensland Museum holds a specimen')+(r._imagedReg?', imaged in its register.':'.');
     note=`<div class="ref-note"><p class="ref-t">No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')} (checked ${esc(fmtLongDate(R.checked))}).</p>
-      <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p>${c?`<p class="ref-t mu">The photograph is of another species in the genus.</p>`:''}</div>`;
-  }else if(c&&level==='species'){
-    note=`<div class="ref-note"><p class="ref-t mu">A museum photograph of the same species, held elsewhere. Not this specimen.</p></div>`;
+      <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p></div>`;
   }
   if(!fig&&!note)return off();
   box.innerHTML=head+`<div class="ref-row${fig?'':' solo'}">${fig}${note}</div>`;box.hidden=false;
