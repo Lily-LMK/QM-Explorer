@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 16 November 2026.
+profile). Read both. Last updated 16 November 2026 (redesign live).
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -204,13 +204,17 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    ALA records only. CSV: ALA rows' `query` is a working ALA address; register rows' `query` is
    plain text with no web address.
 5. Collecting regions as a filter and map colour choice; author and current name from the AFD.
-6. Redesign in the Queensland Museum Design System — under way on branch
-   `redesign/museum-2026-11` (three passes, 16 November 2026; not merged). Visual layer and
-   page structure only; element ids and all search, filter, export and map logic unchanged.
-   Status, decisions and the remaining list are in `project-notes/HANDOVER.md` ("Redesign").
-   The unfinished Browse work (8c-b, 8c-d, 8c-e in `docs/BROWSE-8C-PLAN.md`, then motion
-   #9 and virtualising large ranks #10) is folded into this stage; Browse is now called
-   "Field guide" on the redesign branch.
+6. Redesign in the Queensland Museum Design System — live on `main` from 16 November 2026
+   (merged from branch `redesign/museum-2026-11`). Visual layer and page structure; element
+   ids and all search, filter, export and map logic unchanged. Records: List is the default,
+   with a count-link to the Gallery; the Gallery shows imaged records only (it turns "With
+   images" on) and opens by itself when "With images" is on or most of the page has pictures.
+   "Imaged" counts ALA records with an image plus register additions recorded as imaged
+   (`_imagedReg`), in Analytics, the count-link and the Field guide. Still to do (Field guide
+   structure, record window links, taxonomy tree, summary line) is in
+   `project-notes/HANDOVER.md` ("Redesign"). The unfinished Browse work (8c-b, 8c-d, 8c-e in
+   `docs/BROWSE-8C-PLAN.md`, then motion #9 and virtualising large ranks #10) is folded into
+   this stage; Browse is now called "Field guide".
 
 Also pending: the report to ALA. `docs/ALA-API-bug-report.md` (the CORS fault) has not been
 sent. To add before sending: wrong-group name matches, the leading-X family fault, older copies
@@ -244,12 +248,11 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` carries register additions v6 (live on GitHub Pages 15 November 2026: 2,068 records) and
-the counting corrections of 16 November 2026: register additions are counted only where they
-match the filters and are included in the headline counts; ALA's collection codes OtherInverts,
-Herpetology, Crustacea and Protozoa show under the collection's name (`COLL_ALIAS` in
-`shortColl`); the collection chip shows the collection's name. The live site still has the former
-design; the redesign is on its own branch. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
+`main` carries register additions v6 (live on GitHub Pages 15 November 2026: 2,068 records),
+the counting corrections of 16 November 2026 (register additions counted only where they match
+the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
+Herpetology, Crustacea and Protozoa shown under the collection's name, `COLL_ALIAS` in
+`shortColl`), and the redesign, merged and pushed 16 November 2026. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
 searches, both CSV exports and every outside service work, with the faults listed under stage 2
 batch 3. Live from the June work: the ALA fixes (`pageSize` cap, 5,000 window with the
 map quadtree, separate `fq` params, service-worker hardening); the `?selftest` harness;
