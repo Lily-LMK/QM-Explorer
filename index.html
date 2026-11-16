@@ -584,6 +584,72 @@ button,select,input{font-family:var(--font)}
 .mc-col i{display:block;background:var(--ink)}
 .mc-col span{font-size:12px;color:var(--muted);padding-top:6px;border-top:1.5px solid var(--ink)}
 
+/* ── record window, fourth pass (17 November 2026): one ledger, links pinned to the foot ── */
+.m-cat{font-style:normal;font-weight:700;font-size:.72em;letter-spacing:0;color:var(--green-d);margin-left:.3em;white-space:nowrap}
+.m-sub{margin-top:8px;font-size:17px;line-height:1.35;color:var(--muted)}
+.m-sub .m-com{font-size:inherit;margin:0;color:inherit}
+.m-com:not(:empty)+.m-auth:not(:empty)::before{content:"·";margin:0 .45em;color:var(--muted2)}
+.mod-dlg.no-media .m-sub{color:#c9c6bf}
+.mod-dlg.no-media .m-sub .m-com *{color:inherit!important}
+.mod-dlg.no-media .m-com:not(:empty)+.m-auth:not(:empty)::before{color:#8f8f8f}
+.m-kind{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.m-kind:empty{display:none}
+.m-kind .type-badge{margin:0;font-size:12px;padding:5px 13px;letter-spacing:.08em}
+.m-kind-t{font-size:15px;font-weight:600;color:#2a2a2a}
+.m-crumbs{margin-top:12px;font-size:15px;line-height:1.75;color:var(--muted2)}
+.mod-right-body .m-crumbs a.crumb{color:#444!important;text-decoration:none!important;font-weight:500!important;border-bottom:1px solid var(--line)}
+.mod-right-body .m-crumbs a.crumb:hover{color:var(--ink)!important;border-bottom-color:var(--ink)}
+.mod-right-body .m-crumbs a.crumb:last-of-type{color:var(--ink)!important;font-weight:700!important}
+.crumb-sep{margin:0 .45em;color:var(--line)}
+.rc-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px 24px;margin-top:22px}
+.rc-col{border-top:3px solid var(--rc,var(--ink));padding-top:9px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.rc-col h3{margin:0;font-size:14px;font-weight:800;letter-spacing:0}
+.rc-k{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)}
+.rc-v{font-size:16px;font-weight:500;line-height:1.3;margin-top:1px;overflow-wrap:anywhere;color:var(--ink)}
+.rc-v.mu{color:#8f8f8f}
+.mod-right-body .det-sec{font-size:14px;border-bottom:0;padding-bottom:0;margin-top:24px;margin-bottom:6px;gap:8px}
+.mod-right-body .det-sec .ds{display:inline-block;width:10px;height:10px;flex:0 0 10px}
+.ctx-p{margin:0;font-size:16px;line-height:1.6;color:#2a2a2a}
+.m-remarks{margin:0;font-size:15.5px;line-height:1.5;color:var(--ink)}
+.wiki-p{margin:0;font-size:15.5px;line-height:1.55;color:#2a2a2a}
+.wiki-src{font-weight:700;color:var(--ink)}
+.wiki-box[hidden],.mf-l[hidden],.mf-ref[hidden]{display:none!important}
+.mod-right-body .copy-block{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5;background:var(--bone);padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:all}
+.mod-foot{flex-shrink:0;background:var(--bone);border-top:1px solid var(--hair);padding:12px 28px 10px;display:flex;flex-direction:column;gap:6px}
+.mod-dlg.no-media .mod-foot{padding:12px 32px 10px}
+.mf-top{display:flex;justify-content:space-between;align-items:center;gap:4px 16px;flex-wrap:wrap}
+.mf-h{margin:0;font-size:14px;font-weight:800;letter-spacing:0}
+.mf-copy{display:flex;align-items:center;flex-wrap:wrap;gap:0 2px;font-size:13px;color:var(--muted)}
+.mf-copy button{font:600 13px var(--font);border:0;background:none;color:#444;min-height:36px;padding:0 6px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.mf-copy button:hover{color:var(--ink);text-decoration-thickness:2px}
+.mf-copy button:focus-visible{outline:none;box-shadow:var(--focus)}
+.mf-copy .meta-hint{min-height:0;padding:0 0 0 6px;color:var(--green-d);font-weight:700}
+.mf-copy .meta-hint:empty{display:none}
+.mf-body{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.mf-body.has-ref{grid-template-columns:minmax(0,1fr) 236px}
+.mf-links{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0 20px}
+.mf-l{display:flex;align-items:center;gap:10px;min-height:44px;text-decoration:none;color:var(--ink);min-width:0}
+.mf-l i{flex:0 0 26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px;font-weight:800}
+.mf-l b{display:block;font-size:16px;font-weight:700;line-height:1.15}
+.mf-l small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mf-l:hover b{text-decoration:underline;text-underline-offset:3px}
+.mf-l:focus-visible{outline:none;box-shadow:var(--focus)}
+.mf-ack{margin:0;padding-top:6px;border-top:1px solid var(--hair2);font-size:11.5px;line-height:1.4;color:var(--muted)}
+.mf-ref{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ref-fig{margin:0;display:flex;flex-direction:column;gap:5px}
+.ref-img{position:relative;display:block;width:100%;height:132px;background:#fff;border:1px solid var(--hair)}
+.ref-img img{width:100%;height:100%;object-fit:contain;display:block}
+.ref-img:focus-visible{outline:none;box-shadow:var(--focus)}
+.ref-tag{position:absolute;left:0;top:0;background:var(--ink);color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px}
+.ref-fig figcaption{font-size:12px;line-height:1.35;color:#444}
+.ref-fig figcaption a{color:var(--ink);font-weight:600;text-underline-offset:2px}
+.ref-note{border:1px solid var(--hair);background:#fff;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.ref-k{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)}
+.ref-t{margin:0;font-size:13.5px;line-height:1.4;color:#2a2a2a}
+.ref-t.mu{color:var(--muted)}
+.ref-q{margin:0;font-size:13.5px;line-height:1.4;font-weight:700;display:flex;gap:7px;align-items:baseline;color:var(--ink)}
+.ref-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center}
+@media(max-width:700px),(max-height:640px){.mod-right{overflow-y:auto}.mod-right-body{flex:none;overflow:visible}.mf-body.has-ref{grid-template-columns:1fr}.mf-ref{max-width:320px}}
 </style>
 </head>
 <body>
@@ -649,10 +715,11 @@ button,select,input{font-family:var(--font)}
     </div>
     <div class="mod-right">
       <div class="mod-right-hdr">
-        <div><div class="m-sci" id="mSci"></div><div class="m-com" id="mCom"></div></div>
+        <div><div class="m-sci" id="mSci"></div><div class="m-sub"><span class="m-com" id="mCom"></span><span class="m-auth" id="mAuth"></span></div></div>
         <button class="mod-x" id="mX" aria-label="Close specimen detail">Close</button>
       </div>
-      <div class="mod-right-body"><div id="mDetails"></div><div class="meta-hint" id="mMetaHint"></div></div>
+      <div class="mod-right-body"><div id="mDetails"></div></div>
+      <div class="mod-foot" id="mFoot"></div>
     </div>
   </div>
 </div>
@@ -5519,7 +5586,7 @@ function renderSpatialSection(r){
     const status=sp.reStatus||sp.reBdStatus;
     if(status)veg+=(veg?' — ':'')+`${esc(status)} vegetation`;
     if(veg)veg+='.';
-    veg+=` <a href="https://apps.des.qld.gov.au/regional-ecosystems/details/?re=${encodeURIComponent(sp.reCode)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:10px">REDD ↗</a>`;
+    veg+=` <a href="https://apps.des.qld.gov.au/regional-ecosystems/details/?re=${encodeURIComponent(sp.reCode)}" target="_blank" rel="noopener">REDD ↗</a>`;
     if(sp.reDesc||status)lines.push(`Vegetation: ${veg}`);
   }
 
@@ -5554,7 +5621,7 @@ function renderSpatialSection(r){
     return;
   }
 
-  el.innerHTML=`<div style="font-size:12px;line-height:1.6;color:var(--ink);padding:4px 0">${lines.join('<br/>')}</div>`;
+  el.innerHTML=`<p class="ctx-p">${lines.join(' ')}</p>`;
 }
 
 /* ═════════════════════════════════════════════════
@@ -5564,7 +5631,7 @@ function openModal(idx){
   try{
   const r=S.res[idx];if(!r)return;S.modalIdx=idx;
   /* Title: species name + catalog number */
-  const catBit=r.cat?` <span style="font-style:normal;font-weight:600;color:var(--green-d);font-size:14px">${esc(r.cat)}</span>`:'';
+  const catBit=r.cat?` <span class="m-cat">${esc(r.cat)}</span>`:'';
   $('#mSci').className='m-sci'+(shouldItalic(r.sci)?' it':'');
   $('#mSci').innerHTML=`${esc(displaySci(r.sci))}${catBit}`;
   $('#mCom').textContent=(r.vern&&r.vernRank!=='generic')?singularize(r.vern):'';
@@ -5602,7 +5669,7 @@ function openModal(idx){
       // If coords appeared after enrichment, fetch spatial now
       if(r.lat!=null&&r.lng!=null&&!r._spatial) fetchSpatialContext(r,idx);
       // Update title with authorship if found
-      const catBit2=r.cat?` <span style="font-style:normal;font-weight:600;color:var(--green-d);font-size:14px">${esc(r.cat)}</span>`:'';
+      const catBit2=r.cat?` <span class="m-cat">${esc(r.cat)}</span>`:'';
       $('#mSci').className='m-sci'+(shouldItalic(r.sci)?' it':'');
       $('#mSci').innerHTML=`${esc(displaySci(r.sci))}${catBit2}`;
       // Now fetch wiki + vern AFTER re-render so elements exist
@@ -5612,6 +5679,7 @@ function openModal(idx){
       if(!r.authorship&&!(r._nm&&(r._nm.differ||r._nm.held)))fetchAuthorship(r,idx);
       try{updateGalleryCard(idx,r)}catch(e){}
       enrichClassificationChain(r,idx);
+      fetchRefImage(r,idx);
     }).catch((err)=>{
       console.error('[ALA] Enrichment failed:',err);
       // Even on error, still fetch wiki
@@ -5619,6 +5687,7 @@ function openModal(idx){
       if(vernNeedsEnrich(r))fetchVernacular(r);
       if(!r.authorship&&!(r._nm&&(r._nm.differ||r._nm.held)))fetchAuthorship(r,idx);
       enrichClassificationChain(r,idx);
+      fetchRefImage(r,idx);
     });
   }else{
     // Non-ALA or already enriched — fetch wiki immediately
@@ -5626,6 +5695,7 @@ function openModal(idx){
     if(vernNeedsEnrich(r))fetchVernacular(r);
     if(!r.authorship)fetchAuthorship(r,idx);
     enrichClassificationChain(r,idx);
+    fetchRefImage(r,idx);
   }
   }catch(err){
     console.error('[openModal] Error:',idx,err);
@@ -5738,24 +5808,29 @@ function wikiRelevant(extract,r){
   return true; /* no contradictions found */
 }
 
+/* An article is accepted only when its summary names a higher group of the record
+   (family, order, class…). This keeps out articles about an unrelated thing that shares the genus name. */
+function wikiNamesLineage(extract,r,term){
+  const ex=(extract||'').toLowerCase();
+  const groups=[r.family,r.superfamily,r.subfamily,r.tribe,r.order,r.class_,r.phylum].filter(g=>g&&g.toLowerCase()!==(term||'').toLowerCase());
+  return groups.some(g=>ex.includes(g.toLowerCase()));
+}
 async function fetchWikiSummary(r){
-  const wb=$('#wikiBox'),wc=$('#wikiContent');
-  if(!wb||!wc)return;
-  wb.style.display='none';wc.innerHTML='';
+  if(r._wiki!==undefined){renderWikiBox(r);return}
   const terms=[r.species,r.genus,r.family].filter(Boolean);
+  const done=w=>{r._wiki=w;if(S.modalIdx>=0&&S.res[S.modalIdx]===r)renderWikiBox(r)};
 
   /* Try Wikipedia for each term: exact → search fallback, with relevance validation */
   for(const term of terms){
     if(_wikiCache.has(term)){
       const d=_wikiCache.get(term);
-      if(d){showWiki(d,wb,wc,term);
-        return}
+      if(d&&wikiNamesLineage(d.extract,r,term)){done({kind:'wiki',d,term});return}
       continue;
     }
     try{
       let d=await wikiSummary(term);
       /* Validate: reject if the extract is about a completely different taxon */
-      if(d&&!wikiRelevant(d.extract,r))d=null;
+      if(d&&(!wikiRelevant(d.extract,r)||!wikiNamesLineage(d.extract,r,term)))d=null;
       if(!d){
         const sr=await cachedFetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term+' taxonomy')}&srnamespace=0&srlimit=3&format=json&origin=*`);
         if(sr.ok){
@@ -5764,25 +5839,23 @@ async function fetchWikiSummary(r){
             const snip=(hit.snippet||'').toLowerCase();
             if(/genus|species|family|insect|animal|arthropod|moth|beetle|fish|bird|reptil|mammal|frog|spider|crab|taxonom|phylum|order|plant|coral|mollusc|worm|fly|wasp|ant|bug/.test(snip)){
               d=await wikiSummary(hit.title);
-              if(d&&wikiRelevant(d.extract,r))break;
+              if(d&&wikiRelevant(d.extract,r)&&wikiNamesLineage(d.extract,r,term))break;
               d=null; /* failed relevance check */
             }
           }
         }
       }
-      if(d){_wikiCache.set(term,d);if(S.modalIdx>=0)showWiki(d,wb,wc,term);
-        return}
+      if(d){_wikiCache.set(term,d);done({kind:'wiki',d,term});return}
       _wikiCache.set(term,null);
     }catch(e){_wikiCache.set(term,null)}
   }
 
-  /* Fallback: ALA BIE species profile */
+  /* Fallback: ALA BIE species profile (text only) */
   for(const term of terms){
     const cKey='bie:'+term;
     if(_wikiCache.has(cKey)){
       const d=_wikiCache.get(cKey);
-      if(d){showBie(d,wb,wc,term);
-        return}
+      if(d){done({kind:'bie',d,term});return}
       continue;
     }
     try{
@@ -5791,13 +5864,12 @@ async function fetchWikiSummary(r){
       const bd=await r2.json();
       const hit=(bd.searchResults?.results||[])[0];
       if(hit&&(hit.description||hit.commonName||hit.name)){
-        _wikiCache.set(cKey,hit);
-        if(S.modalIdx>=0)showBie(hit,wb,wc,term);
-        return;
+        _wikiCache.set(cKey,hit);done({kind:'bie',d:hit,term});return;
       }
       _wikiCache.set(cKey,null);
     }catch(e){_wikiCache.set(cKey,null)}
   }
+  done(null);
 }
 async function wikiSummary(title){
   try{
@@ -5807,33 +5879,203 @@ async function wikiSummary(title){
     return(d.type==='standard'&&d.extract)?d:null;
   }catch(e){return null}
 }
-
-function showWiki(d,wb,wc,fromTerm){
-  const ex=d.extract.length>300?d.extract.slice(0,297)+'…':d.extract;
-  let h='';
-  if(d.thumbnail)h+=`<img src="${d.thumbnail.source}" alt="" style="float:right;max-width:80px;max-height:80px;margin:0 0 4px 8px;border-radius:4px"/>`;
-  const src=fromTerm?` <span style="color:var(--muted);font-size:10px">(${esc(fromTerm)})</span>`:'';
-  h+=`<span>${esc(ex)}</span> <a href="${d.content_urls?.desktop?.page||'#'}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11px">Read more ↗</a>${src}`;
-  wc.innerHTML=h;wb.style.display='block';
-  wb.querySelectorAll('[data-label]').forEach(el=>el.remove());
-  const lbl=document.createElement('div');lbl.dataset.label='1';lbl.style.cssText='font-weight:700;font-size:11px;color:var(--muted);margin-bottom:3px';lbl.textContent='📖 Wikipedia';
-  wb.insertBefore(lbl,wc);
+/* Which rank the article is about, judged from its title (a species name can redirect to its genus) */
+function _wikiLevel(title,r){
+  const t=(title||'').toLowerCase().trim();
+  if(r.species&&t===r.species.toLowerCase())return'Species';
+  if(r.genus&&t===r.genus.toLowerCase())return'Genus';
+  if(r.family&&t===r.family.toLowerCase())return'Family';
+  return'';
 }
-function showBie(hit,wb,wc,fromTerm){
+function renderWikiBox(r){
+  const wb=$('#wikiBox'),wl=$('#mWikiLink');
+  if(!wb)return;
+  const w=r._wiki;
+  if(!w){wb.hidden=true;if(wl)wl.hidden=true;return}
+  const itl=t=>shouldItalic(t)?`<em>${esc(t)}</em>`:esc(t);
+  if(w.kind==='wiki'){
+    const d=w.d;const title=d.title||w.term;const lvl=_wikiLevel(title,r);
+    const ex=d.extract.length>420?d.extract.slice(0,417)+'…':d.extract;
+    const url=d.content_urls?.desktop?.page||'';
+    const about=`${lvl?lvl+' article, ':'Article, '}${itl(title)}`;
+    wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#dcb77e"></div> Wikipedia</div><p class="wiki-p"><span class="wiki-src">${about}.</span> ${esc(ex)}${url?` <a href="${esc(url)}" target="_blank" rel="noopener">Read more ↗</a>`:''}</p>`;
+    if(wl&&url){wl.href=url;wl.querySelector('small').innerHTML=about;wl.hidden=false}
+  }else{
+    const hit=w.d;
+    const clean=(hit.description||'').replace(/<[^>]+>/g,'');
+    const ex=clean.length>420?clean.slice(0,417)+'…':clean;
+    const guid=hit.guid||hit.id||'';
+    wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#9cf0de"></div> Atlas of Living Australia profile</div><p class="wiki-p"><span class="wiki-src">${itl(hit.name||w.term)}.</span> ${ex?esc(ex)+' ':''}${hit.commonName?`Common name: ${esc(hit.commonName)}. `:''}${guid?`<a href="https://bie.ala.org.au/species/${encodeURIComponent(guid)}" target="_blank" rel="noopener">ALA profile ↗</a>`:''}</p>`;
+    if(wl)wl.hidden=true;
+  }
+  wb.hidden=false;
+}
+
+/* ═════════════════════════════════════════════════
+   MUSEUM REFERENCE IMAGE — records without their own images
+   Only photographs of museum specimens (preserved-specimen records with an image) from ALA and GBIF.
+   No iNaturalist or other observation photos. Species first, then genus; never family.
+   Every candidate must sit in the record's family (or order), so a genus name shared with an
+   unrelated organism cannot slip in. Not shown when the museum's name and ALA's match differ,
+   or when the name is held. When the species has no museum photograph in ALA or GBIF,
+   the panel says so, with the date checked.
+   ═════════════════════════════════════════════════ */
+const _refCache=new Map();
+function _localISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function _licShort(s){
+  s=(s||'').toString().trim();if(!s)return'';
+  if(/publicdomain\/zero|^cc0/i.test(s))return'CC0';
+  if(/publicdomain\/mark/i.test(s))return'Public domain';
+  const m=/licenses\/([a-z-]+)\/(\d\.\d)/i.exec(s);
+  if(m)return'CC '+m[1].toUpperCase()+' '+m[2];
+  return s.replace(/^CC-BY/i,'CC BY').replace(/\s*\((?:Int|International)\)\s*$/i,'');
+}
+function _personName(s){
+  s=(s||'').toString().trim();
+  const m=/^([^,]+),\s*([^,]+)$/.exec(s);
+  return m?`${m[2].trim()} ${m[1].trim()}`:s;
+}
+function _canon(n){
+  const p=(n||'').trim().split(/\s+/);
+  return p.length>=2&&/^[a-z]/.test(p[1])?p[0]+' '+p[1]:(p[0]||'');
+}
+function _typeRank(t){const s=(t||'').toLowerCase();if(!s)return 9;if(/holotype|lectotype|neotype/.test(s))return 0;if(/syntype/.test(s))return 1;return 2}
+async function _refAla(rank,name,r){
+  try{
+    const cl=[`${rank}:"${name.replace(/"/g,'')}"`,'multimedia:"Image"','basis_of_record:"PreservedSpecimen"'];
+    if(r.family)cl.push(`family:"${r.family.replace(/"/g,'')}"`);else if(r.order)cl.push(`order:"${r.order.replace(/"/g,'')}"`);
+    if(r.kingdom)cl.push(`kingdom:"${r.kingdom.replace(/"/g,'')}"`);
+    const u=new URLSearchParams();u.set('q','*:*');appendFQ(u,cl);
+    u.set('pageSize','20');u.set('startIndex','0');u.set('facets','');u.set('flimit','0');
+    const res=await cachedFetch('https://biocache-ws.ala.org.au/ws/occurrences/search?'+u.toString());
+    if(!res.ok)return{ok:false,c:[]};
+    const d=await res.json();
+    const c=(d.occurrences||[]).filter(o=>o.uuid!==r.uuid&&(o.imageUrl||o.largeImageUrl||(o.images&&o.images.length))).map(o=>{
+      const id=(o.images&&o.images[0])||imgId(o.imageUrl||o.largeImageUrl);
+      return{via:'ALA',imageId:id,img:id?`https://images.ala.org.au/image/proxyImageThumbnailLarge?imageId=${id}`:(o.largeImageUrl||o.imageUrl),
+        name:_canon(o.species||o.scientificName),type:(Array.isArray(o.typeStatus)?o.typeStatus[0]:o.typeStatus)||'',
+        inst:o.institutionName||o.dataResourceName||'',cat:o.raw_catalogNumber||o.catalogNumber||'',lic:_licShort(o.license),creator:'',
+        href:'https://biocache.ala.org.au/occurrences/'+encodeURIComponent(o.uuid)};
+    });
+    return{ok:true,c};
+  }catch(e){return{ok:false,c:[]}}
+}
+async function _refGbif(rank,name,r){
+  try{
+    let q=`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(name)}&rank=${rank.toUpperCase()}&strict=true`;
+    if(r.kingdom)q+='&kingdom='+encodeURIComponent(r.kingdom);
+    if(r.family)q+='&family='+encodeURIComponent(r.family);
+    const m=await cachedFetch(q);if(!m.ok)return{ok:false,c:[]};
+    const md=await m.json();
+    /* No exact match of the same rank and family: GBIF cannot be said to lack a photograph */
+    if(md.matchType!=='EXACT'||(md.rank||'').toLowerCase()!==rank||(r.family&&md.family&&md.family.toLowerCase()!==r.family.toLowerCase()))return{ok:false,c:[]};
+    const o=await cachedFetch(`https://api.gbif.org/v1/occurrence/search?taxonKey=${md.usageKey}&basisOfRecord=PRESERVED_SPECIMEN&mediaType=StillImage&limit=20`);
+    if(!o.ok)return{ok:false,c:[]};
+    const od=await o.json();
+    const c=(od.results||[]).map(x=>{
+      const mm=(x.media||[]).find(v=>v.type==='StillImage'&&v.identifier);if(!mm)return null;
+      if((x.institutionCode||'').toUpperCase()==='QM'&&r.cat&&x.catalogNumber===r.cat)return null;
+      return{via:'GBIF',imageId:imgId(mm.identifier),img:mm.identifier.replace(/^http:\/\//,'https://'),
+        name:_canon(x.species||x.scientificName),type:(Array.isArray(x.typeStatus)?x.typeStatus[0]:x.typeStatus)||'',
+        inst:mm.rightsHolder||x.institutionCode||'',cat:x.catalogNumber||'',lic:_licShort(mm.license||x.license),creator:_personName(mm.creator||''),
+        href:'https://www.gbif.org/occurrence/'+x.gbifID};
+    }).filter(Boolean);
+    return{ok:true,c};
+  }catch(e){return{ok:false,c:[]}}
+}
+/* Photographer and licence for an ALA image (images.ala.org.au) */
+async function _refAlaCredit(c){
+  if(c.via!=='ALA'||!c.imageId||c._credited)return;
+  c._credited=true;
+  try{
+    const res=await fetch('https://images.ala.org.au/ws/image/'+encodeURIComponent(c.imageId));
+    if(!res.ok)return;
+    const d=await res.json();
+    if(d.creator)c.creator=_personName(d.creator);
+    const lic=d.recognisedLicence?.acronym||d.license;if(lic)c.lic=_licShort(lic);
+    if(!c.inst&&d.rightsHolder)c.inst=d.rightsHolder;
+  }catch(e){}
+}
+function _refMerge(a,g){
+  const seen=new Set(),out=[];
+  for(const c of[...a.c,...g.c]){const k=c.imageId||c.img;if(seen.has(k))continue;seen.add(k);out.push(c)}
+  return out.sort((x,y)=>_typeRank(x.type)-_typeRank(y.type));
+}
+async function _refLookup(sp,gen,r){
+  const out={checked:_localISO(),species:sp,genus:gen,spCands:[],genCands:[]};
+  if(sp){
+    const[a,g]=await Promise.all([_refAla('species',sp,r),_refGbif('species',sp,r)]);
+    out.spAla=a.ok;out.spGbif=g.ok;out.spCands=_refMerge(a,g);
+  }
+  if(!out.spCands.length&&gen){
+    const[a,g]=await Promise.all([_refAla('genus',gen,r),_refGbif('genus',gen,r)]);
+    out.genAla=a.ok;out.genGbif=g.ok;out.genCands=_refMerge(a,g);
+  }
+  const top=(out.spCands.length?out.spCands:out.genCands).slice(0,3);
+  await Promise.all(top.map(_refAlaCredit));
+  return out;
+}
+async function fetchRefImage(r,idx){
+  if(S.modalIdx!==idx)return;
+  if(S.modalPhotos.length){renderRef(r);return}
+  if(r._ref!==undefined&&!r._ref?.loading){renderRef(r);return}
+  const nm=r._nm||{};
+  const sp=r.species&&r.species.trim().split(/\s+/).length>=2?r.species.trim():'';
+  const gen=(r.genus||'').trim();
+  if(nm.differ||nm.held||(!sp&&!gen)){r._ref=null;renderRef(r);return}
+  r._ref={loading:true};renderRef(r);
+  const key=[sp,gen,r.family,r.order,r.kingdom,r.uuid].join('|');
+  let p=_refCache.get(key);
+  if(!p){p=_refLookup(sp,gen,r);_refCache.set(key,p)}
+  const out=await p;
+  r._ref=out;
+  if(S.modalIdx>=0&&S.res[S.modalIdx]===r)renderRef(r);
+}
+function renderRef(r){
+  const box=$('#mRef');if(!box)return;
+  const body=box.parentElement;
+  const R=r._ref;
+  const off=()=>{box.hidden=true;box.innerHTML='';body.classList.remove('has-ref')};
+  if(!R||S.modalPhotos.length)return off();
+  if(R.loading){
+    box.innerHTML=`<div class="ref-note"><div class="ref-k">Specimen photographs</div><p class="ref-t mu">Looking in ALA and GBIF…</p></div>`;
+    box.hidden=false;body.classList.add('has-ref');return;
+  }
+  const level=R.spCands.length?'species':(R.genCands.length?'genus':'');
+  const cands=level==='species'?R.spCands:R.genCands;
+  const pick=R.pick||0;
+  const c=cands[pick];
   let h='';
-  if(hit.smallImageUrl)h+=`<img src="${hit.smallImageUrl}" alt="" style="float:right;max-width:80px;max-height:80px;margin:0 0 4px 8px;border-radius:4px"/>`;
-  const desc=hit.description||'';
-  const clean=desc.replace(/<[^>]+>/g,'');
-  const ex=clean.length>300?clean.slice(0,297)+'…':clean;
-  if(ex)h+=`<span>${esc(ex)}</span> `;
-  if(hit.commonName)h+=`<br><b>Common name:</b> ${esc(hit.commonName)} `;
-  const guid=hit.guid||hit.id||'';
-  if(guid)h+=`<a href="https://bie.ala.org.au/species/${encodeURIComponent(guid)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:11px">ALA profile ↗</a>`;
-  h+=fromTerm?` <span style="color:var(--muted);font-size:10px">(${esc(fromTerm)})</span>`:'';
-  wc.innerHTML=h;wb.style.display='block';
-  wb.querySelectorAll('[data-label]').forEach(el=>el.remove());
-  const lbl=document.createElement('div');lbl.dataset.label='1';lbl.style.cssText='font-weight:700;font-size:11px;color:var(--muted);margin-bottom:3px';lbl.textContent='📖 Atlas of Living Australia';
-  wb.insertBefore(lbl,wc);
+  if(c){
+    const nameBit=level==='genus'&&c.name?`<em>${esc(c.name)}</em>, `:'';
+    const who=[c.type?c.type.toLowerCase():'',[c.inst,c.cat].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const credit=c.creator?`Photo ${esc(c.creator)}${c.lic?', '+esc(c.lic):''}`:(c.lic?esc(c.lic):'');
+    h+=`<figure class="ref-fig">
+      <a class="ref-img" href="${esc(c.href)}" target="_blank" rel="noopener" aria-label="Museum photograph of ${esc(c.name||'a related specimen')}, ${level==='species'?'not this specimen':'another species in the genus'}. Opens its source.">
+        <img src="${esc(c.img)}" alt="" loading="lazy">
+        <span class="ref-tag">${level==='species'?'Not this specimen':'Genus only'}</span>
+      </a>
+      <figcaption>${nameBit}${esc(who)}${credit?' · '+credit:''} · via ${c.via} <a href="${esc(c.href)}" target="_blank" rel="noopener">Source ↗</a></figcaption>
+    </figure>`;
+  }
+  /* The quiet note: the species (or, for a record named only to genus, the genus) has no museum photograph */
+  const subj=R.species?{n:R.species,ala:R.spAla,gbif:R.spGbif,none:!R.spCands.length,genus:false}:{n:R.genus,ala:R.genAla,gbif:R.genGbif,none:!R.genCands.length,genus:true};
+  const srcs=[subj.ala?'ALA':'',subj.gbif?'GBIF':''].filter(Boolean);
+  if(subj.n&&subj.none&&srcs.length){
+    const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
+    const holds=isType(ts)?`Queensland Museum holds ${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}.`:'Queensland Museum holds a specimen.';
+    h+=`<div class="ref-note"><div class="ref-k">Specimen photographs</div>
+      <p class="ref-t">No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')} (checked ${esc(fmtLongDate(R.checked))}).</p>
+      <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p></div>`;
+  }
+  if(!h)return off();
+  box.innerHTML=h;box.hidden=false;body.classList.add('has-ref');
+  const img=box.querySelector('.ref-img img');
+  if(img)img.addEventListener('error',async()=>{
+    R.pick=pick+1;
+    const nx=cands[R.pick];if(nx)await _refAlaCredit(nx);
+    if(S.modalIdx>=0&&S.res[S.modalIdx]===r)renderRef(r);
+  },{once:true});
 }
 
 /* ═════════════════════════════════════════════════
@@ -6680,20 +6922,8 @@ async function fetchAuthorship(r,idx){
 }
 function updateAuthDisplay(r,idx){
   if(S.modalIdx!==idx)return;
-  /* Update auth line in modal */
-  const det=$('#mDetails');
-  if(det){
-    const existing=det.querySelector('.auth-line');
-    if(!existing){
-      const chips=det.querySelector('.tax-chips');
-      if(chips){
-        const div=document.createElement('div');div.className='auth-line';div.innerHTML=`<em>${esc(r.authorship)}</em>`;
-        chips.parentElement.insertBefore(div,chips);
-      }
-    }else{
-      existing.innerHTML=`<em>${esc(r.authorship)}</em>`;
-    }
-  }
+  /* Authors and year sit in the header, after the common name */
+  const au=$('#mAuth');if(au)au.textContent=r.authorship||'';
   /* Update gallery card */
   try{updateGalleryCard(idx,r)}catch(e){}
 }
@@ -6964,7 +7194,6 @@ function modalNamesHTML(r,df){
 }
 function renderModalDetails(r){
   const link=`https://biocache.ala.org.au/occurrences/${r.key}`;
-  const src='ALA';
   const hasType=isType(r.typeStatus);
   const dateStr=fmtDate(r);
   const elevStr=typeof r.elevMin==='number'?(typeof r.elevMax==='number'&&r.elevMax!==r.elevMin?`${r.elevMin}–${r.elevMax} m`:`${r.elevMin} m`):'';
@@ -6972,23 +7201,12 @@ function renderModalDetails(r){
 
   const taxArr=[['Kingdom',r.kingdom,'kingdom'],['Phylum',r.phylum,'phylum'],['Class',r.class_,'class'],['Order',r.order,'order'],['Superfamily',r.superfamily,'superfamily'],['Family',r.family,'family'],['Subfamily',r.subfamily,'subfamily'],['Tribe',r.tribe,'tribe'],['Genus',r.genus,'genus'],['Species',r.species,'species']].filter(([,v])=>v);
   const df=(label,val,wide)=>val?`<span class="df${wide?' wide':''}"><span class="k">${label}</span><span class="v">${val}</span></span>`:'';
+  /* One field in the record columns; a muted value says what the record does not give */
+  const fv=(label,val,muted)=>val?`<div class="rc-f"><div class="rc-k">${label}</div><div class="rc-v${muted?' mu':''}">${val}</div></div>`:'';
   const loc=[r.locality,r.state,r.country].filter(Boolean).join(', ');
 
-  /* AFD/APC taxon link — use scientific name, not ALA UUID */
-  let afdLink='';
-  if(r.sci){
-    const nameForUrl=r.sci.trim().replace(/\s+/g,'_');
-    if(r.kingdom==='Animalia'){
-      const href='https://biodiversity.org.au/afd/taxa/'+encodeURIComponent(nameForUrl);
-      afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">AFD Taxon ↗</a>`;
-    }else if(r.kingdom==='Plantae'||r.kingdom==='Fungi'){
-      const href='https://biodiversity.org.au/nsl/services/search/names?name='+encodeURIComponent(r.sci.trim());
-      afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">APC/APNI ↗</a>`;
-    }else{
-      const href='https://bie.ala.org.au/species/'+encodeURIComponent(r.taxonConceptID||r.sci.trim());
-      afdLink=`<a href="${href}" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;font-size:11px;text-decoration:none">ALA Species ↗</a>`;
-    }
-  }
+  /* Authors and year sit in the header, after the common name */
+  const au=$('#mAuth');if(au)au.textContent=r.authorship||'';
 
   const suppNote=r._supp?`<div class="supp-note" role="note">
       <div class="sn-h">Added from Queensland Museum’s register</div>
@@ -6997,78 +7215,92 @@ function renderModalDetails(r){
     </div>`:'';
   const suppExtra=r._supp&&r._suppExtra&&Object.keys(r._suppExtra).length?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> From the register</div>
     <div class="det-flow">${df('Register ID',esc(r.regId))}${Object.entries(r._suppExtra).map(([k,v])=>df(esc(k),esc(v),String(v).length>40)).join('')}</div>`:(r._supp?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> From the register</div><div class="det-flow">${df('Register ID',esc(r.regId))}</div>`:'');
+
+  /* The line under the type badge: collection · preparation · basis of record */
+  const BASIS_LONG={PRESERVED_SPECIMEN:'Preserved specimen',FOSSIL_SPECIMEN:'Fossil specimen',LIVING_SPECIMEN:'Living specimen',HUMAN_OBSERVATION:'Human observation',MACHINE_OBSERVATION:'Machine observation',MATERIAL_SAMPLE:'Material sample'};
+  const kind=[r.coll?shortColl(r.coll):'',r.preparations||'',BASIS_LONG[r.basis]||basisL(r.basis)].filter(Boolean).map(esc).join(' · ');
+
+  /* Taxonomy breadcrumb: every rank links to its records, as the chips did */
+  const crumbs=taxArr.map(([rk,v,rkey])=>{
+    const nm=(rkey==='genus'||rkey==='species')&&shouldItalic(v)?`<em>${esc(v)}</em>`:esc(v);
+    return`<a href="#" class="crumb" data-rk="${esc(rkey)}" data-nm="${esc(v)}" title="${rk}: ${esc(v)}. Show its records" aria-label="${rk} ${esc(v)}, show its records">${nm}</a>`;
+  }).join('<span class="crumb-sep" aria-hidden="true">›</span>');
+
+  const colSpec=[fv('Sex',esc(r.sex)),fv('Life stage',esc(r.lifeStage)),fv('Count',esc(r.individualCount)),fv('Field number',esc(r.fieldNumber))].join('');
+  const colEvt=[fv('Collector',r.recBy?esc(r.recBy.replace(/\s*\|\s*/g,' & ')):'Not in this record',!r.recBy),fv('Date',esc(dateStr)),fv('Method',esc(r.samplingProtocol)),fv('Identified by',esc(r.identifiedBy))].join('');
+  const colPlace=[fv('Locality',esc(loc)),fv('Coordinates',coordStr),fv('Elevation',elevStr),fv('Depth',r.depth!=null?esc(r.depth+' m'):''),fv('Habitat',esc(r.habitat))].join('');
+
   $('#mDetails').innerHTML=`
     ${suppNote}
-    ${hasType?`<div class="type-badge" style="background:${typeColor(r.typeStatus)}">${esc(r.typeStatus)}</div>`:''}
-    ${r.authorship?`<div class="auth-line"><em>${esc(r.authorship)}</em></div>`:''}
+    <div class="m-kind">${hasType?`<span class="type-badge" style="background:${typeColor(r.typeStatus)}">${esc(r.typeStatus)}</span>`:''}${kind?`<span class="m-kind-t">${kind}</span>`:''}</div>
+    ${crumbs?`<nav class="m-crumbs" aria-label="Taxonomy">${crumbs}</nav>`:''}
     ${modalNamesHTML(r,df)}
 
-    <div class="tax-chips">${taxArr.map(([rk,v,rkey])=>`<span class="tc" data-rk="${esc(rkey)}" data-nm="${esc(v)}"><span class="rk">${rk}</span> ${esc(v)}</span>`).join('')}</div>
-
-    <div class="det-sec"><div class="ds" style="background:var(--green)"></div> Specimen</div>
-    <div class="det-flow">
-      ${df('Basis',basisL(r.basis))}${df('Collection',esc(shortColl(r.coll)))}${df('Preparations',esc(r.preparations))}${df('Sex',esc(r.sex))}${df('Life Stage',esc(r.lifeStage))}${df('Count',esc(r.individualCount))}${df('Field #',esc(r.fieldNumber))}
+    <div class="rc-cols">
+      ${colSpec?`<section class="rc-col" style="--rc:#da83ff"><h3>Specimen</h3>${colSpec}</section>`:''}
+      <section class="rc-col" style="--rc:#ffb50a"><h3>Collected</h3>${colEvt}</section>
+      ${colPlace?`<section class="rc-col" style="--rc:#81a5ff"><h3>Place</h3>${colPlace}</section>`:''}
     </div>
 
-    <div class="det-sec"><div class="ds" style="background:var(--blue)"></div> Collection Event</div>
-    <div class="det-flow">
-      ${df('Collector',esc((r.recBy||'').replace(/\s*\|\s*/g,' & ')))}${df('Date',esc(dateStr))}${df('Method',esc(r.samplingProtocol))}${df('ID\'d by',esc(r.identifiedBy))}
-    </div>
-
-    <div class="det-sec"><div class="ds" style="background:var(--orange)"></div> Geography</div>
-    <div class="det-flow">
-      ${loc?`<span class="df wide"><span class="k">Locality</span><span class="v">${esc(loc)}</span></span>`:''}${df('Coords',coordStr)}${df('Elev.',elevStr)}${df('Depth',r.depth!=null?r.depth+' m':'')}${df('Habitat',esc(r.habitat))}
-    </div>
-
-    ${r.lat!=null&&r.lng!=null?`<div class="det-sec"><div class="ds" style="background:var(--purple)"></div> Country & Context</div><div id="spatialCtx"></div>`:''}
+    ${r.lat!=null&&r.lng!=null?`<div class="det-sec"><div class="ds" style="background:#6daf21"></div> Country &amp; context</div><div id="spatialCtx"></div>`:''}
 
     ${suppExtra}
-    ${r.occurrenceRemarks?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> Remarks</div><div style="font-size:11px;color:var(--ink);padding:2px 0;line-height:1.4">${esc(r.occurrenceRemarks)}</div>`:''}
+    ${r.occurrenceRemarks?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> Remarks</div><p class="m-remarks">${esc(r.occurrenceRemarks)}</p>`:''}
+    <div id="wikiBox" class="wiki-box" hidden></div>
+    <div id="mCopyOut"></div>`;
 
-    <div class="det-sec"><div class="ds" style="background:var(--red)"></div> Links & Metadata</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:3px 0">
-      ${r._supp?(r._suppSharesUuid?`<a href="https://biocache.ala.org.au/occurrences/${encodeURIComponent(r._suppSharesUuid)}" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;font-size:11px;text-decoration:none">ALA’s record under ${esc(r.cat)} ↗</a>`:''):`<a href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;font-size:11px;text-decoration:none">View on ${src} ↗</a>`}
-      ${afdLink}
-      ${r.sci?`<a href="https://www.biodiversitylibrary.org/search?searchTerm=${encodeURIComponent(r.sci)}#/names" target="_blank" rel="noopener" style="color:#0f7bab;font-weight:600;font-size:11px;text-decoration:none">BHL Literature ↗</a>`:''}
-      ${r.sci?`<a href="https://scholar.google.com/scholar?q=${encodeURIComponent('"'+r.sci+'"')}" target="_blank" rel="noopener" style="color:#a86a00;font-weight:600;font-size:11px;text-decoration:none">Google Scholar ↗</a>`:''}
-      ${r.species||r.genus?`<a href="https://bie.ala.org.au/search?q=${encodeURIComponent(r.species||r.genus)}" target="_blank" rel="noopener" style="color:#264939;font-weight:600;font-size:11px;text-decoration:none">ALA Species ↗</a>`:''}
+  /* ── Links & metadata: pinned to the foot of the window ── */
+  const L=[];
+  if(r._supp){
+    if(r._suppSharesUuid)L.push({href:`https://biocache.ala.org.au/occurrences/${encodeURIComponent(r._suppSharesUuid)}`,label:`ALA’s record under ${r.cat}`,desc:'The specimen ALA holds',c:'#378841',inv:1});
+  }else L.push({href:link,label:'View on ALA',desc:'The occurrence record',c:'#378841',inv:1});
+  let alaSpeciesDone=false;
+  if(r.sci){
+    if(r.kingdom==='Animalia'){
+      L.push({href:'https://biodiversity.org.au/afd/taxa/'+encodeURIComponent(r.sci.trim().replace(/\s+/g,'_')),label:'AFD taxon',desc:'Names, synonyms, type data',c:'#ff6430'});
+    }else if(r.kingdom==='Plantae'||r.kingdom==='Fungi'){
+      L.push({href:'https://biodiversity.org.au/nsl/services/search/names?name='+encodeURIComponent(r.sci.trim()),label:'APC/APNI',desc:'Australian plant names',c:'#ff6430'});
+    }else{
+      L.push({href:'https://bie.ala.org.au/species/'+encodeURIComponent(r.taxonConceptID||r.sci.trim()),label:'ALA species',desc:'Species page and map',c:'#9cf0de'});alaSpeciesDone=true;
+    }
+    L.push({href:`https://www.biodiversitylibrary.org/search?searchTerm=${encodeURIComponent(r.sci)}#/names`,label:'BHL literature',desc:'Digitised publications',c:'#1289bd',inv:1});
+    L.push({href:`https://scholar.google.com/scholar?q=${encodeURIComponent('"'+r.sci+'"')}`,label:'Google Scholar',desc:'Papers citing the name',c:'#ffb50a'});
+  }
+  if((r.species||r.genus)&&!alaSpeciesDone)L.push({href:`https://bie.ala.org.au/search?q=${encodeURIComponent(r.species||r.genus)}`,label:'ALA species',desc:'Species page and map',c:'#9cf0de'});
+  const lk=o=>`<a class="mf-l" href="${esc(o.href)}" target="_blank" rel="noopener"><i style="background:${o.c};color:${o.inv?'#fff':'#0a0a0a'}" aria-hidden="true">↗</i><span><b>${esc(o.label)}</b><small>${o.desc}</small></span></a>`;
+  $('#mFoot').innerHTML=`
+    <div class="mf-top">
+      <h2 class="mf-h">Links &amp; metadata</h2>
+      <div class="mf-copy">Copy <button type="button" id="mCopyTitle">title</button><button type="button" id="mCopyCaption">caption</button><button type="button" id="mCopyKw">keywords</button><button type="button" id="mCopySrc">sources</button><span class="meta-hint" id="mMetaHint" role="status" aria-live="polite"></span></div>
     </div>
-    <div id="wikiBox" style="margin:6px 0;font-size:12px;line-height:1.5;color:var(--ink);display:none">
-      <div id="wikiContent"></div>
+    <div class="mf-body">
+      <div class="mf-links">${L.map(lk).join('')}<a class="mf-l" id="mWikiLink" href="#" target="_blank" rel="noopener" hidden><i style="background:#dcb77e" aria-hidden="true">↗</i><span><b>Wikipedia</b><small></small></span></a></div>
+      <div class="mf-ref" id="mRef" hidden></div>
     </div>
-    <div class="meta-btns">
-      <button id="mCopyTitle">Copy title</button>
-      <button id="mCopyCaption">Copy caption</button>
-      <button id="mCopyKw">Copy keywords</button>
-      <button id="mCopySrc">Copy sources</button>
-    </div>`;
+    <p class="mf-ack">Queensland Museum acknowledges the First Peoples – the Traditional Custodians of the lands, waters and sky where we live and work.</p>`;
 
-  // Clickable taxonomy chips
-  $('#mDetails').querySelectorAll('.tc[data-rk]').forEach(tc=>{
-    tc.addEventListener('click',()=>{closeModal();applyTaxonFilter(tc.dataset.rk,tc.dataset.nm)});
+  // Clickable taxonomy breadcrumb
+  $('#mDetails').querySelectorAll('.crumb[data-rk]').forEach(a=>{
+    a.addEventListener('click',e=>{e.preventDefault();closeModal();applyTaxonFilter(a.dataset.rk,a.dataset.nm)});
   });
-  // Metadata copy buttons
-  const hint=$('#mMetaHint');hint.innerHTML='';
-  $('#mCopyTitle')?.addEventListener('click',async()=>{
-    const t=specTitle(r);
-    const ok=await clipCopy(t);
-    hint.innerHTML=ok?`<span class="copy-ok">Copied title:</span> ${esc(t)}`:`<div class="copy-block">${esc(t)}</div>`;
+  /* Copy buttons: a short confirmation in the footer. Sources are also shown at the end of the record,
+     because the full native title attributions live there. If the clipboard is refused, the text is shown to copy by hand. */
+  const hint=$('#mMetaHint');let hintT=0;
+  const say=t=>{hint.textContent=t;clearTimeout(hintT);hintT=setTimeout(()=>{hint.textContent=''},4000)};
+  const out=$('#mCopyOut');
+  const showText=(what,t)=>{out.innerHTML=`<div class="det-sec"><div class="ds" style="background:var(--ink)"></div> ${esc(what)}</div><div class="copy-block">${esc(t)}</div>`;out.scrollIntoView({behavior:'smooth',block:'nearest'})};
+  const wire=(id,what,fn,alwaysShow)=>$(id)?.addEventListener('click',async()=>{
+    const t=fn(r);const ok=await clipCopy(t);
+    if(ok)say(`Copied ${what.toLowerCase()}.`);else say('Copy it from the box below.');
+    if(!ok||alwaysShow)showText(what,t);
   });
-  $('#mCopyCaption')?.addEventListener('click',async()=>{
-    const t=specCaption(r);
-    const ok=await clipCopy(t);
-    hint.innerHTML=ok?`<span class="copy-ok">Copied caption:</span> ${esc(t)}`:`<div class="copy-block">${esc(t)}</div>`;
-  });
-  $('#mCopyKw')?.addEventListener('click',async()=>{
-    const t=specKeywords(r);
-    const ok=await clipCopy(t);
-    hint.innerHTML=ok?`<span class="copy-ok">Copied keywords:</span> ${esc(t)}`:`<div class="copy-block">${esc(t)}</div>`;
-  });
-  $('#mCopySrc')?.addEventListener('click',async()=>{
-    const t=specSources(r);
-    const ok=await clipCopy(t);
-    hint.innerHTML=ok?`<span class="copy-ok">Copied sources:</span><div class="copy-block">${esc(t)}</div>`:`<div class="copy-block">${esc(t)}</div>`;
-  });
+  wire('#mCopyTitle','Title',specTitle);
+  wire('#mCopyCaption','Caption',specCaption);
+  wire('#mCopyKw','Keywords',specKeywords);
+  wire('#mCopySrc','Sources',specSources,true);
+
+  if(r._wiki!==undefined)renderWikiBox(r);
+  if(r._ref!==undefined)renderRef(r);
 }
 
 /* The two sources on a tile, when the museum's name and ALA's match differ */
