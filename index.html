@@ -42,7 +42,10 @@ button,select,input{font-family:var(--font)}
 
 /* ── HEADER ── */
 .hdr{position:sticky;top:0;z-index:100;background:var(--ink);color:#fff;display:flex;align-items:center;gap:28px;padding:0 24px;height:68px;flex-shrink:0}
-.hdr-brand{display:flex;align-items:stretch;gap:12px;flex-shrink:0}
+.hdr-brand{display:flex;align-items:stretch;gap:12px;flex-shrink:0;color:inherit;text-decoration:none}
+.hdr-brand .qm-wm{display:block}
+.hdr-brand .t1,.hdr-brand .t2{display:block}
+.hdr-brand:hover .t1,.hdr-brand:hover .t2{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 .qm-wm{font-weight:900;font-size:17px;line-height:.9;letter-spacing:-.01em;text-transform:uppercase}
 .qm-rule{width:2px;background:var(--chart);align-self:stretch}
 .hdr-logo{display:none}
@@ -588,7 +591,7 @@ button,select,input{font-family:var(--font)}
 <a href="#scroll" class="skip-link">Skip to content</a>
 
 <header class="hdr" role="banner">
-  <div class="hdr-brand"><div class="qm-wm">Queensland<br/>Museum</div><span class="qm-rule" aria-hidden="true"></span><div class="hdr-t"><span class="t1">Collections</span><span class="t2">Explorer</span></div></div>
+  <a class="hdr-brand" id="homeLink" href="./" aria-label="Queensland Museum Collections Explorer: start again with the whole collection"><span class="qm-wm">Queensland<br/>Museum</span><span class="qm-rule" aria-hidden="true"></span><span class="hdr-t"><span class="t1">Collections</span><span class="t2">Explorer</span></span></a>
   <div class="hdr-search" role="search"><span class="si" id="searchIcon" aria-hidden="true">⌕</span><input type="text" id="q" placeholder="Search by common name, species, family…" autocomplete="off" aria-label="Search collections"/><button class="srst" id="searchRst" title="Clear search &amp; filters" aria-label="Clear search and filters">✕</button></div>
   <div class="hdr-r">
     
@@ -7451,6 +7454,13 @@ FIDS.forEach((id,idx)=>{$('#'+id).addEventListener('change',()=>{for(let i=idx+1
 $('#catGo')?.addEventListener('click',()=>{S.off=0;doSearch()});
 $('#fCat')?.addEventListener('keydown',e=>{if(e.key==='Enter'){S.off=0;doSearch()}});
 $('#fSort')?.addEventListener('change',()=>{updateDropdowns()});
+$('#homeLink')?.addEventListener('click',e=>{
+  if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button!==0)return; /* new tab or window: let the browser open it */
+  e.preventDefault();
+  $('#resetBtn').click();
+  if(S.view!=='gallery')switchView('gallery');
+  const sc=$('#scroll');if(sc)sc.scrollTop=0;
+});
 $('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;S._taxWasSet=false;try{setTaxFold(false)}catch(e){};_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
   const catEl=$('#fCat');if(catEl)catEl.value='';
   updateSearchRst();doSearch()});
@@ -7545,10 +7555,22 @@ function pushURLState(){
   /* Build hash */
   const h=p.toString();
   const newHash=h?'#'+h:'';
-  if(('#'+location.hash.replace(/^#/,''))!==newHash&&location.hash!==newHash){
-    history.replaceState(null,'',newHash||location.pathname+location.search);
-  }
+  const boot=_urlBoot;_urlBoot=false; /* the state on arrival is already the current entry */
+  if(_hashKey(location.hash)===_hashKey(newHash))return;
+  /* Each search a person makes gets its own history entry, so Back and Forward step
+     through them. Follow-ups within a moment of a change (the page filling in parent
+     ranks, a view switch after a search, the first state on arrival, or the state
+     rebuilt after Back) replace the entry instead of adding another. */
+  const now=Date.now();
+  const replace=boot||now<_urlReplaceUntil||now-_urlLastPush<1000;
+  const url=newHash||location.pathname+location.search;
+  if(replace)history.replaceState(null,'',url);
+  else{history.pushState(null,'',url);_urlLastPush=now}
+  try{_lastNavHash=location.hash}catch(e){}
 }
+/* The same state written in a different order is the same place in history. */
+function _hashKey(h){const p=new URLSearchParams(String(h||'').replace(/^#/,''));return [...p.entries()].sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:a[1]<b[1]?-1:1).map(e=>e.join('=')).join('&')}
+let _urlBoot=true,_urlLastPush=0,_urlReplaceUntil=0;
 
 function restoreFromURL(){
   const raw=location.hash.replace(/^#/,'');
@@ -7587,12 +7609,13 @@ function restoreFromURL(){
 }
 
 /* Listen for browser back/forward */
-window.addEventListener('hashchange',()=>{
+function _onHistoryNav(){
+  _urlReplaceUntil=Date.now()+5000; /* rebuilding this state must not add entries */
   _urlSuppressPush=true;
   const raw=location.hash.replace(/^#/,'');
   if(!raw){
-    /* Hash cleared — reset all filters */
-    $('#q').value='';S.q='';
+    /* Back to the start — reset all filters */
+    $('#q').value='';S.q='';S.guideFocus=null;
     for(const domId of Object.values(_URL_KEYS)){const el=$('#'+domId);if(el){if(el.tagName==='SELECT')el.selectedIndex=0;else el.value=''}}
     _urlSuppressPush=false;
     doSearch();
@@ -7605,8 +7628,8 @@ window.addEventListener('hashchange',()=>{
     const el=$('#'+domId);if(!el)continue;
     const v=p.get(stateKey)||'';
     if(el.tagName==='SELECT'){
-      if([...el.options].some(o=>o.value===v))el.value=v;
-      else el.selectedIndex=0;
+      if(!v)el.selectedIndex=0;
+      else{if(![...el.options].some(o=>o.value===v)){const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)}el.value=v}
     }else el.value=v;
   }
   if(p.get('q')){S.q=p.get('q');$('#q').value=S.q}else{S.q='';$('#q').value=''}
@@ -7621,7 +7644,11 @@ window.addEventListener('hashchange',()=>{
   /* Re-render Browse for back/forward within the guide view (switchView is
      skipped when the view is unchanged, e.g. drilling in/out of a focus). */
   if(view==='guide'){try{renderGuide()}catch(e){}}
-});
+}
+let _lastNavHash=location.hash;
+function _historyNav(){if(location.hash===_lastNavHash)return;_lastNavHash=location.hash;_onHistoryNav()}
+window.addEventListener('popstate',_historyNav);
+window.addEventListener('hashchange',_historyNav);
 
 /* BOOT */
 const hadURLState=restoreFromURL();
