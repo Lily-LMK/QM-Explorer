@@ -45,7 +45,10 @@ button,select,input{font-family:var(--font)}
 .hdr-brand{display:flex;align-items:stretch;gap:12px;flex-shrink:0;color:inherit;text-decoration:none}
 .hdr-brand .qm-wm{display:block}
 .hdr-brand .t1,.hdr-brand .t2{display:block}
-.hdr-brand:hover .t1,.hdr-brand:hover .t2{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+/* The two header links do not change on hover; a focus ring shows only for the keyboard */
+.hdr-brand .hb-link{color:inherit;text-decoration:none;display:flex;align-items:center}
+.hdr-brand .hb-link.hdr-t{flex-direction:column;align-items:flex-start;justify-content:center}
+.hdr-brand .hb-link:focus-visible{outline:none;box-shadow:var(--focus)}
 .qm-wm{font-weight:900;font-size:17px;line-height:.9;letter-spacing:-.01em;text-transform:uppercase}
 .qm-rule{width:2px;background:var(--chart);align-self:stretch}
 .hdr-logo{display:none}
@@ -658,7 +661,7 @@ button,select,input{font-family:var(--font)}
 <a href="#scroll" class="skip-link">Skip to content</a>
 
 <header class="hdr" role="banner">
-  <a class="hdr-brand" id="homeLink" href="./" aria-label="Queensland Museum Collections Explorer: start again with the whole collection"><span class="qm-wm">Queensland<br/>Museum</span><span class="qm-rule" aria-hidden="true"></span><span class="hdr-t"><span class="t1">Collections</span><span class="t2">Explorer</span></span></a>
+  <div class="hdr-brand"><a class="hb-link" id="homeLink" href="./" aria-label="Queensland Museum: home page of the Collections Explorer"><span class="qm-wm">Queensland<br/>Museum</span></a><span class="qm-rule" aria-hidden="true"></span><a class="hb-link hdr-t" id="recordsLink" href="./" aria-label="Collections Explorer: all records"><span class="t1">Collections</span><span class="t2">Explorer</span></a></div>
   <div class="hdr-search" role="search"><span class="si" id="searchIcon" aria-hidden="true">⌕</span><input type="text" id="q" placeholder="Search by common name, species, family…" autocomplete="off" aria-label="Search collections"/><button class="srst" id="searchRst" title="Clear search &amp; filters" aria-label="Clear search and filters">✕</button></div>
   <div class="hdr-r">
     
@@ -7713,13 +7716,17 @@ FIDS.forEach((id,idx)=>{$('#'+id).addEventListener('change',()=>{for(let i=idx+1
 $('#catGo')?.addEventListener('click',()=>{S.off=0;doSearch()});
 $('#fCat')?.addEventListener('keydown',e=>{if(e.key==='Enter'){S.off=0;doSearch()}});
 $('#fSort')?.addEventListener('change',()=>{updateDropdowns()});
-$('#homeLink')?.addEventListener('click',e=>{
+/* "Queensland Museum" goes to the home page; "Collections Explorer" goes to all records.
+   Until the opening page is built (see HANDOVER), both start again with the whole collection. */
+const _goAllRecords=e=>{
   if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button!==0)return; /* new tab or window: let the browser open it */
   e.preventDefault();
   $('#resetBtn').click();
   if(S.view!=='gallery')switchView('gallery');
   const sc=$('#scroll');if(sc)sc.scrollTop=0;
-});
+};
+$('#homeLink')?.addEventListener('click',_goAllRecords);
+$('#recordsLink')?.addEventListener('click',_goAllRecords);
 $('#resetBtn').addEventListener('click',()=>{S.q='';S.off=0;S.guideFocus=null;clearMapBox();try{clearNNTT(true)}catch(e){};S._smartMatch=null;S._densityManual=false;S.galDensity=null;S._taxWasSet=false;try{setTaxFold(false)}catch(e){};_resolveId++;$('#q').value='';FIDS.forEach(id=>$('#'+id).value='');['fType','fCoord','fMedia','fColl','fSrc','fSort','fCo','fSt'].forEach(id=>{const el=$('#'+id);if(el)el.value=el.options?el.options[0]?.value||'':''});
   const catEl=$('#fCat');if(catEl)catEl.value='';
   updateSearchRst();doSearch()});
