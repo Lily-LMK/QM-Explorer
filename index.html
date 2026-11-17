@@ -5939,7 +5939,8 @@ function wikiNamesLineage(extract,r,term){
 }
 async function fetchWikiSummary(r){
   if(r._wiki!==undefined){renderWikiBox(r);return}
-  const terms=[r.species,r.genus,r.family].filter(Boolean);
+  /* Species, then genus, then family, then order (Lily, 18 November 2026: Desmoxya and Desmoxyidae have no article; Poecilosclerida does) */
+  const terms=[r.species,r.genus,r.family,r.order].filter(Boolean);
   const done=w=>{r._wiki=w;if(S.modalIdx>=0&&S.res[S.modalIdx]===r)renderWikiBox(r)};
 
   /* Try Wikipedia for each term: exact → search fallback, with relevance validation */
@@ -5961,7 +5962,7 @@ async function fetchWikiSummary(r){
             const snip=(hit.snippet||'').toLowerCase();
             if(/genus|species|family|insect|animal|arthropod|moth|beetle|fish|bird|reptil|mammal|frog|spider|crab|taxonom|phylum|order|plant|coral|mollusc|worm|fly|wasp|ant|bug/.test(snip)){
               /* Only an article titled with one of the record's own names (not "Taxonomy of the Lepidoptera") */
-              const own=[r.species,r.genus,r.family].filter(Boolean).map(x=>x.toLowerCase());
+              const own=[r.species,r.genus,r.family,r.order].filter(Boolean).map(x=>x.toLowerCase());
               if(!own.includes((hit.title||'').toLowerCase())){d=null;continue}
               d=await wikiSummary(hit.title);
               if(d&&wikiRelevant(d.extract,r)&&wikiNamesLineage(d.extract,r,term))break;
@@ -6010,6 +6011,7 @@ function _wikiLevel(title,r,term){
     if(r.species&&t===r.species.toLowerCase())return'Species';
     if(r.genus&&t===r.genus.toLowerCase())return'Genus';
     if(r.family&&t===r.family.toLowerCase())return'Family';
+    if(r.order&&t===r.order.toLowerCase())return'Order';
     return''};
   /* The title first (a species name can redirect to its genus), then the name that was looked up */
   return lv(title)||lv(term);
@@ -6049,7 +6051,7 @@ function renderWikiBox(r){
     const guid=hit.guid||hit.id||'';
     /* Headed like Wikipedia, "About this species" (Lily, 18 November 2026), with the rank of the name the
        profile was found under, so a genus profile reads "About this genus". The source is the link at the end. */
-    const lvl=w.term===r.species?'species':w.term===r.genus?'genus':w.term===r.family?'family':'species';
+    const lvl=w.term===r.species?'species':w.term===r.genus?'genus':w.term===r.family?'family':w.term===r.order?'order':'species';
     const nm=hit.name||w.term;
     const body=ex?esc(ex)+' ':(hit.commonName?'':`ALA holds no description of ${itl(nm)}. `);
     wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#9cf0de"></div> About this ${lvl}</div><p class="wiki-p">${body}${hit.commonName?`Common name: ${esc(hit.commonName)}. `:''}${guid?`<a href="https://bie.ala.org.au/species/${encodeURIComponent(guid)}" target="_blank" rel="noopener" aria-label="ALA profile, ${esc(nm)}">ALA profile ↗</a>`:''}</p>`;
@@ -6218,8 +6220,8 @@ function renderRef(r){
   const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
   const holds='Queensland Museum holds '+(isType(ts)?`${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}`:'a specimen');
   let note='';
-  /* Not shown when a museum photograph of the species exists elsewhere (Lily, 18 November 2026) */
-  if(level!=='species'&&subj.n){
+  /* Not shown when a museum photograph of the species exists elsewhere, and only for type specimens (Lily, 18 November 2026) */
+  if(level!=='species'&&subj.n&&isType(ts)){
     const none=subj.none&&srcs.length?` No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')}.`:'';
     if(c||none)note=`<b>${holds}${r._imagedReg?', imaged in its register':''}.</b>${none}`;
   }

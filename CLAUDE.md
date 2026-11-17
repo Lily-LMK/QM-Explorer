@@ -126,9 +126,9 @@ not a real outage.
   and sources belong in Copy Sources (`specSources`), not in Country & Context.
 - **Record window, context row (live 18 November 2026, `main` d372f03):** after Remarks, one row
   (`.ctx-row`): text on the left, borrowed photo (190 px) on the right; on phones it stacks, text first.
-  - Text: `fetchWikiSummary` tries Wikipedia for species, then genus, then family (`wikiRelevant`,
+  - Text: `fetchWikiSummary` tries Wikipedia for species, then genus, then family, then order (`wikiRelevant`,
     `wikiNamesLineage` reject the wrong taxon), then the ALA BIE profile. `renderWikiBox` heads it by
-    rank, "About this species / genus / family" (`_wikiLevel` reads the article title; a species can
+    rank, "About this species / genus / family / order" (`_wikiLevel` reads the article title; a species can
     redirect to its genus), with "Wikipedia ↗" at the end and a tan swatch (#dcb77e). `_wikiClip` keeps
     the first three sentences (Intl.Segmenter), 400-character backstop. Links & metadata names the
     article ("Genus article, *Sphaerospira*") in `#mWikiLink`. The ALA-profile fallback has the same
@@ -138,11 +138,12 @@ not a real outage.
     GBIF preserved specimens, same family; species, then genus; never family; never iNaturalist).
     Heading "Not this specimen" (species-level) or "Genus only", tan swatch; the caption describes only
     the photo ("Shown: another species, …, holotype, Museums Victoria F705 · Photo … · via ALA · Source").
-  - Holdings note (`#mRefNote`, under the text, orange dot #ff6430): only when no museum photograph of
-    the species exists ("Queensland Museum holds the holotype. No museum photograph of … in ALA or
+  - Holdings note (`#mRefNote`, under the text, orange dot #ff6430): type specimens only (any type
+    status), and only when no museum photograph of the species exists ("Queensland Museum holds the holotype. No museum photograph of … in ALA or
     GBIF."). Not shown beside a "Not this specimen" photo.
   - Known on 18 November 2026: GBIF can return a register-ledger scan as a "specimen" image (G332190,
-    *Desmoxya*); a genus-photo note can stand as one sentence ("holds a specimen.").
+    *Desmoxya*). The marine-park line can fire on land animals (MO79570, a land snail): left for now,
+    as many molluscs are marine (Lily, 18 November 2026).
 - **CSV:** both exports end with `retrievalDate` and `query`. Elevation is ALA `el674`.
 - **Service worker:** never caches `index.html` (network-only), so a deploy reaches visitors at
   once. Propagates real network/CORS failures (does NOT manufacture a
