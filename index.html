@@ -6047,7 +6047,12 @@ function renderWikiBox(r){
     const clean=(hit.description||'').replace(/<[^>]+>/g,'');
     const ex=_wikiClip(clean);
     const guid=hit.guid||hit.id||'';
-    wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#9cf0de"></div> Atlas of Living Australia profile</div><p class="wiki-p"><span class="wiki-src">${itl(hit.name||w.term)}.</span> ${ex?esc(ex)+' ':''}${hit.commonName?`Common name: ${esc(hit.commonName)}. `:''}${guid?`<a href="https://bie.ala.org.au/species/${encodeURIComponent(guid)}" target="_blank" rel="noopener">ALA profile ↗</a>`:''}</p>`;
+    /* Headed like Wikipedia, "About this species" (Lily, 18 November 2026), with the rank of the name the
+       profile was found under, so a genus profile reads "About this genus". The source is the link at the end. */
+    const lvl=w.term===r.species?'species':w.term===r.genus?'genus':w.term===r.family?'family':'species';
+    const nm=hit.name||w.term;
+    const body=ex?esc(ex)+' ':(hit.commonName?'':`ALA holds no description of ${itl(nm)}. `);
+    wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#9cf0de"></div> About this ${lvl}</div><p class="wiki-p">${body}${hit.commonName?`Common name: ${esc(hit.commonName)}. `:''}${guid?`<a href="https://bie.ala.org.au/species/${encodeURIComponent(guid)}" target="_blank" rel="noopener" aria-label="ALA profile, ${esc(nm)}">ALA profile ↗</a>`:''}</p>`;
     if(wl)wl.hidden=true;
   }
   wb.hidden=false;
