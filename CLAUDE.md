@@ -189,12 +189,13 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    and syntype. Next: filters and counts driven by the museum's `raw_` fields, with ALA's match
    second; a report on whether held names have since been published.
 4. Shared registration numbers and records ALA lacks — Entomology, Molluscs, Arachnids,
-   Herpetology and Corals fully inventoried (14–15 November 2026), Other Invertebrates on
-   17 November 2026.
-   `data/qm-register-supplement.json` (v7, 17 November 2026) holds 2,860 specimens from the
-   museum's register: 1,111 hidden in ALA because they share a registration number, and 1,749 ALA
+   Herpetology and Corals fully inventoried (14–15 November 2026), Other Invertebrates and
+   Fishes on 17 November 2026.
+   `data/qm-register-supplement.json` (v8, 17 November 2026) holds 3,550 specimens from the
+   museum's register: 1,111 hidden in ALA because they share a registration number, and 2,439 ALA
    holds under no QM collection, marked `addedBecause: "not in ALA"` (among them 652 Corals,
-   237 Herpetology and 778 Other Invertebrates, published once Lily confirmed each set is public).
+   237 Herpetology, 778 Other Invertebrates and 690 Fishes, published once Lily confirmed each set
+   is public).
    Other Invertebrates additions carry the register's code `OtherInverts`; `SUPP_COLL_UID` maps it
    (and `Crustacea`, `Protozoa`) to ALA's collection uid. Items awaiting a curator
    are marked `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
@@ -255,7 +256,8 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 ## State of the live site
 
 `main` carries register additions v7 (17 November 2026: 2,860 records, including 792 Other
-Invertebrates; v6 of 15 November 2026 held 2,068),
+Invertebrates; v6 of 15 November 2026 held 2,068); v8 (3,550, adding 690 Fishes) is on branch
+`supplement/v8-fishes` awaiting Lily,
 the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
 Crustacea and Protozoa shown under the collection's name, and ALA's "Amphibians and Reptiles" shown as
