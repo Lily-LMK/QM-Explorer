@@ -644,7 +644,7 @@ button,select,input{font-family:var(--font)}
 #mRefNote[hidden]{display:none!important}
 #wikiBox:not([hidden])+#mRefNote{border-top:1px solid var(--hair2);margin-top:14px;padding-top:10px}
 .ctx-l>#wikiBox[hidden]+#mRefNote{margin-top:24px}
-.mod-right-body .det-sec .ds.ds-ref{background:#ff6430}
+.mod-right-body .det-sec .ds.ds-ref{background:#dcb77e}
 .ref-row{display:block}
 .ref-fig{margin:0;display:flex;flex-direction:column;gap:5px;width:190px;max-width:100%}
 .ref-img{position:relative;display:block;width:100%;height:140px;background:#fff;border:1px solid var(--hair)}
@@ -6036,7 +6036,11 @@ function renderWikiBox(r){
     const ex=_wikiClip(d.extract);
     const url=d.content_urls?.desktop?.page||'';
     const about=`${lvl?lvl+' article, ':'Article, '}${itl(title)}`;
-    wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#dcb77e"></div> Wikipedia</div><p class="wiki-p"><span class="wiki-src">${about}.</span> ${esc(ex)}${url?` <a href="${esc(url)}" target="_blank" rel="noopener">Read more ↗</a>`:''}</p>`;
+    /* Headed by the article's rank, "About this genus" (Lily, 18 November 2026); the source is the link at the end.
+       When the rank can't be told from the title, it stays "Wikipedia" with the article named. */
+    const headT=lvl?`About this ${lvl.toLowerCase()}`:'Wikipedia';
+    const lead=lvl?'':`<span class="wiki-src">${about}.</span> `;
+    wb.innerHTML=`<div class="det-sec"><div class="ds" style="background:#dcb77e"></div> ${headT}</div><p class="wiki-p">${lead}${esc(ex)}${url?` <a href="${esc(url)}" target="_blank" rel="noopener" aria-label="Wikipedia article, ${esc(title)}">Wikipedia ↗</a>`:''}</p>`;
     if(wl&&url){wl.href=url;wl.querySelector('small').innerHTML=about;wl.hidden=false}
   }else{
     const hit=w.d;
