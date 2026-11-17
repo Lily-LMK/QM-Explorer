@@ -644,7 +644,7 @@ button,select,input{font-family:var(--font)}
 #mRefNote[hidden]{display:none!important}
 #wikiBox:not([hidden])+#mRefNote{border-top:1px solid var(--hair2);margin-top:14px;padding-top:10px}
 .ctx-l>#wikiBox[hidden]+#mRefNote{margin-top:24px}
-.mod-right-body .det-sec .ds.ds-ref{background:transparent!important;border:1.5px solid var(--ink);box-sizing:border-box}
+.mod-right-body .det-sec .ds.ds-ref{background:#ff6430}
 .ref-row{display:block}
 .ref-fig{margin:0;display:flex;flex-direction:column;gap:5px;width:190px;max-width:100%}
 .ref-img{position:relative;display:block;width:100%;height:140px;background:#fff;border:1px solid var(--hair)}
@@ -6202,16 +6202,15 @@ function renderRef(r){
       <figcaption>Shown: ${level==='genus'?'another species, ':''}${nameBit}${esc(who)}${credit?' · '+credit:''} · via ${c.via} <a href="${esc(c.href)}" target="_blank" rel="noopener">Source ↗</a></figcaption>
     </figure>`;
   }
-  /* The holdings note (Lily, 18 November 2026): what the museum holds, and that it has no photograph.
+  /* The holdings note (Lily, 18 November 2026): what the museum holds, when no museum photograph of the species exists.
      It sits under Wikipedia, in the space the shorter text column leaves, so it adds no height. */
   const subj=R.species?{n:R.species,ala:R.spAla,gbif:R.spGbif,none:!R.spCands.length,genus:false}:{n:R.genus,ala:R.genAla,gbif:R.genGbif,none:!R.genCands.length,genus:true};
   const srcs=[subj.ala?'ALA':'',subj.gbif?'GBIF':''].filter(Boolean);
   const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
   const holds='Queensland Museum holds '+(isType(ts)?`${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}`:'a specimen');
   let note='';
-  if(level==='species'&&c){
-    note=`<b>${holds}${r.cat?', '+esc(r.cat):''}.</b> No photograph of it in ALA${r._imagedReg?' (imaged in the museum\'s register)':''}.`;
-  }else if(subj.n){
+  /* Not shown when a museum photograph of the species exists elsewhere (Lily, 18 November 2026) */
+  if(level!=='species'&&subj.n){
     const none=subj.none&&srcs.length?` No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')}.`:'';
     if(c||none)note=`<b>${holds}${r._imagedReg?', imaged in its register':''}.</b>${none}`;
   }
