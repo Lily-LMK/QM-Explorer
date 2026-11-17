@@ -131,7 +131,9 @@ not a real outage.
     rank, "About this species / genus / family" (`_wikiLevel` reads the article title; a species can
     redirect to its genus), with "Wikipedia ↗" at the end and a tan swatch (#dcb77e). `_wikiClip` keeps
     the first three sentences (Intl.Segmenter), 400-character backstop. Links & metadata names the
-    article ("Genus article, *Sphaerospira*") in `#mWikiLink`.
+    article ("Genus article, *Sphaerospira*") in `#mWikiLink`. The ALA-profile fallback has the same
+    heading (rank of the name it was found under), teal swatch, "ALA profile ↗" at the end, and "ALA
+    holds no description of …" when the profile is empty (branch `design/ala-profile-heading`).
   - Photo: `renderRef` shows a museum photograph only for records with no photos of their own (ALA and
     GBIF preserved specimens, same family; species, then genus; never family; never iNaturalist).
     Heading "Not this specimen" (species-level) or "Genus only", tan swatch; the caption describes only
