@@ -258,9 +258,9 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` carries register additions v9 (17 November 2026: 12,745 records, the whole Arachnids,
-Molluscs and Entomology sets ALA lacks added to v8's 3,550; v10 with 285 Crustacea records is on
-branch `supplement/v10-crustacea`, not merged; v7 of the same day held 2,860, v6 of
+`main` carries register additions v10 (17 November 2026: 13,030 records, v9's 12,745 plus 285
+Crustacea; v9 of the same day added the whole Arachnids, Molluscs and Entomology sets ALA lacks to
+v8's 3,550; v7 of the same day held 2,860, v6 of
 15 November 2026 held 2,068),
 the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
