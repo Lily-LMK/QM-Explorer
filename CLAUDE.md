@@ -255,9 +255,8 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` carries register additions v7 (17 November 2026: 2,860 records, including 792 Other
-Invertebrates; v6 of 15 November 2026 held 2,068); v8 (3,550, adding 690 Fishes) is on branch
-`supplement/v8-fishes` awaiting Lily,
+`main` carries register additions v8 (17 November 2026: 3,550 records, including 690 Fishes;
+v7 of the same day held 2,860, v6 of 15 November 2026 held 2,068),
 the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
 Crustacea and Protozoa shown under the collection's name, and ALA's "Amphibians and Reptiles" shown as
