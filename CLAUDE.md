@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 18 November 2026 (register additions v11).
+profile). Read both. Last updated 18 November 2026 (record window "Not this specimen" release, `main` d372f03).
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -124,6 +124,23 @@ not a real outage.
   window shows only a short group name (`_ntShortName`) and a brief outcome ("Recognised
   (non-exclusive)", "Application under way"); full Tribunal names, IDs, dates, bodies corporate
   and sources belong in Copy Sources (`specSources`), not in Country & Context.
+- **Record window, context row (live 18 November 2026, `main` d372f03):** after Remarks, one row
+  (`.ctx-row`): text on the left, borrowed photo (190 px) on the right; on phones it stacks, text first.
+  - Text: `fetchWikiSummary` tries Wikipedia for species, then genus, then family (`wikiRelevant`,
+    `wikiNamesLineage` reject the wrong taxon), then the ALA BIE profile. `renderWikiBox` heads it by
+    rank, "About this species / genus / family" (`_wikiLevel` reads the article title; a species can
+    redirect to its genus), with "Wikipedia ↗" at the end and a tan swatch (#dcb77e). `_wikiClip` keeps
+    the first three sentences (Intl.Segmenter), 400-character backstop. Links & metadata names the
+    article ("Genus article, *Sphaerospira*") in `#mWikiLink`.
+  - Photo: `renderRef` shows a museum photograph only for records with no photos of their own (ALA and
+    GBIF preserved specimens, same family; species, then genus; never family; never iNaturalist).
+    Heading "Not this specimen" (species-level) or "Genus only", tan swatch; the caption describes only
+    the photo ("Shown: another species, …, holotype, Museums Victoria F705 · Photo … · via ALA · Source").
+  - Holdings note (`#mRefNote`, under the text, orange dot #ff6430): only when no museum photograph of
+    the species exists ("Queensland Museum holds the holotype. No museum photograph of … in ALA or
+    GBIF."). Not shown beside a "Not this specimen" photo.
+  - Known on 18 November 2026: GBIF can return a register-ledger scan as a "specimen" image (G332190,
+    *Desmoxya*); a genus-photo note can stand as one sentence ("holds a specimen.").
 - **CSV:** both exports end with `retrievalDate` and `query`. Elevation is ALA `el674`.
 - **Service worker:** never caches `index.html` (network-only), so a deploy reaches visitors at
   once. Propagates real network/CORS failures (does NOT manufacture a
