@@ -640,7 +640,10 @@ button,select,input{font-family:var(--font)}
 .ref-sec[hidden]{display:none!important}
 .ctx-row{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:0 24px;align-items:start}
 .ctx-row>*{min-width:0}
-.ctx-row:has(>#wikiBox[hidden]),.ctx-row:has(>.ref-sec[hidden]){grid-template-columns:minmax(0,1fr)}
+.ctx-row:has(>.ref-sec[hidden]),.ctx-row:has(#wikiBox[hidden]):has(#mRefNote[hidden]){grid-template-columns:minmax(0,1fr)}
+#mRefNote[hidden]{display:none!important}
+#wikiBox:not([hidden])+#mRefNote{border-top:1px solid var(--hair2);margin-top:14px;padding-top:10px}
+.ctx-l>#wikiBox[hidden]+#mRefNote{margin-top:24px}
 .mod-right-body .det-sec .ds.ds-ref{background:transparent!important;border:1.5px solid var(--ink);box-sizing:border-box}
 .ref-row{display:block}
 .ref-fig{margin:0;display:flex;flex-direction:column;gap:5px;width:190px;max-width:100%}
@@ -649,11 +652,12 @@ button,select,input{font-family:var(--font)}
 .ref-img:focus-visible{outline:none;box-shadow:var(--focus)}
 .ref-fig figcaption{font-size:12.5px;line-height:1.35;color:#444}
 .ref-fig figcaption a{color:var(--ink);font-weight:600;text-underline-offset:2px}
-.ref-note{display:flex;flex-direction:column;gap:6px;max-width:460px}
+.ref-note{max-width:560px}
 .ref-k{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)}
 .ref-t{margin:0;font-size:15px;line-height:1.5;color:#2a2a2a}
 .ref-t.mu{color:var(--muted)}
-.ref-q{margin:0;font-size:15px;line-height:1.4;font-weight:700;display:flex;gap:7px;align-items:baseline;color:var(--ink)}
+.ref-q{margin:0;font-size:15px;line-height:1.45;display:flex;gap:8px;align-items:baseline;color:var(--muted)}
+.ref-q b{font-weight:700;color:var(--ink)}
 .ref-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center}
 @media(max-width:700px),(max-height:640px){.mod-right{overflow-y:auto}.mod-right-body{flex:none;overflow:visible}.ctx-row{grid-template-columns:minmax(0,1fr)}}
 
@@ -6175,19 +6179,19 @@ async function fetchRefImage(r,idx){
 }
 function renderRef(r){
   const box=$('#mRef');if(!box)return;
+  const nb=$('#mRefNote');
   const R=r._ref;
-  const off=()=>{box.hidden=true;box.innerHTML=''};
+  const off=()=>{box.hidden=true;box.innerHTML='';if(nb){nb.hidden=true;nb.innerHTML=''}};
   if(!R||S.modalPhotos.length)return off();
   const sec=t=>`<div class="det-sec"><div class="ds ds-ref" aria-hidden="true"></div> ${t}</div>`;
-  if(R.loading){box.innerHTML=sec('Museum photographs')+`<p class="ref-t mu">Looking in ALA and GBIF for museum photographs…</p>`;box.hidden=false;return}
+  if(R.loading){if(nb){nb.hidden=true;nb.innerHTML=''}box.innerHTML=sec('Museum photographs')+`<p class="ref-t mu">Looking in ALA and GBIF for museum photographs…</p>`;box.hidden=false;return}
   const level=R.spCands.length?'species':(R.genCands.length?'genus':'');
   const cands=level==='species'?R.spCands:R.genCands;
   const pick=R.pick||0;
   const c=cands[pick];
-  let fig='',note='';
-  const head=sec(level==='species'?'Not this specimen':level==='genus'?'Not this species':'Museum photographs');
+  let fig='';
+  const head=sec(level==='species'?'Not this specimen':'Genus only');
   if(c){
-    const lead=r.cat?`No photograph of ${esc(r.cat)} in ALA${r._imagedReg?' (imaged in the museum\'s register)':''}. `:'';
     const nameBit=level==='genus'&&c.name?`<em>${esc(c.name)}</em>, `:'';
     const who=[c.type?c.type.toLowerCase():'',[c.inst,c.cat].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const credit=c.creator?`Photo ${esc(c.creator)}${c.lic?', '+esc(c.lic):''}`:(c.lic?esc(c.lic):'');
@@ -6195,21 +6199,28 @@ function renderRef(r){
       <a class="ref-img" href="${esc(c.href)}" target="_blank" rel="noopener" aria-label="Museum photograph of ${esc(c.name||'a related specimen')}, ${level==='species'?'not this specimen':'another species in the genus'}. Opens its source.">
         <img src="${esc(c.img)}" alt="" loading="lazy">
       </a>
-      <figcaption>${lead}Shown: ${level==='genus'?'another species, ':''}${nameBit}${esc(who)}${credit?' · '+credit:''} · via ${c.via} <a href="${esc(c.href)}" target="_blank" rel="noopener">Source ↗</a></figcaption>
+      <figcaption>Shown: ${level==='genus'?'another species, ':''}${nameBit}${esc(who)}${credit?' · '+credit:''} · via ${c.via} <a href="${esc(c.href)}" target="_blank" rel="noopener">Source ↗</a></figcaption>
     </figure>`;
   }
-  /* The quiet note: the species (or, for a record named only to genus, the genus) has no museum photograph */
+  /* The holdings note (Lily, 18 November 2026): what the museum holds, and that it has no photograph.
+     It sits under Wikipedia, in the space the shorter text column leaves, so it adds no height. */
   const subj=R.species?{n:R.species,ala:R.spAla,gbif:R.spGbif,none:!R.spCands.length,genus:false}:{n:R.genus,ala:R.genAla,gbif:R.genGbif,none:!R.genCands.length,genus:true};
   const srcs=[subj.ala?'ALA':'',subj.gbif?'GBIF':''].filter(Boolean);
-  /* Shown only when there is no photograph at all: the "Not this specimen" or "Not this species" heading already says enough */
-  if(!c&&subj.n&&subj.none&&srcs.length){
-    const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
-    const holds=(isType(ts)?`Queensland Museum holds ${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}`:'Queensland Museum holds a specimen')+(r._imagedReg?', imaged in its register.':'.');
-    note=`<div class="ref-note"><p class="ref-t">No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')} (checked ${esc(fmtLongDate(R.checked))}).</p>
-      <p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${holds}</span></p></div>`;
+  const ts=(r.typeStatus||'').trim(),tl=ts.toLowerCase();
+  const holds='Queensland Museum holds '+(isType(ts)?`${/^(holotype|lectotype|neotype)/.test(tl)?'the':'a'} ${esc(tl)}`:'a specimen');
+  let note='';
+  if(level==='species'&&c){
+    note=`<b>${holds}${r.cat?', '+esc(r.cat):''}.</b> No photograph of it in ALA${r._imagedReg?' (imaged in the museum\'s register)':''}.`;
+  }else if(subj.n){
+    const none=subj.none&&srcs.length?` No museum photograph of ${subj.genus?'the genus ':''}<em>${esc(subj.n)}</em> in ${srcs.join(' or ')}.`:'';
+    if(c||none)note=`<b>${holds}${r._imagedReg?', imaged in its register':''}.</b>${none}`;
   }
-  if(!fig&&!note)return off();
-  box.innerHTML=head+`<div class="ref-row${fig?'':' solo'}">${fig}${note}</div>`;box.hidden=false;
+  if(nb){
+    nb.innerHTML=note?`<p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${note}</span></p>`:'';
+    nb.hidden=!note;
+  }
+  if(!fig){box.hidden=true;box.innerHTML='';return}
+  box.innerHTML=head+`<div class="ref-row">${fig}</div>`;box.hidden=false;
   const img=box.querySelector('.ref-img img');
   if(img)img.addEventListener('error',async()=>{
     R.pick=pick+1;
@@ -7387,7 +7398,7 @@ function renderModalDetails(r){
 
     ${suppExtra}
     ${r.occurrenceRemarks?`<div class="det-sec"><div class="ds" style="background:var(--muted)"></div> Remarks</div><p class="m-remarks">${esc(r.occurrenceRemarks)}</p>`:''}
-    <div class="ctx-row"><div id="wikiBox" class="wiki-box" hidden></div><section id="mRef" class="ref-sec" aria-label="Photographs of other specimens" hidden></section></div>
+    <div class="ctx-row"><div class="ctx-l"><div id="wikiBox" class="wiki-box" hidden></div><div id="mRefNote" class="ref-note" hidden></div></div><section id="mRef" class="ref-sec" aria-label="Photographs of other specimens" hidden></section></div>
     <div id="mCopyOut"></div>`;
 
   /* ── Links & metadata: pinned to the foot of the window ── */
