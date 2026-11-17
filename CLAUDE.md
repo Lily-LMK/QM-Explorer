@@ -191,11 +191,14 @@ The Explorer never calls the museum's register; anything from it arrives as a re
 4. Shared registration numbers and records ALA lacks — Entomology, Molluscs, Arachnids,
    Herpetology and Corals fully inventoried (14–15 November 2026), Other Invertebrates and
    Fishes on 17 November 2026.
-   `data/qm-register-supplement.json` (v8, 17 November 2026) holds 3,550 specimens from the
-   museum's register: 1,111 hidden in ALA because they share a registration number, and 2,439 ALA
-   holds under no QM collection, marked `addedBecause: "not in ALA"` (among them 652 Corals,
-   237 Herpetology, 778 Other Invertebrates and 690 Fishes, published once Lily confirmed each set
-   is public).
+   `data/qm-register-supplement.json` (v9, 17 November 2026) holds 12,745 specimens from the
+   museum's register: 1,111 hidden in ALA because they share a registration number, and 11,634 ALA
+   holds under no QM collection, marked `addedBecause: "not in ALA"` (Arachnids 8,184, Entomology
+   925, Corals 652, Other Invertebrates 778, Fishes 690, Herpetology 237, Molluscs 168).
+   **Lily's rule (17 November 2026): whole sets are published, always.** Every record ALA lacks
+   goes in, not only the types; nothing is held back for a curator's answer. The held-names rule
+   and the coordinate check still apply. Build files for each version are listed in
+   `project-notes/data/README.md`.
    Other Invertebrates additions carry the register's code `OtherInverts`; `SUPP_COLL_UID` maps it
    (and `Crustacea`, `Protozoa`) to ALA's collection uid. Items awaiting a curator
    are marked `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
@@ -255,8 +258,9 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` carries register additions v8 (17 November 2026: 3,550 records, including 690 Fishes;
-v7 of the same day held 2,860, v6 of 15 November 2026 held 2,068),
+`main` carries register additions v9 (17 November 2026: 12,745 records, the whole Arachnids,
+Molluscs and Entomology sets ALA lacks added to v8's 3,550; v7 of the same day held 2,860, v6 of
+15 November 2026 held 2,068),
 the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
 Crustacea and Protozoa shown under the collection's name, and ALA's "Amphibians and Reptiles" shown as
