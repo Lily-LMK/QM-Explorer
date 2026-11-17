@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 16 November 2026 (redesign live).
+profile). Read both. Last updated 18 November 2026 (register additions v11).
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -188,13 +188,15 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    working names shown exactly as supplied; primary types are holotype, neotype, type, lectotype
    and syntype. Next: filters and counts driven by the museum's `raw_` fields, with ALA's match
    second; a report on whether held names have since been published.
-4. Shared registration numbers and records ALA lacks — Entomology, Molluscs, Arachnids,
-   Herpetology and Corals fully inventoried (14–15 November 2026), Other Invertebrates,
-   Fishes and Crustacea on 17 November 2026.
-   `data/qm-register-supplement.json` (v10, 17 November 2026) holds 13,030 specimens from the
-   museum's register: 1,113 hidden in ALA because they share a registration number, and 11,917 ALA
-   holds under no QM collection, marked `addedBecause: "not in ALA"` (Arachnids 8,184, Entomology
-   925, Other Invertebrates 778, Fishes 690, Corals 652, Crustacea 283, Herpetology 237, Molluscs 168).
+4. Shared registration numbers and records ALA lacks — all 14 collection inventories are
+   complete. Entomology, Molluscs, Arachnids, Herpetology and Corals were inventoried on
+   14–15 November 2026. Other Invertebrates, Fishes and Crustacea followed on 17 November,
+   then Birds, Mammals, Porifera, Protozoa, Plants and Fossil on 18 November 2026.
+   `data/qm-register-supplement.json` (v11, 18 November 2026) holds 13,165 databased records
+   from the museum's register. It adds 48 Birds, 83 Porifera and 4 Protozoa to v10.
+   There are 1,161 entries hidden at shared registration numbers and 12,004 whose number
+   ALA holds under no QM collection. The release check matched Vernon object IDs against
+   ALA occurrences at exact numbers across `institution_uid:in15` on 18 November 2026.
    **Lily's rule (17 November 2026): whole sets are published, always.** Every record ALA lacks
    goes in, not only the types; nothing is held back for a curator's answer. The held-names rule
    and the coordinate check still apply. Build files for each version are listed in
@@ -204,9 +206,9 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    are marked `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
    Register); ALA's results come first and the additions follow, keyed `reg:<register
    identifier>`. Where coordinates are withheld, locality and location remarks are withheld too.
-   `imagedInRegister` is a yes/no flag (no image links). The file is built in
-   `project-notes/scripts/supplement-pilot/`; before rebuilding, re-run the ALA check there so no
-   specimen is shown twice, then rebuild the private tracking register (`tracking_register.py`).
+   `imagedInRegister` is a yes/no flag (no image links). The v11 build and ALA recheck are
+   in `project-notes/data/supplement-v11/`. Use the release check to remove any specimens
+   ALA now shows and to update the private tracking register.
    The Map places additions that have a coordinate; Taxa, Browse and polygon searches still show
    ALA records only. CSV: ALA rows' `query` is a working ALA address; register rows' `query` is
    plain text with no web address.
@@ -258,11 +260,12 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` carries register additions v10 (17 November 2026: 13,030 records, v9's 12,745 plus 285
-Crustacea; v9 of the same day added the whole Arachnids, Molluscs and Entomology sets ALA lacks to
-v8's 3,550; v7 of the same day held 2,860, v6 of
-15 November 2026 held 2,068),
-the counting corrections of 16 November 2026 (register additions counted only where they match
+`main` carries register additions v11 (18 November 2026, data commit `ba61ec3`).
+The 13,165 databased records include all 13,030 from v10 and the 135 Session C additions.
+The next stage is to keep the additions current, followed by Session D1 (more than 5,000
+records).
+
+The live site also carries the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
 Crustacea and Protozoa shown under the collection's name, and ALA's "Amphibians and Reptiles" shown as
 Herpetology, the museum's name for it; `COLL_ALIAS` in `shortColl`), and the redesign, merged and pushed 16 November 2026. Stage 2 batches 1 and 2 and supplied names build 1 are live. All five views, the
