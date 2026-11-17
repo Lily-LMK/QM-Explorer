@@ -6219,7 +6219,7 @@ function renderRef(r){
     if(c||none)note=`<b>${holds}${r._imagedReg?', imaged in its register':''}.</b>${none}`;
   }
   if(nb){
-    nb.innerHTML=note?`<p class="ref-q"><span class="ref-dot" style="background:${isType(ts)?typeColor(ts):'var(--ink)'}" aria-hidden="true"></span><span>${note}</span></p>`:'';
+    nb.innerHTML=note?`<p class="ref-q"><span class="ref-dot" style="background:#ff6430" aria-hidden="true"></span><span>${note}</span></p>`:'';
     nb.hidden=!note;
   }
   if(!fig){box.hidden=true;box.innerHTML='';return}
