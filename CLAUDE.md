@@ -189,11 +189,14 @@ The Explorer never calls the museum's register; anything from it arrives as a re
    and syntype. Next: filters and counts driven by the museum's `raw_` fields, with ALA's match
    second; a report on whether held names have since been published.
 4. Shared registration numbers and records ALA lacks — Entomology, Molluscs, Arachnids,
-   Herpetology and Corals fully inventoried (14–15 November 2026).
-   `data/qm-register-supplement.json` (v6, live 15 November 2026) holds 2,068 specimens from the
-   museum's register: 1,097 hidden in ALA because they share a registration number, and 971 ALA
-   holds under no QM collection, marked `addedBecause: "not in ALA"` (among them 652 Corals and
-   237 Herpetology, published once Lily confirmed the set is public). Items awaiting a curator
+   Herpetology and Corals fully inventoried (14–15 November 2026), Other Invertebrates on
+   17 November 2026.
+   `data/qm-register-supplement.json` (v7, 17 November 2026) holds 2,860 specimens from the
+   museum's register: 1,111 hidden in ALA because they share a registration number, and 1,749 ALA
+   holds under no QM collection, marked `addedBecause: "not in ALA"` (among them 652 Corals,
+   237 Herpetology and 778 Other Invertebrates, published once Lily confirmed each set is public).
+   Other Invertebrates additions carry the register's code `OtherInverts`; `SUPP_COLL_UID` maps it
+   (and `Crustacea`, `Protozoa`) to ALA's collection uid. Items awaiting a curator
    are marked `curatorReview: "pending"`. Records has a Source filter (All sources / ALA Biocache / QM
    Register); ALA's results come first and the additions follow, keyed `reg:<register
    identifier>`. Where coordinates are withheld, locality and location remarks are withheld too.
@@ -251,7 +254,8 @@ numbers ending in 9 almost never go missing from ALA (see `project-notes/finding
 
 ## State of the live site
 
-`main` carries register additions v6 (live on GitHub Pages 15 November 2026: 2,068 records),
+`main` carries register additions v7 (17 November 2026: 2,860 records, including 792 Other
+Invertebrates; v6 of 15 November 2026 held 2,068),
 the counting corrections of 16 November 2026 (register additions counted only where they match
 the filters and included in the headline and imaged counts; ALA's collection codes OtherInverts,
 Crustacea and Protozoa shown under the collection's name, and ALA's "Amphibians and Reptiles" shown as
