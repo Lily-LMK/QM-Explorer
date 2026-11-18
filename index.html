@@ -791,6 +791,83 @@ body.on-home #csvBtn,body.on-home #csvPlusBtn{display:none}
   .type-badge,.m-kind .type-badge{font-size:12.5px}
   .ref-fig figcaption,.ref-t{font-size:13px}
 }
+/* E and F. Map and taxonomy tree on phones (18 November 2026) */
+.map-mbar,.map-fold,.msh-h,.msh-f,.ph-only,.tn-grp{display:none}
+@media(hover:none){.tn-btns{display:flex!important;opacity:1!important}}
+@media(max-width:600px){
+  .ph-only{display:inline}.ph-hide{display:none}
+  body:has(#v-map.on) .sum{display:none}
+  /* Map: one bar with the count and Map settings */
+  .map-bar{border-bottom:1px solid var(--hair)}
+  .map-mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;min-height:52px}
+  .mm-ct{font-size:14px;white-space:nowrap}
+  .mm-ct b{font-size:22px;font-weight:900;letter-spacing:-.02em;margin-right:5px;font-variant-numeric:tabular-nums}
+  .mm-set{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid var(--ink);border-radius:var(--pill);background:#fff;color:var(--ink);font:700 14px var(--font);cursor:pointer;white-space:nowrap}
+  .mm-set[aria-expanded="true"]{background:var(--ink);color:#fff}
+  .map-top{display:none}
+  /* Map settings: a sheet from the bottom */
+  .map-shell.set-open .map-bar{z-index:1002}
+  .map-shell.set-open::after{content:'';position:fixed;inset:0;background:rgba(10,10,10,.55);z-index:1000}
+  .map-shell.set-open .map-top{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;position:fixed;top:auto;left:0;right:0;bottom:0;z-index:1001;max-height:88vh;max-height:88dvh;overflow-y:auto;background:#fff;border-top:2px solid var(--ink);padding:0;min-height:0}
+  .map-shell.set-open .msh-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px 4px}
+  .msh-h h2{margin:0;font-size:24px;font-weight:900;letter-spacing:-.02em}
+  .msh-x{min-height:44px;padding:0 16px;border:1.5px solid var(--ink);border-radius:var(--pill);background:#fff;color:var(--ink);font:700 14px var(--font);cursor:pointer}
+  .map-shell.set-open .map-pill{flex-wrap:wrap;align-items:center;border:none;margin:0;padding:8px 14px;gap:6px 8px;font-weight:500}
+  .map-shell.set-open .map-pill label{flex:1 1 100%;font-size:13px;font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0}
+  .map-shell.set-open .map-pill select,.map-shell.set-open .map-pill input{flex:1 1 0;min-width:0;width:auto!important;font-size:16px;min-height:44px}
+  .map-shell.set-open .map-pill button{min-height:44px;padding:0 18px}
+  .map-shell.set-open .map-tools-btn{display:none}
+  .map-shell.set-open .map-tools-wrap{display:block;margin:0;width:auto;align-self:stretch}
+  .map-shell.set-open .map-tools-pop{width:auto;box-sizing:border-box}
+  .map-shell.set-open .map-tools-pop label,.map-shell.set-open .map-tools-pop button{width:100%;box-sizing:border-box}
+  .map-shell.set-open .map-tools-pop{display:block;position:static;border:none;box-shadow:none;padding:0 14px 8px;min-width:0;font-size:15px}
+  .map-shell.set-open .map-tools-pop label{white-space:normal;min-height:44px}
+  .map-shell.set-open .map-tools-pop button{min-height:44px;font-size:15px}
+  .map-shell.set-open .msh-f{display:flex;position:sticky;bottom:0;margin-top:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:2px solid var(--ink)}
+  .msh-go{flex:1;min-height:48px;border:0;border-radius:var(--pill);background:var(--ink);color:#fff;font:700 15px var(--font);cursor:pointer}
+  .msh-x:focus-visible,.msh-go:focus-visible,.mm-set:focus-visible,.mf-b:focus-visible{outline:none;box-shadow:var(--focus)}
+  /* Markers and Load more float on the map */
+  .map-dock{min-height:0}
+  .map-c .map-info .mi-t{flex:1 1 auto;min-width:0}
+  .map-c .map-info button{flex-shrink:0}
+  .map-c .map-info{position:absolute;left:10px;right:10px;bottom:24px;top:auto;z-index:650;display:flex;align-items:center;flex-wrap:nowrap;gap:8px;border:1.5px solid var(--ink);border-radius:22px;padding:6px 6px 6px 14px;font-size:13px;line-height:1.3;color:var(--ink);background:#fff}
+  .map-c .map-info button{min-height:36px;margin-left:auto;border:0;background:var(--ink);color:#fff;padding:0 14px}
+  /* Colour key and collection years fold into one row below the map */
+  .map-fold{display:flex;order:-2;border-top:2px solid var(--ink);flex-shrink:0}
+  .mf-b{flex:1 1 0;min-width:0;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px;border:0;background:#fff;color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+  .mf-b+.mf-b{border-left:1px solid var(--hair)}
+  .mf-b[hidden]{display:none}
+  .mf-b[aria-expanded="true"]{background:var(--bone)}
+  .mf-b span{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+  .mf-b small{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .mf-b b{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mf-b i{width:8px;height:8px;border-right:2.4px solid var(--ink);border-bottom:2.4px solid var(--ink);transform:translateY(-2px) rotate(45deg);flex-shrink:0}
+  .mf-b[aria-expanded="true"] i{transform:translateY(2px) rotate(-135deg)}
+  .map-dock .map-legend{display:none;order:1;position:static;max-width:none;max-height:200px;overflow-y:auto;border:none;box-shadow:none;background:var(--bone);padding:6px 14px 12px}
+  .map-shell.fold-key .map-dock .map-legend{display:block}
+  .map-dock .map-legend .ml-head{display:none}
+  .map-dock .map-legend.shut .ml-body{display:block}
+  .map-dock .map-legend .ml-item{min-height:28px}
+  .map-dock .map-legend .ml-nm{font-size:14px}
+  .map-shell:not(.fold-years) .map-dock .map-temporal{display:none!important}
+  .map-shell.fold-years .map-dock .map-temporal.vis{display:grid;order:2;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"hist hist" "slider slider" ". reset";row-gap:6px;background:var(--bone);border:none;padding:10px 16px 12px}
+  .map-dock .map-temporal .mt-label,.map-dock .map-temporal .mt-range,.map-dock .map-temporal .mt-tog{display:none!important}
+  .map-shell.fold-years .map-dock .map-temporal .mt-hist{display:flex;height:40px}
+  .map-shell.fold-years .map-dock .map-temporal .mt-slider{display:block}
+  /* F. Taxonomy tree: two lines per row, rank once per group, buttons always shown */
+  .tn{margin-left:6px;padding-left:6px}
+  .tn-h{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;grid-template-areas:"tog nm nm ct" ". com btns btns";align-items:center;column-gap:8px;row-gap:2px;padding:8px 8px 8px 2px;min-height:0}
+  .tn-tog{grid-area:tog;font-size:12px}
+  .tn-nm{grid-area:nm;font-size:16px;min-width:0;overflow-wrap:anywhere}
+  .tn-ct{grid-area:ct;min-width:0!important;margin:0!important;font-size:15px;font-weight:700}
+  .tn-rk{display:none}
+  .tn-com{grid-area:com;min-width:0;margin:0;font-size:14px;line-height:1.25}
+  .tn-com::first-letter{text-transform:uppercase}
+  .tn-btns{grid-area:btns;display:flex!important;opacity:1!important;margin:0}
+  .tn-b{min-height:34px;font-size:13px;padding:0 13px}
+  .tn-grp{display:block;padding:10px 4px 4px 30px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tree-ctl{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
@@ -2708,6 +2785,7 @@ function renderTaxa(){
     kingdoms=[...kMap.entries()].map(([name,count])=>({name,value:name,count}));
   }
   if(!kingdoms.length){wrap.innerHTML='<div class="empty"><div class="ico">🌿</div><h3>No taxonomy</h3><p>Run a search first.</p></div>';return}
+  wrap.insertAdjacentHTML('beforeend','<div class="tn-grp">Kingdoms</div>');
   kingdoms.sort((a,b)=>b.count-a.count).forEach(k=>{
     /* Should this kingdom node auto-expand? Yes if it's on the filter path, or if there's only 1 kingdom */
     const shouldExpand=hasPath?(filterPath[0]?.rank==='kingdom'&&filterPath[0]?.name===k.name):kingdoms.length===1;
@@ -2870,6 +2948,7 @@ function mkTreeNode(name,count,rank,ancestors,autoExpandPath){
             childAutoPath=autoExpandPath.slice(nextIdx+1);
           }
         }
+        kids.insertAdjacentHTML('beforeend',`<div class="tn-grp">${RPLURAL[usedRank]||usedRank}</div>`);
         items.forEach(it=>{
           const shouldAutoExpand=autoExpandPath&&autoExpandPath.some(fp=>fp.rank===usedRank&&fp.name===it.name);
           kids.appendChild(mkTreeNode(it.name,it.count,usedRank,cf,shouldAutoExpand?childAutoPath:null));
@@ -3850,13 +3929,64 @@ function renderMap(){
   }else{addMarkers();buildLegend();setTimeout(()=>S.map.invalidateSize(),120)}
 }
 
+/* Phones (600 px and below): Map settings sheet, folded colour key and years */
+const _phoneMQ=window.matchMedia?matchMedia('(max-width:600px)'):{matches:false,addEventListener(){}};
+function isPhone(){return _phoneMQ.matches}
+function setMapSheet(open){
+  const sh=$('#mapShell');if(!sh)return;
+  sh.classList.toggle('set-open',!!open);
+  const b=$('#mmSet');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  if(open)setTimeout(()=>{try{$('#mapCB').focus()}catch(e){}},60);
+  else{if(b&&sh.contains(document.activeElement))b.focus({preventScroll:true});if(S.map)setTimeout(()=>S.map.invalidateSize(),80)}
+}
+function setMapFold(which){
+  S.mapFold=S.mapFold===which?null:which;
+  const sh=$('#mapShell');if(!sh)return;
+  sh.classList.toggle('fold-key',S.mapFold==='key');sh.classList.toggle('fold-years',S.mapFold==='years');
+  const k=$('#mfKey'),y=$('#mfYr');
+  if(k)k.setAttribute('aria-expanded',S.mapFold==='key'?'true':'false');
+  if(y)y.setAttribute('aria-expanded',S.mapFold==='years'?'true':'false');
+  if(S.map)setTimeout(()=>S.map.invalidateSize(),80);
+}
+function ensureMapPhoneBits(){
+  const bar=$('#mapBar');
+  if(bar&&!$('#mapMBar')){
+    const m=document.createElement('div');m.className='map-mbar';m.id='mapMBar';
+    m.innerHTML=`<span class="mm-ct" id="mmCt"></span><button type="button" class="mm-set" id="mmSet" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>Map settings</button>`;
+    bar.prepend(m);
+    m.querySelector('#mmSet').addEventListener('click',()=>setMapSheet(!$('#mapShell').classList.contains('set-open')));
+  }
+  const dock=$('#mapDock');
+  if(dock&&!$('#mapFold')){
+    const f=document.createElement('div');f.className='map-fold';f.id='mapFold';
+    f.innerHTML=`<button type="button" class="mf-b" id="mfKey" aria-expanded="false"><span><small>Colour key</small><b id="mfKeyV">—</b></span><i aria-hidden="true"></i></button><button type="button" class="mf-b" id="mfYr" aria-expanded="false" hidden><span><small>Collection year</small><b id="mfYrV">—</b></span><i aria-hidden="true"></i></button>`;
+    dock.prepend(f);
+    f.querySelector('#mfKey').addEventListener('click',()=>setMapFold('key'));
+    f.querySelector('#mfYr').addEventListener('click',()=>setMapFold('years'));
+  }
+  const ct=$('#mmCt');if(ct)ct.innerHTML=`<b>${fmt(S.total||0)}</b>records`;
+  const lh=document.querySelector('#mapShell .map-legend .ml-head span');
+  const kv=$('#mfKeyV');if(kv)kv.textContent=lh?lh.textContent:'—';
+  const t=$('#mapTemporal'),yb=$('#mfYr');
+  if(yb){yb.hidden=!(t&&t.classList.contains('vis'));const r=$('#mtRange');$('#mfYrV').textContent=r?r.textContent:'—'}
+}
+_phoneMQ.addEventListener('change',()=>{setMapSheet(false);if(S.map){buildLegend();updateMapInfo()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#mapShell')?.classList.contains('set-open'))setMapSheet(false)});
+
 function addMapControls(){
   const mc=$('#mapC');
   // Remove old controls
   $('#mapShell').querySelectorAll('.map-top,.map-legend,.map-info').forEach(e=>e.remove());
   const top=document.createElement('div');top.className='map-top';
-  top.innerHTML=`<div class="map-pill"><label for="mapCB">Colour by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-pill"><label for="mapSrch">Go to</label><input id="mapSrch" type="text" placeholder="Town, park or island in Australia" style="width:230px"/><button id="mapSrchBtn">Go</button></div><div class="map-pill nntt-wrap"><label for="nnttSrch">Limit to area</label><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:230px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-tools-wrap"><button class="map-tools-btn" id="mapToolsBtn" aria-haspopup="true" aria-expanded="false" title="Marker display and drawing tools">Draw &amp; display <span aria-hidden="true">▾</span></button><div class="map-tools-pop" id="mapToolsPop"><div class="mtp-section">Display</div><label><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''}/>Spread out overlapping markers</label><label title="Remove the 50,000 marker cap. Warning: loading 200k+ records is slow."><input type="checkbox" id="uncapTog"${S.mapUncapped?' checked':''}/>Load all markers</label><div class="mtp-section">Limit records to a drawn area</div><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish polygon</button><button id="clearPolyBtn" style="display:none">Clear drawn area</button></div></div>`;
+  top.innerHTML=`<div class="msh-h"><h2 id="mshTitle">Map settings</h2><button type="button" class="msh-x" id="mshX">Close</button></div><div class="map-pill"><label for="mapCB">Colour by</label><select id="mapCB"><option value="collection">Collection</option><option value="phylum">Phylum</option><option value="class">Class</option><option value="order">Order</option><option value="family" selected>Family</option><option value="genus">Genus</option><option value="species">Species</option></select></div><div class="map-pill"><label for="mapSrch">Go to</label><input id="mapSrch" type="text" placeholder="Town, park or island in Australia" style="width:230px"/><button id="mapSrchBtn">Go</button></div><div class="map-pill nntt-wrap"><label for="nnttSrch">Limit to area</label><input id="nnttSrch" type="text" placeholder="LGA, bioregion, marine park…" style="width:230px" autocomplete="off"/><div id="nnttDrop" class="nntt-drop" style="display:none"></div><div id="nnttActive" class="nntt-active" style="display:none"></div></div><div class="map-tools-wrap"><button class="map-tools-btn" id="mapToolsBtn" aria-haspopup="true" aria-expanded="false" title="Marker display and drawing tools">Draw &amp; display <span aria-hidden="true">▾</span></button><div class="map-tools-pop" id="mapToolsPop"><div class="mtp-section">Display</div><label><input type="checkbox" id="spiderfyTog"${S.mapSpiderfy?' checked':''}/>Spread out overlapping markers</label><label title="Remove the 50,000 marker cap. Warning: loading 200k+ records is slow."><input type="checkbox" id="uncapTog"${S.mapUncapped?' checked':''}/>Load all markers</label><div class="mtp-section">Limit records to a drawn area</div><button id="drawBtn">Draw box</button><button id="clearBtn" style="display:none">Clear box</button><button id="drawPolyBtn">Draw polygon</button><button id="finishPolyBtn" style="display:none">Finish polygon</button><button id="clearPolyBtn" style="display:none">Clear drawn area</button></div></div><div class="msh-f"><button type="button" class="msh-go" id="mshGo">Show map</button></div>`;
   $('#mapBar').appendChild(top);
+  top.setAttribute('aria-labelledby','mshTitle');
+  top.querySelector('#mshX').addEventListener('click',()=>setMapSheet(false));
+  top.querySelector('#mshGo').addEventListener('click',()=>setMapSheet(false));
+  /* On phones, an action that needs the map closes the sheet */
+  top.addEventListener('click',e=>{if(isPhone()&&e.target.closest('#drawBtn,#drawPolyBtn,#mapSrchBtn,#nnttDrop > *'))setTimeout(()=>setMapSheet(false),0)});
+  top.querySelector('#mapSrch').addEventListener('keydown',e=>{if(e.key==='Enter'&&isPhone())setTimeout(()=>setMapSheet(false),0)});
+  ensureMapPhoneBits();
 
   /* Tools popover toggle */
   const toolsBtn=top.querySelector('#mapToolsBtn');
@@ -3948,19 +4078,20 @@ function updateMapInfo(){
   const unmapped=(!loading&&!capped&&!filtered)?Math.max(0,S.total-allCount):0;
   $('#mapShell').querySelectorAll('.map-info').forEach(e=>e.remove());
   const info=document.createElement('div');info.className='map-info';info.setAttribute('role','status');
-  let txt=`<b>Markers:</b> ${fmt(visCount)}`;
+  let txt=`<span class="ph-hide"><b>Markers:</b> </span><b class="ph-only">${fmt(visCount)}</b><span class="ph-hide">${fmt(visCount)}</span><span class="ph-only"> markers</span>`;let btnHtml='';
   if(filtered&&visCount!==allCount)txt+=` <span style="color:#22622c">${S.mapPoly?'in '+esc(S.mapPoly.source==='drawn'?'drawn area':S.mapPoly.source||'area'):'in box'}</span> / ${fmt(allCount)} loaded`;
   const asking=!loading&&mapLoadNeedsAsking()&&S._mapDoneId!==S.mapLoadId;
   if(loading)txt+=` <span style="color:#a86a00">(loading… ${Math.round(fetched/cap*100)}%)</span>`;
-  else if(asking)txt+=` · only the first ${fmt(S.res.length)} of ${fmt(S.total)} records are loaded <button type="button" id="mapLoadBtn">Load up to ${fmt(MAP_POINT_CAP)} markers</button>`;
+  else if(asking)txt+=`<span class="ph-hide"> · only the first ${fmt(S.res.length)} of ${fmt(S.total)} records are loaded</span><span class="ph-only"> · first ${fmt(S.res.length)} of ${fmt(S.total)} loaded</span>`,btnHtml=` <button type="button" id="mapLoadBtn"><span class="ph-hide">Load up to ${fmt(MAP_POINT_CAP)} markers</span><span class="ph-only">Load more</span></button>`;
   else if(unmapped>0)txt+=` <span style="color:var(--muted)" title="${fmt(unmapped)} of ${fmt(S.total)} records hold no released coordinate, so they can't be placed on the map.">· ${fmt(unmapped)} of ${fmt(S.total)} have no mapped coordinate</span>`;
   else txt+=` of ${fmt(S.total)} total`;
   if(asking){/* nothing more to add */}
   else if(!S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--muted)">(50k cap)</span>`;
   else if(S.mapUncapped&&S.total>50000)txt+=` <span style="color:var(--orange);font-weight:600">(uncapped)</span>`;
   if(S.mapYearRange)txt+=` · <span style="color:var(--ink);font-weight:600">${S.mapYearRange[0]}–${S.mapYearRange[1]}</span>`;
-  info.innerHTML=txt;
-  $('#mapDock').appendChild(info);
+  info.innerHTML=`<span class="mi-t">${txt}</span>${btnHtml}`;
+  (isPhone()?$('#mapC'):$('#mapDock')).appendChild(info);
+  ensureMapPhoneBits();
   const lb=info.querySelector('#mapLoadBtn');
   if(lb)lb.addEventListener('click',()=>{S._mapAskedId=S.mapLoadId;startMapLoad(getFilters(),S.mapLoadId);updateMapInfo()});
 }
@@ -4115,7 +4246,7 @@ function buildPopupHTML(r){
 }
 
 function buildLegend(){
-  if(!S.map)return;$('#mapC').querySelectorAll('.map-legend').forEach(e=>e.remove());
+  if(!S.map)return;$('#mapShell').querySelectorAll('.map-legend').forEach(e=>e.remove());
   const pts=getVisiblePts();
   const counts=new Map(); /* label → {color, count} */
   pts.forEach(r=>{
@@ -4137,7 +4268,8 @@ function buildLegend(){
   const boxTag=S.mapBox?' · <span style="color:#22622c;font-size:10px">in box</span>':S.mapPoly?' · <span style="color:#2d6a4f;font-size:10px">in '+esc(S.mapPoly.source==='drawn'?'drawn area':S.mapPoly.name||'area')+'</span>':'';
   leg.innerHTML=`<div class="ml-head"><span>${esc(cbL)} (${counts.size})${boxTag}</span><span>${S.mapLegendShut?'▸':'▾'}</span></div><div class="ml-body">${shown.map(([l,v])=>`<div class="ml-item"><div class="ml-dot" style="background:${v.color}"></div><div class="ml-nm">${esc(l)} <span style="color:var(--muted);font-size:10px">(${v.count})</span></div></div>`).join('')}${entries.length>30?'<div style="color:var(--muted);padding-top:3px">+ '+(entries.length-30)+' more</div>':''}</div>`;
   leg.querySelector('.ml-head').onclick=()=>{S.mapLegendShut=!S.mapLegendShut;leg.classList.toggle('shut');leg.querySelector('.ml-head span:last-child').textContent=S.mapLegendShut?'▸':'▾'};
-  $('#mapC').appendChild(leg);
+  (isPhone()?$('#mapDock'):$('#mapC')).appendChild(leg);
+  ensureMapPhoneBits();
 }
 
 /* DRAW BOX */
@@ -4374,8 +4506,9 @@ function updateTemporalSlider(){
       if(r.year<minY)minY=r.year;if(r.year>maxY)maxY=r.year;
     }
   });
-  if(minY>maxY||maxY-minY<2){wrap.classList.remove('vis');return}
+  if(minY>maxY||maxY-minY<2){wrap.classList.remove('vis');ensureMapPhoneBits();return}
   wrap.classList.add('vis');
+  setTimeout(ensureMapPhoneBits,0);
 
   /* Build histogram */
   const histEl=$('#mtHist');

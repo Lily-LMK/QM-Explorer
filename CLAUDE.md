@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 18 November 2026 (phone layout A–D live).
+profile). Read both. Last updated 18 November 2026 (phone layout A–F live).
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -150,7 +150,15 @@ not a real outage.
   records, the shaded page or Escape close it; Export CSV and "+ place" sit in its bottom bar). Below
   600 px: header in two rows with full-width search, all five tabs fit, one record per row in the
   list (photo Gallery two per row), and the record window scrolls as one page with the title and
-  Close pinned (`.mod-dlg` scrollTop reset in `openModal`). Still to do: map (E) and taxonomy tree (F).
+  Close pinned (`.mod-dlg` scrollTop reset in `openModal`).
+- **Map and taxonomy tree on phones (E and F, 18 November 2026):** second block at the end of the
+  `<style>` ("E and F"). Below 600 px the Map tab hides the summary; `#mapMBar` holds the count and
+  "Map settings", which opens `.map-top` as a sheet from the bottom (`setMapSheet`; Close, Show map,
+  Escape; Draw, Go and an area choice close it). `.map-info` moves onto the map (`#mapC`) and the
+  legend into the dock (`isPhone()` in `updateMapInfo` and `buildLegend`); `#mapFold` folds the
+  colour key and collection years (`setMapFold`, `S.mapFold`; years start folded). Tree rows are a
+  two-line grid, the rank shows once per group (`.tn-grp`, `RPLURAL`), and Filter and Browse show
+  on phones and on any touch screen (`hover:none`).
 - **CSV:** both exports end with `retrievalDate` and `query`. Elevation is ALA `el674`.
 - **Service worker:** never caches `index.html` (network-only), so a deploy reaches visitors at
   once. Propagates real network/CORS failures (does NOT manufacture a
