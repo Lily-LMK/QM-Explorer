@@ -716,6 +716,80 @@ body.on-home #csvBtn,body.on-home #csvPlusBtn{display:none}
 .home a:focus-visible{outline:3px solid var(--peri);outline-offset:3px}
 @media(max-width:1200px){.hm-colls{grid-template-columns:repeat(4,minmax(0,1fr))}.hm-photos{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.hm-hero{grid-template-columns:1fr}.hm-intro{padding:40px 20px 36px}.hm-fig{min-height:0;aspect-ratio:4/5;max-height:560px}.hm-sec,.hm-sec+.hm-sec{padding:36px 20px 8px}.hm-sec+.hm-sec{padding-bottom:40px}.hm-colls{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-photos{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-stats b{font-size:32px}.hm-lede{font-size:18px}.hm-sh h2{font-size:26px}}
+
+/* ═════════════════════════════════════════════════
+   PHONES AND NARROW WINDOWS (Lily, 18 November 2026: A–D; records view first)
+   Filters: below 900 px the panel slides over the page from the left (it was hidden outright).
+   A header in two rows, B tab row with a fade and export in the Filters panel, C one record per row,
+   D record window as one scrolling page. Layout only: no search, filter or export logic changes.
+   ═════════════════════════════════════════════════ */
+.side-x,.side-done{display:none}
+@media(max-width:900px){
+  .side,.lay.col .side{display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;width:min(420px,100vw);z-index:1000;opacity:1;padding:0;border-right:1px solid var(--hair);box-shadow:0 0 40px rgba(0,0,0,.35);transition:transform .22s cubic-bezier(.2,.7,.2,1),visibility .22s;overflow:hidden}
+  .lay.col{grid-template-columns:minmax(0,1fr)}
+  .lay.col .side{transform:translateX(-102%);visibility:hidden;pointer-events:none;box-shadow:none}
+  .side-scroll{flex:1;overflow-y:auto;padding:18px 18px 24px;-webkit-overflow-scrolling:touch}
+  .lay:not(.col)::after{content:'';position:fixed;inset:0;background:rgba(10,10,10,.55);z-index:999}
+  .side-h{gap:10px}
+  .side-x{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;border:1.5px solid var(--ink);border-radius:var(--pill);background:#fff;color:var(--ink);font:700 14px var(--font);cursor:pointer}
+  .side-h .btn-rst{margin-left:auto;min-height:44px}
+  .side-done{display:flex;gap:10px;flex-shrink:0;padding:12px 18px calc(12px + env(safe-area-inset-bottom));background:var(--paper);border-top:2px solid var(--ink)}
+  .side-done button{min-height:48px;border-radius:var(--pill);font:700 15px var(--font);cursor:pointer;padding:0 16px}
+  .sd-go{flex:1;border:0;background:var(--ink);color:#fff}
+  .sd-csv,.sd-plus{border:1.5px solid var(--ink);background:#fff;color:var(--ink)}
+  .sd-plus[aria-pressed="true"]{background:var(--chart);border-color:var(--chart)}
+  .side select,.side input{font-size:16px;min-height:44px}
+  .side label{font-size:13px}
+  .side-x:focus-visible,.side-done button:focus-visible{outline:none;box-shadow:var(--focus)}
+}
+@media(prefers-reduced-motion:reduce){.side{transition:none!important}}
+@media(max-width:600px){
+  /* A. Header: logo and Filters on the first row, search across the full width below */
+  .hdr{flex-wrap:wrap;height:auto;padding:10px 14px 12px;gap:10px 12px}
+  .hdr-brand{order:1}
+  .hdr-r{order:2}
+  .hdr-search{order:3;flex:1 1 100%;max-width:none}
+  .hdr-search input{font-size:16px}
+  .hdr-brand .hdr-t{display:flex}
+  .hdr-brand .qm-rule{display:block}
+  .hdr-brand .hb-link{min-height:44px}
+  .tog-btn{font-size:15px}
+  /* B. Tabs: tighter so all five fit where they can; a fade shows the row scrolls; export lives in Filters */
+  .tabs{padding:0 6px;gap:0;min-height:50px;-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
+  .tab{font-size:15px;padding:0 9px;min-height:48px}
+  .tabs .csv-btn,.tabs .tab-sp{display:none}
+  /* C. Records: one per row in the list; text no smaller than 13 px */
+  .gal.compact,.gal.compact.dense{grid-template-columns:minmax(0,1fr);gap:10px}
+  .gal:not(.compact){grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .gal.compact .card-sci{font-size:18px}
+  .gal.compact .card-cat,.card-cat{font-size:14px}
+  .gal.compact .card-com{font-size:15px}
+  .gal.compact .card-fam{font-size:12.5px}
+  .gal.compact .card-type-inline,.card-type{font-size:12px;padding:3px 9px}
+  .card-names .cn-l{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-src,.card-tax,.card-collector,.card-crumb,.card-det,.card-tag,.card-basis{font-size:13px}
+  .chip .ck{font-size:12px}
+  /* D. Record window: the whole window scrolls as one page; Close stays in reach */
+  .mod-bg{padding:0;align-items:stretch}
+  .mod-dlg{width:100vw;height:100vh;height:100dvh;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .mod-left{height:44vh;min-height:220px}
+  .mod-dlg.no-media .mod-left{display:none}
+  .mod-right,.mod-right-body{overflow:visible}
+  .mod-right-hdr{position:sticky;top:0;z-index:5;background:#fff;padding:16px 18px 12px;border-bottom:1px solid var(--hair2)}
+  .mod-dlg.no-media .mod-right-hdr{background:var(--ink)}
+  .mod-right-body{padding:6px 18px 22px}
+  .mod-dlg.no-media .mod-right-body{padding:16px 18px 22px}
+  .mod-foot,.mod-dlg.no-media .mod-foot{padding:14px 18px calc(16px + env(safe-area-inset-bottom))}
+  .rc-cols{grid-template-columns:minmax(0,1fr);gap:18px}
+  .rc-k{font-size:12px}
+  .det-flow .df{display:block;padding:9px 0}
+  .det-flow .df .k{display:block;font-size:12px;margin-bottom:2px}
+  .mf-links{grid-template-columns:minmax(0,1fr)}
+  .mf-l small{font-size:13px}
+  .mf-ack{font-size:13px}
+  .type-badge,.m-kind .type-badge{font-size:12.5px}
+  .ref-fig figcaption,.ref-t{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -734,8 +808,9 @@ body.on-home #csvBtn,body.on-home #csvPlusBtn{display:none}
 <div class="chip-bar" id="chipBar" role="status" aria-live="polite" aria-label="Active filters"></div>
 
 <div class="lay" id="lay">
-  <aside class="side" id="side" role="complementary" aria-label="Filters">
-    <div class="side-h"><h2>Filters</h2><button class="btn-rst" id="resetBtn">Reset all</button></div>
+  <aside class="side" id="side" role="complementary" aria-label="Filters" tabindex="-1">
+    <div class="side-scroll">
+    <div class="side-h"><h2>Filters</h2><button class="btn-rst" id="resetBtn">Reset all</button><button type="button" class="side-x" id="sideX" aria-label="Close filters">Close</button></div>
     <div class="sec tx" id="taxSec"><h3 class="sec-t tx-h"><button type="button" class="tx-tog" id="taxTog" aria-expanded="false" aria-controls="taxBody"><span>Taxonomy</span><span class="tx-n" id="taxN"></span><svg class="tx-chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></button></h3>
       <div id="taxBody" hidden>
       <div class="fg"><label for="fK">Kingdom</label><select id="fK"><option value="">All Kingdoms</option></select></div>
@@ -753,6 +828,8 @@ body.on-home #csvBtn,body.on-home #csvPlusBtn{display:none}
     <hr class="hr"/>
     <div class="sec"><div class="sec-t"><span class="d" style="background:var(--red)" aria-hidden="true"></span> Lists</div>
       <div class="fg"><label for="fSort">Order taxon lists by</label><select id="fSort"><option value="count">Most records first</option><option value="az">A → Z</option><option value="za">Z → A</option></select></div></div>
+    </div>
+    <div class="side-done"><button type="button" class="sd-go" id="sideDone">Show records</button><button type="button" class="sd-csv" id="sideCsv">Export CSV</button><button type="button" class="sd-plus" id="sideCsvPlus" aria-pressed="false" aria-label="Add place context to the export" title="Add place context to the export">+ place</button></div>
   </aside>
 
   <main class="main" role="main">
@@ -5761,6 +5838,7 @@ function openModal(idx){
   /* Scroll both panels to top */
   $('#mImgWrap').scrollTop=0;
   const rb=document.querySelector('.mod-right-body');if(rb)rb.scrollTop=0;
+  const dl=document.querySelector('.mod-dlg');if(dl)dl.scrollTop=0; /* on phones the whole window scrolls */
 
   // Spatial context — fires in parallel for any record with coordinates
   if(r.lat!=null&&r.lng!=null) fetchSpatialContext(r,idx);
@@ -7880,7 +7958,7 @@ document.querySelector('.tabs[role="tablist"]')?.addEventListener('keydown',e=>{
   else if(e.key==='End')ni=tabs.length-1;
   if(ni>=0){e.preventDefault();tabs[ni].focus();tabs[ni].click()}
 });
-$('#togSide').addEventListener('click',()=>{if(S.home){hideHome();$('#lay').classList.remove('col');$('#togSide').setAttribute('aria-expanded','true');pushURLState();return}$('#lay').classList.toggle('col');const btn=$('#togSide');btn.setAttribute('aria-expanded',!$('#lay').classList.contains('col'));if(S.map)setTimeout(()=>S.map.invalidateSize(),300)});
+$('#togSide').addEventListener('click',()=>{if(S.home){hideHome();setSide(true);pushURLState();return}setSide($('#lay').classList.contains('col'))});
 $('#prevP')?.addEventListener('click',()=>{
   if(S.mapPoly&&S.mapPoly.rings){
     if((S._polyPage||0)>0){S._polyPage--;S._polyNavActive=true;doSearch()}
@@ -7893,6 +7971,25 @@ $('#nextP')?.addEventListener('click',()=>{
 });
 /* Density toggle + CSV export + Nav buttons */
 $('#galCount').addEventListener('click',e=>{const b=e.target.closest('.gal-link');if(!b)return;if(b.dataset.go==='grid')showGallery();else showList(true)});
+/* Filters on phones and narrow windows (Lily, 18 November 2026): the panel slides over the page,
+   starts closed, and closes with Close, Show records, the shaded page or Escape. */
+const _narrowQ=matchMedia('(max-width:900px)');
+function setSide(open){
+  const lay=$('#lay');lay.classList.toggle('col',!open);
+  $('#togSide').setAttribute('aria-expanded',open);
+  const m=$('.main');if(m)m.inert=!!(open&&_narrowQ.matches);
+  if(open&&_narrowQ.matches)setTimeout(()=>$('#side').focus({preventScroll:true}),30);
+  if(S.map)setTimeout(()=>S.map.invalidateSize(),300);
+}
+if(_narrowQ.matches)setSide(false);
+_narrowQ.addEventListener('change',e=>setSide(!e.matches));
+const _closeSide=()=>{setSide(false);$('#togSide').focus()};
+$('#sideX').addEventListener('click',_closeSide);
+$('#sideDone').addEventListener('click',_closeSide);
+$('#sideCsv').addEventListener('click',()=>{setSide(false);$('#csvBtn').click()});
+$('#sideCsvPlus').addEventListener('click',()=>{$('#csvPlusBtn').click();$('#sideCsvPlus').setAttribute('aria-pressed',$('#csvPlusBtn').classList.contains('on'))});
+$('#lay').addEventListener('click',e=>{if(_narrowQ.matches&&e.target===e.currentTarget&&!e.currentTarget.classList.contains('col'))_closeSide()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_narrowQ.matches&&!$('#lay').classList.contains('col')&&!$('#modal').classList.contains('open')){e.preventDefault();_closeSide()}});
 $('#csvBtn').addEventListener('click',e=>{e.stopPropagation();exportCSV($('#csvPlusBtn').classList.contains('on'))});
 $('#csvPlusBtn').addEventListener('click',e=>{e.stopPropagation();const btn=$('#csvPlusBtn');btn.classList.toggle('on');btn.setAttribute('aria-pressed',btn.classList.contains('on'));toast(btn.classList.contains('on')?'CSV+ on — export will include full spatial enrichment':'CSV+ off — fast export')});
 /* Nav: open sequential records in modal */
