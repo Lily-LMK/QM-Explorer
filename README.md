@@ -14,13 +14,15 @@ Live data from the [Atlas of Living Australia](https://www.ala.org.au/) (ALA) vi
 - **View** full specimen detail with multi-image gallery, spatial context (bioregion, LGA, vegetation, marine zones, bathymetry, traditional owner groups), and Wikipedia descriptions
 - **Export** filtered results as CSV, or as an enriched CSV that adds spatial context for each record. Every row of both files ends with the retrieval date and the ALA query, so a file explains itself away from the site
 
-The five views in the interface are labelled **Records, Taxa, Browse, Map, Analytics**.
+The five views in the interface are labelled **Records, Taxonomy, Field guide, Map, Analytics**. The address with no hash opens a home page with live counts per collection.
+
+On phones and narrow windows (below 900 px) the filters slide over the page from the ≡ Filters button; below 600 px the header takes two rows, records show one per row, and the record window scrolls as one page.
 
 ## Architecture
 
 ### Single-file design
 
-`index.html` is a self-contained ~400 KB file, around 7,100 lines. All CSS, JavaScript, and HTML live in one document. External dependencies are loaded via CDN:
+`index.html` is a self-contained file of about 520 KB and 8,600 lines. All CSS, JavaScript, and HTML live in one document. External dependencies are loaded via CDN:
 
 - [Leaflet](https://leafletjs.com/) 1.9.4 — mapping
 - [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster) 1.5.3 — marker clustering
@@ -91,7 +93,7 @@ Targets WCAG 2.1 AA compliance:
 
 ### Local
 
-Open `index.html` in any modern browser. No server required — all API calls are to public CORS-enabled endpoints.
+Serve the folder over http (`python3 -m http.server 8000`, then open `http://localhost:8000`). Opened as a `file://` page, the register additions (`data/qm-register-supplement.json`) cannot load and the service worker does not run. All API calls are to public CORS-enabled endpoints.
 
 If `sw.js` is not present alongside `index.html`, the app runs in standalone mode without service worker caching. The registration call fails silently.
 

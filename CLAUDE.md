@@ -17,7 +17,7 @@ natural-history collections via the Atlas of Living Australia (ALA), enriched wi
 GBIF, iNaturalist, Wikipedia, and Queensland Government / Geoscience Australia spatial
 services. Deployed on GitHub Pages: <https://lily-lmk.github.io/QM-Explorer>.
 
-- `index.html` — the entire app (~7,100 lines, ~400 KB: HTML + CSS + JS inline). No framework,
+- `index.html` — the entire app (~8,600 lines, ~520 KB: HTML + CSS + JS inline). No framework,
   no build step. External deps (Leaflet, fonts) load via CDN.
 - `sw.js` — optional service worker: caches CDN assets + API responses. App runs
   without it.
