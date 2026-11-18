@@ -3,7 +3,7 @@
 Project-level guidance, auto-loaded each session. This is the **specific truth for
 this folder**; the workspace file at `~/Documents/Claude/CLAUDE.md` holds the broader
 working philosophy (Explore → Plan → Code → Commit, biodiversity context, Lily's
-profile). Read both. Last updated 18 November 2026 (record window "Not this specimen" release, `main` d372f03).
+profile). Read both. Last updated 18 November 2026 (phone layout A–D live).
 
 For where the project is and what is next, read "Current chapter" below, then
 `project-notes/HANDOVER.md` if it is present (private notes, git-ignored). The June 2026
@@ -144,6 +144,13 @@ not a real outage.
   - Known on 18 November 2026: GBIF can return a register-ledger scan as a "specimen" image (G332190,
     *Desmoxya*). The marine-park line can fire on land animals (MO79570, a land snail): left for now,
     as many molluscs are marine (Lily, 18 November 2026).
+- **Phones and narrow windows (live 18 November 2026):** one block at the end of the `<style>` ("PHONES
+  AND NARROW WINDOWS"). Below 900 px the Filters panel slides over the page (`setSide(open)`; the class
+  `col` on `#lay` means closed; starts closed; `.main` is made inert while it is open; Close, Show
+  records, the shaded page or Escape close it; Export CSV and "+ place" sit in its bottom bar). Below
+  600 px: header in two rows with full-width search, all five tabs fit, one record per row in the
+  list (photo Gallery two per row), and the record window scrolls as one page with the title and
+  Close pinned (`.mod-dlg` scrollTop reset in `openModal`). Still to do: map (E) and taxonomy tree (F).
 - **CSV:** both exports end with `retrievalDate` and `query`. Elevation is ALA `el674`.
 - **Service worker:** never caches `index.html` (network-only), so a deploy reaches visitors at
   once. Propagates real network/CORS failures (does NOT manufacture a
